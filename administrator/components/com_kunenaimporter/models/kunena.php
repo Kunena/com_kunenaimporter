@@ -16,10 +16,10 @@ defined ( '_JEXEC' ) or die ();
 require_once (JPATH_ROOT . DS . 'components' . DS . 'com_kunena' . DS . 'lib' . DS . 'kunena.defines.php');
 require_once (KUNENA_PATH_LIB . DS . 'kunena.config.class.php');
 
-class CKunenaTable extends JTable {
+class KunenaImporterTable extends JTable {
 	protected $_exists;
 
-	function store($updateNulls = false) {
+	public function store($updateNulls = false) {
 		if (! $this->_exists)
 			$ret = $this->_db->insertObject ( $this->_tbl, $this, $this->_tbl_key );
 		else
@@ -31,13 +31,13 @@ class CKunenaTable extends JTable {
 		return $ret;
 	}
 
-	function exists($exists = null) {
+	public function exists($exists = null) {
 		$return = $this->_exists;
 		if ($exists !== null) $this->_exists = $exists;
 		return $return;
 	}
 
-	function load($oid = null) {
+	public function load($oid = null) {
 		$ret = parent::load ( $oid );
 		if ($ret === true)
 			$this->_exists = true;
@@ -45,7 +45,7 @@ class CKunenaTable extends JTable {
 	}
 }
 
-class CKunenaTableExtUser extends CKunenaTable {
+class KunenaImporterTableExtUser extends KunenaImporterTable {
 	var $extid = null;
 	var $extusername = null;
 	var $id = null;
@@ -62,11 +62,11 @@ class CKunenaTableExtUser extends CKunenaTable {
 	var $conflict = null;
 	var $error = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunenaimporter_users', 'extid', $database );
 	}
 
-	function loadIdMap($list) {
+	public function loadIdMap($list) {
 		if (empty($list)) return array();
 		$list = implode(',', $list);
 		$this->_db->setQuery ( "SELECT id, extid, lastvisitDate FROM #__kunenaimporter_users WHERE extid IN ({$list})" );
@@ -74,7 +74,7 @@ class CKunenaTableExtUser extends CKunenaTable {
 	}
 }
 
-class CKunenaTableAnnouncements extends CKunenaTable {
+class KunenaImporterTableAnnouncements extends KunenaImporterTable {
 	var $id = null;
 	var $title = null;
 	var $sdescription = null;
@@ -84,12 +84,12 @@ class CKunenaTableAnnouncements extends CKunenaTable {
 	var $ordering = null;
 	var $showdate = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_announcement', 'id', $database );
 	}
 }
 
-class CKunenaTableAttachments extends CKunenaTable {
+class KunenaImporterTableAttachments extends KunenaImporterTable {
 	var $id = null;
 	var $mesid = null;
 	var $userid = null;
@@ -99,12 +99,12 @@ class CKunenaTableAttachments extends CKunenaTable {
 	var $filetype = null;
 	var $filename = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_attachments', 'mesid', $database );
 	}
 }
 
-class CKunenaTableCategories extends CKunenaTable {
+class KunenaImporterTableCategories extends KunenaImporterTable {
 	var $id = null;
 	var $parent = null;
 	var $name = null;
@@ -135,24 +135,24 @@ class CKunenaTableCategories extends CKunenaTable {
 	var $numPosts = null;
 	var $time_last_msg = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_categories', 'id', $database );
 	}
 
-	function store($updateNulls = false) {
+	public function store($updateNulls = false) {
 		$ret = parent::store ( $updateNulls );
 		if ($ret) {
 			// we must reset fbSession (allowed), when forum record was changed
 			$this->_db->setQuery ( "UPDATE #__kunena_sessions SET allowed='na'" );
 			// FIXME: Need to check and validate query error codes
 			$this->_db->query ();
-			
+
 		}
 		return $ret;
 	}
 }
 
-class CKunenaTableConfig extends CKunenaConfig {
+class KunenaImporterTableConfig extends CKunenaConfig {
 	protected function bind($array, $ignore = '') {
 		if (! is_array ( $array )) {
 			$this->_error = strtolower ( get_class ( $this ) ) . '::bind failed.';
@@ -167,23 +167,23 @@ class CKunenaTableConfig extends CKunenaConfig {
 		return true;
 	}
 
-	public function save($data) {
+	public public function save($data) {
 		$this->remove ();
 		$this->bind ( $data );
 		$this->create ();
 	}
 }
 
-class CKunenaTableFavorites extends CKunenaTable {
+class KunenaImporterTableFavorites extends KunenaImporterTable {
 	var $thread = null;
 	var $userid = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_favorites', 'thread', $database );
 	}
 }
 
-class CKunenaTableMessages extends CKunenaTable {
+class KunenaImporterTableMessages extends KunenaImporterTable {
 	var $id = null;
 	var $parent = null;
 	var $thread = null;
@@ -204,111 +204,111 @@ class CKunenaTableMessages extends CKunenaTable {
 	var $modified_time = null;
 	var $modified_reason = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_messages', 'id', $database );
 	}
 }
 
-class CKunenaTableMessages_Text extends CKunenaTable {
+class KunenaImporterTableMessages_Text extends KunenaImporterTable {
 	var $mesid = null;
 	var $message = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_messages_text', 'mesid', $database );
 	}
 }
 
-class CKunenaTableModeration extends CKunenaTable {
+class KunenaImporterTableModeration extends KunenaImporterTable {
 	var $catid = null;
 	var $userid = null;
 	var $future1 = null;
 	var $future2 = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_moderation', 'catid', $database );
 	}
 }
 
-class CKunenaTablePolls extends CKunenaTable {
+class KunenaImporterTablePolls extends KunenaImporterTable {
 	var $id = null;
 	var $title = null;
 	var $threadid = null;
 	var $polltimetolive = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_polls', 'id', $database );
 	}
 }
 
-class CKunenaTablePolls_Options extends CKunenaTable {
+class KunenaImporterTablePolls_Options extends KunenaImporterTable {
 	var $id = null;
 	var $pollid = null;
 	var $text = null;
 	var $votes = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_polls_options', 'id', $database );
 	}
 }
 
-class CKunenaTablePolls_Users extends CKunenaTable {
+class KunenaImporterTablePolls_Users extends KunenaImporterTable {
 	var $pollid = null;
 	var $userid = null;
 	var $votes = null;
 	var $lasttime = null;
 	var $lastvote = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_polls_users', 'id', $database );
 	}
 }
 
-class CKunenaTableRanks extends CKunenaTable {
+class KunenaImporterTableRanks extends KunenaImporterTable {
 	var $rank_id = null;
 	var $rank_title = null;
 	var $rank_min = null;
 	var $rank_special = null;
 	var $rank_image = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_ranks', 'rank_id', $database );
 	}
 }
 
-class CKunenaTableSessions extends CKunenaTable {
+class KunenaImporterTableSessions extends KunenaImporterTable {
 	var $userid = null;
 	var $allowed = null;
 	var $lasttime = null;
 	var $readtopics = null;
 	var $currvisit = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_sessions', 'userid', $database );
 	}
 }
 
-class CKunenaTableSmilies extends CKunenaTable {
+class KunenaImporterTableSmilies extends KunenaImporterTable {
 	var $id = null;
 	var $code = null;
 	var $location = null;
 	var $greylocation = null;
 	var $emoticonbar = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_smileys', 'id', $database );
 	}
 }
 
-class CKunenaTableSubscriptions extends CKunenaTable {
+class KunenaImporterTableSubscriptions extends KunenaImporterTable {
 	var $thread = null;
 	var $userid = null;
 	var $future1 = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_subscriptions', 'thread', $database );
 	}
 
-	function store($updateNulls = false) {
+	public function store($updateNulls = false) {
 		$this->_db->setQuery ( "INSERT INTO #__kunena_subscriptions (thread, userid) VALUES ({$this->thread}, {$this->userid})" );
 		$this->_db->query ();
 		return !$this->_db->getErrorNum ();
@@ -316,28 +316,28 @@ class CKunenaTableSubscriptions extends CKunenaTable {
 
 }
 
-class CKunenaTableSubscriptions_Categories extends CKunenaTable {
+class KunenaImporterTableSubscriptions_Categories extends KunenaImporterTable {
 	var $thread = null;
 	var $userid = null;
 	var $future1 = null;
 
-	function __construct(&$database) {
+	function __construct($database) {
 		parent::__construct ( '#__kunena_subscriptions_categories', 'thread', $database );
 	}
 }
 
-class CKunenaTableThankYou extends CKunenaTable {
+class KunenaImporterTableThankYou extends KunenaImporterTable {
 	var $postid = null;
 	var $userid = null;
 	var $targetuserid = null;
 	var $time = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_thankyou', 'thread', $database );
 	}
 }
 
-class CKunenaTableUserProfile extends CKunenaTable {
+class KunenaImporterTableUserProfile extends KunenaImporterTable {
 	var $userid = null;
 	var $view = null;
 	var $signature = null;
@@ -376,12 +376,12 @@ class CKunenaTableUserProfile extends CKunenaTable {
 	var $hideEmail = null;
 	var $showOnline = null;
 
-	function __construct($database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_users', 'userid', $database );
 	}
 }
 
-class CKunenaTableUsersBanned extends CKunenaTable {
+class KunenaImporterTableUsersBanned extends KunenaImporterTable {
 	var $id = null;
 	var $userid = null;
 	var $ip = null;
@@ -396,12 +396,12 @@ class CKunenaTableUsersBanned extends CKunenaTable {
 	var $comments = null;
 	var $params = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_users_banned', 'id', $database );
 	}
 }
 
-class CKunenaTableVersion extends CKunenaTable {
+class KunenaImporterTableVersion extends KunenaImporterTable {
 	var $id = null;
 	var $version = null;
 	var $versiondate = null;
@@ -410,12 +410,12 @@ class CKunenaTableVersion extends CKunenaTable {
 	var $versionname = null;
 	var $state = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_version', 'id', $database );
 	}
 }
 
-class CKunenaTableWhoIsOnline extends CKunenaTable {
+class KunenaImporterTableWhoIsOnline extends KunenaImporterTable {
 	var $id = null;
 	var $userid = null;
 	var $time = null;
@@ -428,7 +428,7 @@ class CKunenaTableWhoIsOnline extends CKunenaTable {
 	var $userip = null;
 	var $user = null;
 
-	function __construct(&$database) {
+	public function __construct($database) {
 		parent::__construct ( '#__kunena_whoisonline', 'id', $database );
 	}
 }

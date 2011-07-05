@@ -23,7 +23,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	var $version;
 	var $pnversion;
 
-	function checkConfig() {
+	public function checkConfig() {
 		parent::checkConfig ();
 		if (JError::isError ( $this->ext_database ))
 			return;
@@ -64,7 +64,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		}
 	}
 
-	function buildImportOps() {
+	public function buildImportOps() {
 		// query: (select, from, where, groupby), functions: (count, export)
 		$importOps = array ();
 		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
@@ -74,17 +74,17 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
 		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$this->importOps = & $importOps;
+		$this->importOps = $importOps;
 	}
 
-	function countCategories() {
+	public function countCategories() {
 		$query = "SELECT count(*) FROM #__categories";
 		$count = $this->getCount ( $query );
 		$query = "SELECT count(*) FROM #__forums";
 		return $count + $this->getCount ( $query );
 	}
 
-	function &exportCategories($start = 0, $limit = 0) {
+	public function &exportCategories($start = 0, $limit = 0) {
 		// Import the categories
 		$query = "(SELECT " . "cat_id+500 AS id, " . "0 AS parent, " . "cat_title AS name, " . //			"cat_emoticon, ".
 		"0 AS locked, " . //			"alert_admin, ".
@@ -114,19 +114,18 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		"forum_last_post_id AS id_last_msg, " . "forum_posts AS numPosts, " . "forum_topics AS numTopics, " . //			"time_last_msg ".
 		"0 AS dummy " . "FROM #__forums) ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit );
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			$row->name = prep ( $row->name );
 			$row->description = prep ( $row->description );
 		}
 		return $result;
 	}
 
-	function countConfig() {
+	public function countConfig() {
 		return 1;
 	}
 
-	function &exportConfig($start = 0, $limit = 0) {
+	public function &exportConfig($start = 0, $limit = 0) {
 		$config = array ();
 		if ($start)
 			return $config;
@@ -278,20 +277,19 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countMessages() {
+	public function countMessages() {
 		$query = "SELECT count(*) FROM #__posts";
 		return $this->getCount ( $query );
 	}
 
-	function &exportMessages($start = 0, $limit = 0) {
+	public function &exportMessages($start = 0, $limit = 0) {
 		$query = "SELECT " . "p.post_id AS id, " . "IF(p.post_id=t.topic_first_post_id,0,t.topic_first_post_id) AS parent, " . "t.topic_first_post_id AS thread, " . "t.forum_id+1 AS catid, " . "IF(p.post_username, p.post_username, u.username) AS name, " . "p.poster_id AS userid, " . "u.user_email AS email, " . "IF(x.post_subject, x.post_subject, t.topic_title) AS subject, " . "p.post_time AS time, " . "p.poster_ip AS ip, " . //			"topic_emoticon, ".
 		"(t.topic_status=1 AND p.post_id=t.topic_first_post_id) AS locked, " . "(a.approval_id>0) AS hold, " . "(t.topic_type>0 AND p.post_id=t.topic_first_post_id) AS ordering, " . "t.topic_views AS hits, " . //			"t.topic_moved_id AS moved, ".
 		"IF(p.post_edit_time,u.username,'') AS modified_by, " . "p.post_edit_time AS modified_time, " . //			"p.post_edit_reason AS modified_reason, ".
 		"x.post_text AS message " . "FROM `#__posts` AS p " . "LEFT JOIN `#__posts_text` AS x ON p.post_id = x.post_id " . "LEFT JOIN `#__topics` AS t ON p.topic_id = t.topic_id " . "LEFT JOIN `#__users` AS u ON p.poster_id = u.user_id " . "LEFT JOIN `#__approve_posts` AS a ON p.post_id = a.post_id " . "ORDER BY p.post_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		// Iterate over all the posts and convert them to Kunena
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			$row->name = prep ( $row->name );
 			$row->email = prep ( $row->email );
 			$row->subject = prep ( $row->subject );
@@ -301,41 +299,40 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countSessions() {
+	public function countSessions() {
 		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_lastvisit>0";
 		return $this->getCount ( $query );
 	}
-	function &exportSessions($start = 0, $limit = 0) {
+	public function &exportSessions($start = 0, $limit = 0) {
 		$query = "SELECT " . "user_id AS userid, " . //			"allowed, ".
 		"user_lastvisit AS lasttime, " . //			"readtopics, ".
 		"user_session_time AS currvisit " . "FROM `#__users` WHERE user_lastvisit>0";
 		$result = $this->getExportData ( $query, $start, $limit );
 
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			$row->lasttime = date ( "Y-m-d H:i:s", $row->lasttime );
 			$row->currvisit = date ( "Y-m-d H:i:s", $row->currvisit );
 		}
 		return $result;
 	}
 
-	function countSubscriptions() {
+	public function countSubscriptions() {
 		$query = "SELECT COUNT(*) FROM `#__topics_watch`";
 		return $this->getCount ( $query );
 	}
-	function &exportSubscriptions($start = 0, $limit = 0) {
+	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT " . "t.topic_first_post_id AS thread, " . "w.user_id AS userid " . //			"future1, ".
 		"FROM `#__topics_watch` AS w LEFT JOIN `#__topics` AS t ON w.topic_id=t.topic_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
 
-	function countUserProfile() {
+	public function countUserProfile() {
 		$query = "SELECT COUNT(*) FROM `#__users` WHERE user_id > 0";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUserProfile($start = 0, $limit = 0) {
+	public function &exportUserProfile($start = 0, $limit = 0) {
 		$query = "SELECT " . "user_id AS userid, " . //			"view, ".
 		"user_sig AS signature, " . //			"moderator, ".
 		//			"ordering, ".
@@ -356,8 +353,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		"0 AS dummy " . "FROM `#__users` WHERE user_id > 0 ORDER BY user_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			// Convert bbcode in signature
 			$row->signature = prep ( $row->signature );
 			$row->location = prep ( $row->location );
@@ -365,12 +361,12 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countUsers() {
+	public function countUsers() {
 		$query = "SELECT count(*) FROM #__users AS f WHERE user_id > 0 && user_lastvisit>0 ";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUsers($start = 0, $limit = 0) {
+	public function &exportUsers($start = 0, $limit = 0) {
 		$prefix = $this->ext_database->_table_prefix;
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
@@ -378,8 +374,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		$query = "SELECT u.user_id AS extuserid, username, user_email AS email, user_password AS password, user_regdate, (b.ban_userid>0) AS blocked FROM #__users AS u LEFT OUTER JOIN #__banlist AS b ON u.pn_uid = b.ban_userid WHERE user_id > 0 && user_lastvisit>0 ORDER BY u.user_id";
 
 		$result = $this->getExportData ( $query, $start, $limit );
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			$row->name = $row->username = $row->username;
 
 			if ($row->user_regdate > $row->pn_user_regdate)
@@ -406,14 +401,14 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countSmilies() {
+	public function countSmilies() {
 		return false;
 
 		$query = "SELECT count(*) FROM #__smilies";
 		return $this->getCount ( $query );
 	}
 
-	function &exportSmilies($start = 0, $limit = 0) {
+	public function &exportSmilies($start = 0, $limit = 0) {
 		$query = "SELECT smiley_id AS id, code AS code, smiley_url AS location, smiley_url AS greylocation, 1 AS emoticonbar FROM `#__smilies` ";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
