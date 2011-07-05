@@ -14,7 +14,7 @@
 defined ( '_JEXEC' ) or die ();
 
 // Initialize the database
-$db = & JFactory::getDBO ();
+$db = JFactory::getDBO ();
 $update_queries = array ("CREATE TABLE IF NOT EXISTS `#__kunenaimporter_users` (
   `extid` int(11) NOT NULL auto_increment,
   `extusername` varchar(150) NOT NULL default '',

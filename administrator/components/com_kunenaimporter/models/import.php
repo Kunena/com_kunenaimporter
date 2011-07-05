@@ -24,25 +24,25 @@ jimport ( 'joomla.application.component.model' );
 require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
 
 class KunenaimporterModelImport extends JModel {
-	function __construct() {
+	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
 		$this->db->debug = 0;
 	}
 
-	function getImportOptions() {
+	public function getImportOptions() {
 		// version
 		$options = array ('users','mapusers','config', 'userprofile', 'categories', 'messages', 'attachments', 'favorites', 'subscriptions', 'moderation', 'ranks', 'smilies', 'announcements', 'sessions', 'whoisonline' );
 		return $options;
 	}
 
-	function commitStart() {
+	protected function commitStart() {
 		$query = "SET autocommit=0;";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Disabling autocommit failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	function commitEnd() {
+	protected function commitEnd() {
 		$query = "COMMIT;";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Commit failed:<br />$query<br />" . $this->db->errorMsg () );
@@ -51,28 +51,28 @@ class KunenaimporterModelImport extends JModel {
 		$result = $this->db->query () or die ( "<br />Enabling autocommit failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	function disableKeys($table) {
+	public function disableKeys($table) {
 		$query = "ALTER TABLE {$table} DISABLE KEYS";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Disable keys failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	function enableKeys($table) {
+	public function enableKeys($table) {
 		$query = "ALTER TABLE {$table} ENABLE KEYS";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Enable keys failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	function setAuthMethod($auth_method) {
+	public function setAuthMethod($auth_method) {
 		$this->auth_method = $auth_method;
 	}
 
-	function getUsername($name) {
+	public function getUsername($name) {
 		//if ($this->auth_method == 'joomla') return $name;
 		return strtr ( $name, "<>\"'%;()&", '_________' );
 	}
 
-	function findPotentialUsers($extuser, $all = false) {
+	protected function findPotentialUsers($extuser, $all = false) {
 		// Check if user exists in Joomla
 		$query = "SELECT u.*
 		FROM `#__users` AS u
@@ -105,7 +105,7 @@ class KunenaimporterModelImport extends JModel {
 		return $newlist;
 	}
 
-	function mapUser($extuser) {
+	protected function mapUser($extuser) {
 		if ($extuser->id !== null)
 			return $extuser->id;
 
@@ -118,13 +118,13 @@ class KunenaimporterModelImport extends JModel {
 		return $best->id;
 	}
 
-	function truncateUsersMap() {
+	public function truncateUsersMap() {
 		$query = "TRUNCATE TABLE `#__kunenaimporter_users`";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	function mapUsers($result, $limit) {
+	public function mapUsers($result, $limit) {
 		if (!$result['total']) {
 			$query = "SELECT COUNT(*) FROM `#__kunenaimporter_users` WHERE id IS NULL";
 			$this->db->setQuery ( $query );
@@ -138,7 +138,7 @@ class KunenaimporterModelImport extends JModel {
 		foreach ( $users as $userdata ) {
 			$result['start'] = $userdata['extid'];
 			$result['now']++;
-			$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+			$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 			$extuser->bind ( $userdata );
 			unset($userdata);
 			$extuser->exists ( true );
@@ -166,12 +166,12 @@ class KunenaimporterModelImport extends JModel {
 		return $result;
 	}
 
-	function createUsers(&$users) {
+	public function createUsers(&$users) {
 		foreach ( $users as $userdata ) {
 		}
 	}
 
-	function UpdateCatStats() {
+	protected function UpdateCatStats() {
 		// Update last message time from all categories.
 		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
 		$this->db->setQuery ( $query );
@@ -179,7 +179,7 @@ class KunenaimporterModelImport extends JModel {
 		unset ( $query );
 	}
 
-	function truncateData($option) {
+	public function truncateData($option) {
 		if ($option == 'config')
 			return;
 		if ($option == 'mapusers')
@@ -189,16 +189,16 @@ class KunenaimporterModelImport extends JModel {
 		if ($option == 'messages')
 			$this->truncateData ( $option . '_text' );
 		$this->db = JFactory::getDBO ();
-		$table = JTable::getInstance ( $option, 'CKunenaTable' );
+		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
 		$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
 	/*
-	function truncateJoomlaUsers() {
+	public function truncateJoomlaUsers() {
 		// Leave only Super Administrators
-		$this->db =& JFactory::getDBO();
+		$this->db = JFactory::getDBO();
 		$query="DELETE FROM #__users WHERE gid != 25";
 		$this->db->setQuery($query);
 		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
@@ -217,13 +217,13 @@ class KunenaimporterModelImport extends JModel {
 	}
 	*/
 
-	function importData($option, &$data) {
+	public function importData($option, &$data) {
 		switch ($option) {
 			case 'config' :
 				$newConfig = end ( $data );
 				if (is_object ( $newConfig ))
 					$newConfig = $newConfig->GetClassVars ();
-				$kunenaConfig = new CKunenaTableConfig ();
+				$kunenaConfig = new KunenaImporterTableConfig ();
 				$kunenaConfig->save ( $newConfig );
 				break;
 			case 'messages' :
@@ -242,8 +242,8 @@ class KunenaimporterModelImport extends JModel {
 		}
 	}
 
-	function importUnique($option, &$data) {
-		$table = JTable::getInstance ( $option, 'CKunenaTable' );
+	protected function importUnique($option, &$data) {
+		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
 		if (! $table)
 			die ( $option );
 
@@ -251,7 +251,7 @@ class KunenaimporterModelImport extends JModel {
 		foreach ( $data as $item ) {
 			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 		$idmap = $extuser->loadIdMap($extids);
 
 		$this->commitStart ();
@@ -267,8 +267,8 @@ class KunenaimporterModelImport extends JModel {
 		$this->commitEnd ();
 	}
 
-	function importDefault($option, &$data) {
-		$table = JTable::getInstance ( $option, 'CKunenaTable' );
+	protected function importDefault($option, &$data) {
+		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
 		if (! $table)
 			die ( $option );
 
@@ -276,7 +276,7 @@ class KunenaimporterModelImport extends JModel {
 		foreach ( $data as $item ) {
 			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 		$idmap = $extuser->loadIdMap($extids);
 
 		$this->commitStart ();
@@ -290,23 +290,23 @@ class KunenaimporterModelImport extends JModel {
 		$this->commitEnd ();
 	}
 
-	function importMessages(&$messages) {
+	protected function importMessages(&$messages) {
 		$extids = array();
 		foreach ( $messages as $message ) {
 			if (!empty($message->userid)) $extids[$message->userid] = $message->userid;
 			if (!empty($message->modified_by)) $extids[$message->modified_by] = $message->modified_by;
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 		$idmap = $extuser->loadIdMap($extids);
 
 		$this->commitStart ();
 		foreach ( $messages as $message ) {
-			$msgtable = JTable::getInstance ( 'messages', 'CKunenaTable' );
-			$txttable = JTable::getInstance ( 'messages_text', 'CKunenaTable' );
+			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
+			$txttable = JTable::getInstance ( 'messages_text', 'KunenaImporterTable' );
 			if ($message->userid) {
 				if ($idmap[$message->userid]->extid && $idmap[$message->userid]->lastvisitDate < $message->time - 86400) {
 					// user MUST have been in the forum in the past 24 hours, update last visit..
-					$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+					$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 					$extuser->load($message->userid);
 					$extuser->lastvisitDate = $idmap[$message->userid]->lastvisitDate =$message->time;
 					$extuser->save();
@@ -335,7 +335,7 @@ class KunenaimporterModelImport extends JModel {
 		$this->updateCatStats ();
 	}
 
-	function updateUserData($oldid, $newid, $replace = false) {
+	public function updateUserData($oldid, $newid, $replace = false) {
 		if ($replace) {
 			$this->db->setQuery ( "DELETE FROM `#__kunena_users` WHERE `userid` = {$this->db->quote($oldid)}" );
 			$this->db->query ();

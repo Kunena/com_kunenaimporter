@@ -25,7 +25,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	var $params;
 	protected $config = null;
 
-	function __construct() {
+	public function __construct() {
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$this->params = new JParameter ( $component->params );
 		$this->getConfiguration();
@@ -44,7 +44,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		parent::__construct ();
 	}
 
-	function getConfiguration() {
+	public function getConfiguration() {
 		if (!$this->config) {
 			$configFile = JPATH_ROOT . '/' . $this->params->get('path') . '/Settings.php';
 			if (!is_file($configFile)) {
@@ -57,7 +57,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $this->config;
 	}
 
-	function checkConfig() {
+	public function checkConfig() {
 		parent::checkConfig ();
 		if ($this->error)
 			return false;
@@ -91,11 +91,11 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$this->addMessage ( '<div>SMF version: <b style="color:green">' . $this->version . '</b></div>' );
 			}
 
-	function getAuthMethod() {
+	public function getAuthMethod() {
 		return $this->auth_method;
 	}
 
-	function buildImportOps() {
+	public function buildImportOps() {
 		// query: (select, from, where, groupby), functions: (count, export)
 		$importOps = array ();
 		$importOps ['users'] = array ('count' => 'countUsers', 'export' => 'exportUsers' );
@@ -106,10 +106,10 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
 		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$this->importOps = & $importOps;
+		$this->importOps = $importOps;
 	}
 
-	function countCategories() {
+	public function countCategories() {
 		static $count = false;
 		if ($count === false) {
 			$query = "SELECT COUNT(*) FROM #__categories";
@@ -120,7 +120,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $count;
 	}
 
-	function &exportCategories($start = 0, $limit = 0) {
+	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id_board) FROM #__boards";
 		$this->ext_database->setQuery ( $query );
 		$maxboard = $this->ext_database->loadResult ();
@@ -188,19 +188,18 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			0 AS time_last_msg
 		FROM #__categories ORDER BY id)";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->id];
+		foreach ( $result as &$row ) {
 			$row->name = $this->prep ( $row->name );
 			$row->description = $this->prep ( $row->description );
 		}
 		return $result;
 	}
 
-	function countConfig() {
+	public function countConfig() {
 		return 1;
 	}
 
-	function &exportConfig($start = 0, $limit = 0) {
+	public function &exportConfig($start = 0, $limit = 0) {
 		$config = array ();
 		if ($start)
 			return $config;
@@ -396,12 +395,12 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countMessages() {
+	public function countMessages() {
 		$query = "SELECT COUNT(*) FROM #__messages";
 		return $this->getCount ( $query );
 	}
 
-	function &exportMessages($start = 0, $limit = 0) {
+	public function &exportMessages($start = 0, $limit = 0) {
 		$query = "SELECT
 			m.id_msg AS id,
 			IF(m.id_msg=t.id_first_msg,0,t.id_first_msg) AS parent,
@@ -428,19 +427,18 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		LEFT JOIN `#__members` AS u ON m.id_member = u.id_member
 		ORDER BY m.id_msg";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->id];
+		foreach ( $result as &$row ) {
 			$row->subject = $this->prep ( $row->subject );
 			$row->message = $this->prep ( $row->message );
 		}
 		return $result;
 	}
 
-	function countSessions() {
+	public function countSessions() {
 		$query = "SELECT COUNT(*) FROM `#__members` WHERE last_login>0";
 		return $this->getCount ( $query );
 	}
-	function &exportSessions($start = 0, $limit = 0) {
+	public function &exportSessions($start = 0, $limit = 0) {
 		$query = "SELECT
 			id_member AS userid,
 			NULL AS allowed,
@@ -453,11 +451,11 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countSubscriptions() {
+	public function countSubscriptions() {
 		$query = "SELECT COUNT(*) FROM `#__log_notify`";
 		return $this->getCount ( $query );
 	}
-	function &exportSubscriptions($start = 0, $limit = 0) {
+	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
 			t.id_first_msg AS thread,
 			s.id_member AS userid,
@@ -468,12 +466,12 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countUserProfile() {
+	public function countUserProfile() {
 		$query = "SELECT COUNT(*) FROM `#__members`";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUserProfile($start = 0, $limit = 0) {
+	public function &exportUserProfile($start = 0, $limit = 0) {
 		$query = "SELECT
 			u.id_member AS userid,
 			'flat' AS view,
@@ -515,8 +513,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		FROM `#__members` AS u
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->userid];
+		foreach ( $result as &$row ) {
 			// Convert bbcode in signature
 			$row->signature = $this->prep ( $row->signature );
 			$row->location = $this->prep ( $row->location );
@@ -524,12 +521,12 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countUsers() {
+	public function countUsers() {
 		$query = "SELECT COUNT(*) FROM `#__members`";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUsers($start = 0, $limit = 0) {
+	public function &exportUsers($start = 0, $limit = 0) {
 		$query = "SELECT
 			u.id_member AS extid,
 			u.member_name AS extusername,
@@ -546,8 +543,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		FROM `#__members` AS u
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->extid];
+		foreach ( $result as &$row ) {
 			$row->name = html_entity_decode ( $row->name );
 			$row->username = html_entity_decode ( $row->username );
 		}
@@ -555,7 +551,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	}
 
 	/*
-	function &exportAttachments($start = 0, $limit = 0) {
+	public function &exportAttachments($start = 0, $limit = 0) {
 		$query = "SELECT
 			id_attach AS id,
 			id_msg AS mesid,
@@ -569,8 +565,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		WHERE attachment_type=0
 		ORDER BY a.id_attach";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->extid];
+		foreach ( $result as &$row ) {
 			$row->folder = 'smf2/'.$row->folder;
 			$row->location = $config->attachmentUploadDir;
 		}
@@ -578,7 +573,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	}
 	*/
 
-	function mapJoomlaUser($joomlauser) {
+	public function mapJoomlaUser($joomlauser) {
 		$query = "SELECT id_member
 			FROM #__members WHERE member_name={$this->ext_database->Quote($joomlauser->username)}";
 
@@ -587,7 +582,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function prep($s) {
+	protected function prep($s) {
 		$s = html_entity_decode($s, ENT_COMPAT, 'UTF-8');
 		$s = preg_replace ( "/\r/", '', $s );
 		$s = preg_replace ( "/\n/", '', $s );

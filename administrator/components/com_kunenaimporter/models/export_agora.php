@@ -23,24 +23,24 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	var $version;
 	var $pnversion;
 
-	function checkConfig() {
+	public function checkConfig() {
 		parent::checkConfig();
 		if (JError::isError($this->ext_database)) return;
 
 	}
 
-	function buildImportOps() {
+	public function buildImportOps() {
 		// query: (select, from, where, groupby), functions: (count, export)
 		$importOps = array();
 		$importOps['categories'] = array('count'=>'countCategories', 'export'=>'exportCategories');
-		$this->importOps =& $importOps;
+		$this->importOps = $importOps;
 	}
 
-	function countConfig() {
+	public function countConfig() {
 		return 1;
 	}
 
-	function &exportConfig($start=0, $limit=0) {
+	public function &exportConfig($start=0, $limit=0) {
 		$config = array();
 		if ($start) return $config;
 
@@ -191,76 +191,75 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 
 	}
 
-	function countCategories() {
+	public function countCategories() {
 		$query="SELECT count(*) FROM #__agora_categories";
 		$count = $this->getCount($query);
 		$query="SELECT count(*) FROM #__agora_forums";
 		return $count + $this->getCount($query);
 	}
 
-	function &exportCategories($start=0, $limit=0) {
+	public function &exportCategories($start=0, $limit=0) {
 		// Import the categories
 		$query="(SELECT cat_name AS name, disp_position AS ordering, enable AS published FROM #__agora_categories) UNION ALL
 		(SELECT enable AS published, forum_name AS name, forum_desc AS description, forum_mdesc AS headerdesc, moderators, num_topics AS numTopics, num_posts AS numPosts, last_post_id AS id_last_msg, cat_id AS id, parent_forum_id AS parent FROM #__agora_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
-		foreach ($result as $key=>$item) {
-			$row =& $result[$key];
+		foreach ($result as $key=>&$row) {
 			$row->name = prep($row->name);
 			$row->description = prep($row->description);
 		}
 		return $result;
 	}
 
-	function countSmilies() {
+	public function countSmilies() {
 		return false;
 
 		$query="SELECT count(*) FROM #__agora_smilies";
 		return $this->getCount($query);
 	}
 
-	function &exportSmilies($start=0, $limit=0)
+	public function &exportSmilies($start=0, $limit=0)
 	{
 		$query="SELECT image AS location,text FROM `#__agora_smilies` ";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
 
-	function countRanks() {
+	public function countRanks() {
 		return false;
 
 		$query="SELECT count(*) FROM #__agora_ranks";
 		return $this->getCount($query);
 	}
 
-	function &exportRanks($start=0, $limit=0)
+	public function &exportRanks($start=0, $limit=0)
 	{
 		$query="SELECT rank AS rank_title, min_posts AS rank_min, image AS rank_image, user_type AS rank_special FROM `#__agora_ranks` ";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
 
-	function countUsers() {
+	public function countUsers() {
 		$query="SELECT count(*) FROM #__agora_users";
 		return $this->getCount($query);
 	}
 
-	function &exportUsers($start=0, $limit=0) {
+	public function &exportUsers($start=0, $limit=0) {
 		$query="SELECT url AS websiteurl, icq AS ICQ, msn AS MSN, aim AS AIM, yahoo AS YAHOO, skype AS SKYPE, location, signature, gender, birthday AS birhtdate, aboutme AS personnalText FROM #__agora_users";
 		$result = $this->getExportData($query, $start, $limit);
 	}
 
-	function countPolls() {
+	public function countPolls() {
 		$query="SELECT count(*) FROM #__agora_polls";
 		return $this->getCount($query);
 	}
 
-	function &exportPolls($start=0, $limit=0) {
+	public function &exportPolls($start=0, $limit=0) {
 		$query="SELECT options,voters,votes FROM #__agora_polls";
 		$result = $this->getExportData($query, $start, $limit);
 	}
 
-	function prep($s) {
+	protected function prep($s) {
 		return $s;
 	}
 }

@@ -30,8 +30,7 @@ class KunenaimporterModelExport extends JModel {
 	var $importOps = array ();
 	var $auth_method;
 
-	function __construct() {
-		$app = JFactory::getApplication ();
+	public function __construct() {
 		parent::__construct ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
@@ -44,13 +43,14 @@ class KunenaimporterModelExport extends JModel {
 				$this->ext_database = JFactory::getDBO ();
 				$this->ext_same = 1;
 			} else {
+				$app = JFactory::getApplication ();
 				$option ['driver'] = $app->getCfg ( 'dbtype' );
 				$option ['host'] = $params->get ( 'db_host' );
 				$option ['user'] = $params->get ( 'db_user' );
 				$option ['password'] = $params->get ( 'db_passwd' );
 				$option ['database'] = $params->get ( 'db_name' );
 				$option ['prefix'] = $params->get ( 'db_prefix' );
-				$this->ext_database = & JDatabase::getInstance ( $option );
+				$this->ext_database = JDatabase::getInstance ( $option );
 			}
 		}
 		// TODO: make this to work
@@ -59,7 +59,7 @@ class KunenaimporterModelExport extends JModel {
 		$this->buildImportOps ();
 	}
 
-	function getExportOptions($importer) {
+	public function getExportOptions($importer) {
 		$app = JFactory::getApplication ();
 
 		$options = $importer->getImportOptions ();
@@ -77,7 +77,7 @@ class KunenaimporterModelExport extends JModel {
 		return $exportOpt;
 	}
 
-	function checkConfig() {
+	public function checkConfig() {
 		$this->addMessage ( '<h2>Importer Status</h2>' );
 
 		// Kunena detection and version check
@@ -102,23 +102,23 @@ class KunenaimporterModelExport extends JModel {
 		$this->addMessage ( '<div>Database connection: <b style="color:green">OK</b></div>' );
 	}
 
-	function getAuthMethod() {
+	public function getAuthMethod() {
 		return $this->auth_method;
 	}
 
-	function addMessage($msg) {
+	protected function addMessage($msg) {
 		$this->messages [] = $msg;
 	}
 
-	function getMessages() {
+	public function getMessages() {
 		return implode ( '', $this->messages );
 	}
 
-	function getError() {
+	public function getError() {
 		return $this->error;
 	}
 
-	function getCount($query) {
+	public function getCount($query) {
 		$this->ext_database->setQuery ( $query );
 		$result = $this->ext_database->loadResult ();
 		if ($this->ext_database->getErrorNum ()) {
@@ -128,7 +128,7 @@ class KunenaimporterModelExport extends JModel {
 		return $result;
 	}
 
-	function &getExportData($query, $start = 0, $limit = 0, $key = null) {
+	public function &getExportData($query, $start = 0, $limit = 0, $key = null) {
 		$this->ext_database->setQuery ( $query, $start, $limit );
 		$result = $this->ext_database->loadObjectList ( $key );
 		if ($this->ext_database->getErrorNum ()) {
@@ -138,7 +138,7 @@ class KunenaimporterModelExport extends JModel {
 		return $result;
 	}
 
-	function countData($operation) {
+	public function countData($operation) {
 		$result = 0;
 		if (empty ( $this->importOps [$operation] ))
 			return false;
@@ -155,7 +155,7 @@ class KunenaimporterModelExport extends JModel {
 		return $result;
 	}
 
-	function &exportData($operation, $start = 0, $limit = 0) {
+	public function &exportData($operation, $start = 0, $limit = 0) {
 		$result = array ();
 		if (empty ( $this->importOps [$operation] ))
 			return $result;
@@ -172,14 +172,14 @@ class KunenaimporterModelExport extends JModel {
 		return $result;
 	}
 
-	function countMapUsers() {
+	public function countMapUsers() {
 		$db = JFactory::getDBO();
 		$query = "SELECT COUNT(*) FROM #__users";
 		$db->setQuery ($query);
 		return $db->loadResult ();
 	}
 
-	function &exportMapUsers($start = 0, $limit = 0) {
+	public function &exportMapUsers($start = 0, $limit = 0) {
 		$db = JFactory::getDBO();
 		$query = "SELECT id, username FROM #__users";
 		$db->setQuery ( $query, $start, $limit );
@@ -189,7 +189,7 @@ class KunenaimporterModelExport extends JModel {
 			$count++;
 			$extid = $this->mapJoomlaUser($user);
 			if ($extid) {
-				$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+				$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 				$extuser->load ( $extid );
 				if ($extuser->exists() && !$extuser->id) {
 					$extuser->id = $user->id;
@@ -202,7 +202,7 @@ class KunenaimporterModelExport extends JModel {
 		return $users;
 	}
 
-	function &exportJoomlaUsers($start = 0, $limit = 0) {
+	public function &exportJoomlaUsers($start = 0, $limit = 0) {
 
 	}
 

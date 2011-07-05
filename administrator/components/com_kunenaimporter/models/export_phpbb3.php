@@ -24,10 +24,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	var $auth_method;
 	var $rokbridge = null;
 
-	function __construct() {
+	public function __construct() {
+		// Get component parameters
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
 
+		// Use RokBridge
 		$rokbridge = JPATH_ADMINISTRATOR . DS . 'components' . DS . 'com_rokbridge' . DS . 'helper.php';
 		if (is_file ( $rokbridge )) {
 			require_once ($rokbridge);
@@ -39,7 +41,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		parent::__construct ();
 	}
 
-	function checkConfig() {
+	public function checkConfig() {
 		parent::checkConfig ();
 		if (JError::isError ( $this->ext_database ))
 			return;
@@ -80,11 +82,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$this->login_field = isset($fields['#__users']['login_name']);
 	}
 
-	function getAuthMethod() {
+	public function getAuthMethod() {
 		return $this->auth_method;
 	}
 
-	function buildImportOps() {
+	public function buildImportOps() {
 		// query: (select, from, where, groupby), functions: (count, export)
 		$importOps = array ();
 		$importOps ['users'] = array ('count' => 'countUsers', 'export' => 'exportUsers' );
@@ -94,15 +96,15 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
 		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$this->importOps = & $importOps;
+		$this->importOps = $importOps;
 	}
 
-	function countCategories() {
+	public function countCategories() {
 		$query = "SELECT COUNT(*) FROM #__forums";
 		return $this->getCount ( $query );
 	}
 
-	function &exportCategories($start = 0, $limit = 0) {
+	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT
 			forum_id AS id,
 			parent_id AS parent,
@@ -135,19 +137,18 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			forum_last_post_time AS time_last_msg
 		FROM #__forums ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->id];
+		foreach ( $result as &$row ) {
 			$row->name = $this->prep ( $row->name );
 			$row->description = $this->prep ( $row->description );
 		}
 		return $result;
 	}
 
-	function countConfig() {
+	public function countConfig() {
 		return 1;
 	}
 
-	function &exportConfig($start = 0, $limit = 0) {
+	public function &exportConfig($start = 0, $limit = 0) {
 		$config = array ();
 		if ($start)
 			return $config;
@@ -299,12 +300,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countMessages() {
+	public function countMessages() {
 		$query = "SELECT COUNT(*) FROM #__posts";
 		return $this->getCount ( $query );
 	}
 
-	function &exportMessages($start = 0, $limit = 0) {
+	public function &exportMessages($start = 0, $limit = 0) {
 		$query = "SELECT
 			p.post_id AS id,
 			IF(p.post_id=t.topic_first_post_id,0,t.topic_first_post_id) AS parent,
@@ -332,8 +333,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		ORDER BY p.post_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
-		foreach ( $result as $item ) {
-			$row = & $result [$item->id];
+		foreach ( $result as &$row ) {
 			$row->name = $this->prep ( $row->name );
 			$row->email = $this->prep ( $row->email );
 			$row->subject = $this->prep ( $row->subject );
@@ -345,11 +345,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countSessions() {
+	public function countSessions() {
 		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_lastvisit>0";
 		return $this->getCount ( $query );
 	}
-	function &exportSessions($start = 0, $limit = 0) {
+	public function &exportSessions($start = 0, $limit = 0) {
 		$query = "SELECT
 			user_id AS userid,
 			NULL AS allowed,
@@ -360,19 +360,18 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		WHERE user_lastvisit>0";
 		$result = $this->getExportData ( $query, $start, $limit );
 
-		foreach ( $result as $key => $item ) {
-			$row = & $result [$key];
+		foreach ( $result as $key => &$row ) {
 			$row->lasttime = date ( "Y-m-d H:i:s", $row->lasttime );
 			$row->currvisit = date ( "Y-m-d H:i:s", $row->currvisit );
 		}
 		return $result;
 	}
 
-	function countSubscriptions() {
+	public function countSubscriptions() {
 		$query = "SELECT COUNT(*) FROM `#__topics_watch`";
 		return $this->getCount ( $query );
 	}
-	function &exportSubscriptions($start = 0, $limit = 0) {
+	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
 			t.topic_first_post_id AS thread,
 			w.user_id AS userid,
@@ -383,12 +382,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countUserProfile() {
+	public function countUserProfile() {
 		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_id > 0 AND u.user_type != 2";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUserProfile($start = 0, $limit = 0) {
+	public function &exportUserProfile($start = 0, $limit = 0) {
 		$query = "SELECT
 			u.user_id AS userid,
 			'flat' AS view,
@@ -432,8 +431,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 
-		foreach ( $result as $item ) {
-			$row = & $result [$item->userid];
+		foreach ( $result as &$row ) {
 			// Convert bbcode in signature
 			$row->signature = $this->prep ( $row->signature );
 			$row->location = $this->prep ( $row->location );
@@ -441,12 +439,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	function countUsers() {
+	public function countUsers() {
 		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_id > 0 AND u.user_type != 2";
 		return $this->getCount ( $query );
 	}
 
-	function &exportUsers($start = 0, $limit = 0) {
+	public function &exportUsers($start = 0, $limit = 0) {
 		$username = $this->login_field ? 'login_name' : 'username';
 		$query = "SELECT
 			u.user_id AS extid,
@@ -467,15 +465,14 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		GROUP BY u.user_id
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
-		foreach ( $result as $item ) {
-			$row = & $result [$item->extid];
+		foreach ( $result as &$row ) {
 			$row->name = html_entity_decode ( $row->name );
 			$row->username = html_entity_decode ( $row->username );
 		}
 		return $result;
 	}
 
-	function mapJoomlaUser($joomlauser) {
+	public function mapJoomlaUser($joomlauser) {
 
 		if (!$this->rokbridge) return false;
 
@@ -496,9 +493,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	//--- Function to prepare strings for MySQL storage ---/
-	function prep($s) {
+	protected function prep($s) {
 		// Parse out the $uid things that fuck up bbcode
-
 
 		$s = preg_replace ( '/\&lt;/', '<', $s );
 		$s = preg_replace ( '/\&gt;/', '>', $s );
