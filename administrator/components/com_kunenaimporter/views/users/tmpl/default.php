@@ -79,10 +79,8 @@ JHTML::_('behavior.tooltip');
 		<tbody>
 		<?php
 			$k = 0;
-			for ($i=0, $n=count( $this->items ); $i < $n; $i++)
+			foreach ($this->items as $i=>$row)
 			{
-				$row 	=& $this->items[$i];
-
 				$img 	= $row->block ? 'publish_x.png' : 'tick.png';
 				$task 	= $row->block ? 'unblock' : 'block';
 				$alt 	= $row->block ? JText::_( 'Enabled' ) : JText::_( 'Blocked' );

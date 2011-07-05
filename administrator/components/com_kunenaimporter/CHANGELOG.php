@@ -31,7 +31,10 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.6.4
+KunenaImporter 1.6.5
+
+5-July-2011 Matias
+^ [#1] Convert component to PHP5
 
 29-November-2010 Xillibit
 # [#20178] Fixes some issues with ccBoard importer

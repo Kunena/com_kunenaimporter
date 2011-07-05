@@ -31,7 +31,7 @@ class KunenaImporterViewUser extends JView {
 		JArrayHelper::toInteger ( $cid, array (0 ) );
 
 		$db = JFactory::getDBO ();
-		$user = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+		$user = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 		$user->load ( $cid [0] );
 
 		$importer = $this->getModel ( 'import' );

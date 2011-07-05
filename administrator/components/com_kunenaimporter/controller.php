@@ -20,13 +20,9 @@ jimport ( 'joomla.error.profiler' );
  * Kunena importer Controller
  */
 class KunenaImporterController extends JController {
-	function __construct() {
-		//Get View
-		if (JRequest::getCmd ( 'view' ) == '') {
-			JRequest::setVar ( 'view', 'default' );
-		}
+	public function __construct() {
 		$this->item_type = 'Default';
-		$this->addModelPath ( JPATH_ADMINISTRATOR . DS . 'components' . DS . 'com_kunenaimporter' . DS . 'models' );
+		$this->addModelPath ( JPATH_ADMINISTRATOR . '/components/com_kunenaimporter/models' );
 		parent::__construct ();
 		$this->registerTask ( 'truncatemap', 'truncatemap' );
 		$this->registerTask ( 'mapusers', 'mapusers' );
@@ -37,55 +33,21 @@ class KunenaImporterController extends JController {
 		$this->registerTask ( 'truncate', 'truncatetable' );
 	}
 
-	function checkTimeout() {
-		static $start = null;
-
-		list ( $usec, $sec ) = explode ( ' ', microtime () );
-		$time = (( float ) $usec + ( float ) $sec);
-
-		if (empty ( $start ))
-			$start = $time;
-
-		if ($time - $start < 4)
-			return false;
-		return true;
-	}
-
-	function getParams() {
-		$app = JFactory::getApplication ();
-		$form = JRequest::getBool ( 'form' );
-
-		if ($form) {
-			$state = JRequest::getVar ( 'cid', array (), 'post', 'array' );
-			$app->setUserState ( 'com_kunenaimporter.state', $state );
-		} else {
-			$state = $app->getUserState ( 'com_kunenaimporter.state' );
-			if (! is_array ( $state ))
-				$state = array ();
-			JRequest::setVar ( 'cid', $state, 'post' );
-		}
-		return array_flip ( $state );
-	}
-
-	function stopmapping() {
-		$app = JFactory::getApplication ();
+	public function stopmapping() {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
 
-	function stopimport() {
-		$app = JFactory::getApplication ();
+	public function stopimport() {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
 	}
 
-	function truncatetable() {
+	public function truncatetable() {
 		$limit = 1000;
 		$timeout = false;
 
-		$db = JFactory::getDBO ();
 		$app = JFactory::getApplication ();
 
-		$importer = & $this->getModel ( 'import' );
-
+		$importer = $this->getModel ( 'import' );
 		$options = $importer->getImportOptions ();
 		$state = $this->getParams ();
 		$optlist = array ();
@@ -103,7 +65,7 @@ class KunenaImporterController extends JController {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
 	}
 
-	function truncatemap() {
+	public function truncatemap() {
 		$importer = $this->getModel ( 'import' );
 		$importer->truncateUsersMap ();
 		$app = JFactory::getApplication ();
@@ -112,11 +74,10 @@ class KunenaImporterController extends JController {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
 
-	function mapusers() {
+	public function mapusers() {
 		$limit = 100;
 		$timeout = false;
 
-		$db = JFactory::getDBO ();
 		$app = JFactory::getApplication ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
@@ -139,7 +100,6 @@ class KunenaImporterController extends JController {
 			$timeout = $this->checkTimeout ();
 		} while ( $result['now'] && ! $timeout );
 
-		//JToolBarHelper::back();
 		if ($timeout) {
 			$view = '&view=mapusers';
 		} else {
@@ -151,7 +111,7 @@ class KunenaImporterController extends JController {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' . $view );
 	}
 
-	function selectuser() {
+	public function selectuser() {
 		$extid = JRequest::getInt ( 'extid', 0 );
 		$cid = JRequest::getVar ( 'cid', array (0 ), 'post', 'array' );
 		$userdata ['id'] = array_shift ( $cid );
@@ -163,7 +123,7 @@ class KunenaImporterController extends JController {
 		require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
 		$importer = $this->getModel ( 'import' );
 
-		$extuser = JTable::getInstance ( 'ExtUser', 'CKunenaTable' );
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 		$extuser->load ( $extid );
 		$success = true;
 		$oldid = $extuser->id;
@@ -177,15 +137,14 @@ class KunenaImporterController extends JController {
 			$importer->updateUserData(-$extid, $oldid);
 		}
 
-		$app = & JFactory::getApplication ();
+		$app = JFactory::getApplication ();
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
 
-	function importforum() {
+	public function importforum() {
 		$limit = 1000;
 		$timeout = false;
 
-		$db = JFactory::getDBO ();
 		$app = JFactory::getApplication ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
@@ -207,7 +166,7 @@ class KunenaImporterController extends JController {
 			if (isset ( $state [$option] )) {
 				$count = 0;
 				do {
-					$data = & $exporter->exportData ( $option, $start, $limit );
+					$data = $exporter->exportData ( $option, $start, $limit );
 					$importer->importData ( $option, $data );
 					$count = count ( $data );
 					$start += $count;
@@ -220,7 +179,6 @@ class KunenaImporterController extends JController {
 				break;
 		}
 
-		//JToolBarHelper::back();
 		if ($timeout)
 			$view = '&view=import';
 		else {
@@ -251,7 +209,7 @@ class KunenaImporterController extends JController {
 */
 	}
 
-	function save() {
+	public function save() {
 		$component = 'com_kunenaimporter';
 
 		$table = JTable::getInstance ( 'component' );
@@ -277,7 +235,7 @@ class KunenaImporterController extends JController {
 		$this->setRedirect ( $link, $msg, $type );
 	}
 
-	function display() {
+	public function display() {
 		$params = $this->getParams ();
 		$cmd = JRequest::getCmd ( 'view', 'default' );
 		$view = $this->getView ( $cmd, 'html' );
@@ -290,5 +248,35 @@ class KunenaImporterController extends JController {
 		JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );
 
 		$view->display ();
+	}
+
+	protected function checkTimeout() {
+		static $start = null;
+
+		list ( $usec, $sec ) = explode ( ' ', microtime () );
+		$time = (( float ) $usec + ( float ) $sec);
+
+		if (empty ( $start ))
+			$start = $time;
+
+		if ($time - $start < 4)
+			return false;
+		return true;
+	}
+
+	protected function getParams() {
+		$app = JFactory::getApplication ();
+		$form = JRequest::getBool ( 'form' );
+
+		if ($form) {
+			$state = JRequest::getVar ( 'cid', array (), 'post', 'array' );
+			$app->setUserState ( 'com_kunenaimporter.state', $state );
+		} else {
+			$state = $app->getUserState ( 'com_kunenaimporter.state' );
+			if (! is_array ( $state ))
+				$state = array ();
+			JRequest::setVar ( 'cid', $state, 'post' );
+		}
+		return array_flip ( $state );
 	}
 }

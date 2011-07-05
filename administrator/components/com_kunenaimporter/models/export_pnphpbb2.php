@@ -24,7 +24,7 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 	var $version;
 	var $pnversion;
 
-	function checkConfig() {
+	public function checkConfig() {
 		$this->addMessage ( '<h2>Importer Status</h2>' );
 		if (JError::isError ( $this->ext_database ))
 			$this->error = $this->ext_database->toString ();
@@ -84,7 +84,7 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 		$this->addMessage ( '<div>PNphpBB2 version: <b style="color:green">' . $this->pnversion . '</b></div>' );
 	}
 
-	function countUsers() {
+	public function countUsers() {
 		$prefix = $this->ext_database->_table_prefix;
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
@@ -92,7 +92,7 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 		return $this->getCount ( $query );
 	}
 
-	function &exportUsers($start = 0, $limit = 0) {
+	public function &exportUsers($start = 0, $limit = 0) {
 		$prefix = $this->ext_database->_table_prefix;
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
@@ -101,8 +101,7 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 
 		$result = $this->getExportData ( $query, $start, $limit, 'extuserid' );
 
-		foreach ( $result as $item ) {
-			$row = & $result [$item->extuserid];
+		foreach ( $result as &$row ) {
 			$row->name = $row->username = $row->username;
 
 			if ($row->user_regdate > $row->pn_user_regdate)

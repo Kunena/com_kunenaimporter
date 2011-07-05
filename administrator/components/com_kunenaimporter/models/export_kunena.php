@@ -22,7 +22,7 @@ require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export.php');
 class KunenaimporterModelExport_Kunena extends KunenaimporterModelExport {
 	var $version = null;
 
-	function checkConfig() {
+	public function checkConfig() {
 		parent::checkConfig ();
 		if (JError::isError ( $this->ext_database ))
 			return;
@@ -60,7 +60,7 @@ class KunenaimporterModelExport_Kunena extends KunenaimporterModelExport {
 
 	}
 
-	function buildImportOps() {
+	public function buildImportOps() {
 		// select, from, where, orderby
 		$importOps = array ();
 		$importOps ['announcements'] = array ('select' => '*', 'from' => '#__fb_announcement', 'orderby' => 'id' );
@@ -77,6 +77,6 @@ class KunenaimporterModelExport_Kunena extends KunenaimporterModelExport {
 		$importOps ['userprofile'] = array ('select' => '*', 'from' => '#__fb_users', 'orderby' => 'userid' );
 		$importOps ['version'] = array ('select' => '*', 'from' => '#__fb_version', 'orderby' => 'id' );
 		$importOps ['whoisonline'] = array ('select' => '*', 'from' => '#__fb_whoisonline', 'orderby' => 'id' );
-		$this->importOps = & $importOps;
+		$this->importOps = $importOps;
 	}
 }
