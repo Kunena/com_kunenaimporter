@@ -167,7 +167,7 @@ class KunenaImporterTableConfig extends CKunenaConfig {
 		return true;
 	}
 
-	public public function save($data) {
+	public function save($data) {
 		$this->remove ();
 		$this->bind ( $data );
 		$this->create ();

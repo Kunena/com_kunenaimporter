@@ -32,7 +32,7 @@ class KunenaimporterModelImport extends JModel {
 
 	public function getImportOptions() {
 		// version
-		$options = array ('users','mapusers','config', 'userprofile', 'categories', 'messages', 'attachments', 'favorites', 'subscriptions', 'moderation', 'ranks', 'smilies', 'announcements', 'sessions', 'whoisonline' );
+		$options = array ('users','mapusers','config', 'userprofile', 'categories', 'messages', 'attachments', 'favorites', 'subscriptions', 'moderation', 'ranks', 'smilies', 'announcements', 'sessions', 'whoisonline', 'avatargalleries' );
 		return $options;
 	}
 
@@ -72,7 +72,7 @@ class KunenaimporterModelImport extends JModel {
 		return strtr ( $name, "<>\"'%;()&", '_________' );
 	}
 
-	protected function findPotentialUsers($extuser, $all = false) {
+	public function findPotentialUsers($extuser, $all = false) {
 		// Check if user exists in Joomla
 		$query = "SELECT u.*
 		FROM `#__users` AS u
@@ -180,7 +180,7 @@ class KunenaimporterModelImport extends JModel {
 	}
 
 	public function truncateData($option) {
-		if ($option == 'config')
+		if ($option == 'config' || $option == 'avatargalleries')
 			return;
 		if ($option == 'mapusers')
 			return;
@@ -190,9 +190,10 @@ class KunenaimporterModelImport extends JModel {
 			$this->truncateData ( $option . '_text' );
 		$this->db = JFactory::getDBO ();
 		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
+		if (!$table) die ("<br />{$option}: Table doesn't exist!");
 		$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
 		$this->db->setQuery ( $query );
-		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
+		$result = $this->db->query () or die ( "<br />{$option}: Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
 	/*
@@ -229,9 +230,18 @@ class KunenaimporterModelImport extends JModel {
 			case 'messages' :
 				$this->importMessages ( $data );
 				break;
+			case 'attachments':
+				$this->importAttachments ( $data );
+				break;
 			case 'subscriptions' :
 			case 'favorites' :
 				$this->importUnique ( $option, $data );
+				break;
+			case 'userprofile':
+				$this->importUserProfile ( $data );
+				break;
+			case 'avatargalleries':
+				$this->importAvatarGalleries ( $data );
 				break;
 			case 'mapusers':
 				break;
@@ -263,6 +273,75 @@ class KunenaimporterModelImport extends JModel {
 				if (! strstr ( $table->getError (), 'Duplicate entry' ))
 					die ( "<br />ERROR: " . $table->getError () );
 			}
+		}
+		$this->commitEnd ();
+	}
+
+	protected function importAttachments(&$data) {
+		$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
+		if (! $table)
+			die ( $option );
+
+		$extids = array();
+		foreach ( $data as $item ) {
+			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
+		}
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
+		$idmap = $extuser->loadIdMap($extids);
+
+		$this->commitStart ();
+		foreach ( $data as $item ) {
+			if (isset($idmap[$item->userid])) {
+				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
+			}
+			$item->folder = 'media/kunena/attachments/'.$item->folder;
+			if (file_exists($item->location)) {
+				$path = JPATH_ROOT."/{$item->folder}";
+
+				// Create upload folder and index.html
+				if (!JFolder::exists($path) && JFolder::create($path)) {
+					JFile::write("{$path}/index.html",'<html><body></body></html>');
+				}
+				$item->hash = md5_file ( $item->location );
+				JFile::copy($item->location, "{$path}/{$item->filename}");
+			}
+			if ($table->save ( $item ) === false)
+				die ( "ERROR: " . $table->getError () );
+		}
+		$this->commitEnd ();
+	}
+
+	protected function importAvatarGalleries(&$data) {
+		foreach ( $data as $item=>$path ) {
+			// Copy gallery
+			JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
+			// Create index.html
+			JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
+		}
+	}
+
+	protected function importUserProfile(&$data) {
+		$table = JTable::getInstance ( 'UserProfile', 'KunenaImporterTable' );
+		if (! $table)
+			die ( $option );
+
+		$extids = array();
+		foreach ( $data as $item ) {
+			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
+		}
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
+		$idmap = $extuser->loadIdMap($extids);
+
+		$this->commitStart ();
+		foreach ( $data as $item ) {
+			if (isset($idmap[$item->userid])) {
+				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
+			}
+			if (!empty($item->avatarpath) && file_exists($item->avatarpath)) {
+				JFile::copy($item->avatarpath, JPATH_ROOT."/media/kunena/avatars/users/{$item->avatar}");
+			}
+			if ($table->save ( $item ) === false)
+				die ( "ERROR: " . $table->getError () );
 		}
 		$this->commitEnd ();
 	}
