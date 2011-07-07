@@ -31,7 +31,13 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.6.5
+KunenaImporter 1.6.5-DEV
+
+7-July-2011 Matias
++ [#5] phpBB3 support: migrate uploaded avatars and gallery
+
+6-July-2011 Matias
++ [#5] phpBB3 support: migrate attachments
 
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5

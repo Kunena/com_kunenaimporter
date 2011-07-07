@@ -29,29 +29,44 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
 
-		// Use RokBridge
+		// Use RokBridge if it has been installed
 		$rokbridge = JPATH_ADMINISTRATOR . DS . 'components' . DS . 'com_rokbridge' . DS . 'helper.php';
 		if (is_file ( $rokbridge )) {
 			require_once ($rokbridge);
 			$this->rokbridge = new RokBridgeHelper ();
 			if (isset ( $this->rokbridge->phpbb_db ))
 				$this->ext_database = $this->rokbridge->phpbb_db;
+				$this->basepath = JPATH_ROOT."/{$this->rokbridge->phpbb_path}";
+				$this->relpath = $this->rokbridge->phpbb_path;
 		}
 
 		parent::__construct ();
 	}
 
+	protected function getConfig() {
+		if (empty($this->config)) {
+			// Check if database settings are correct
+			$query = "SELECT config_name, config_value AS value FROM #__config";
+			$this->ext_database->setQuery ( $query );
+			$this->config = $this->ext_database->loadObjectList ('config_name');
+		}
+		return $this->config;
+	}
+
 	public function checkConfig() {
+		// Check Kunena compatibility
 		parent::checkConfig ();
 		if (JError::isError ( $this->ext_database ))
 			return;
 
-		if ($this->rokbridge)
+		// Check RokBridge
+		if ($this->rokbridge) {
 			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
-		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
-		$this->ext_database->setQuery ( $query );
-		$this->version = $this->ext_database->loadResult ();
-		if (! $this->version) {
+		}
+
+		// Check if database settings are correct
+		$config = $this->getConfig();
+		if (empty($config['version'])) {
 			$this->error = $this->ext_database->getErrorMsg ();
 			if (! $this->error)
 				$this->error = 'Configuration information missing: phpBB version not found';
@@ -61,6 +76,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			return false;
 		}
 
+		// Check version number
+		$this->version = $config['version']->value;
 		if ($this->version [0] == '.')
 			$this->version = '2' . $this->version;
 		$version = explode ( '.', $this->version, 3 );
@@ -73,11 +90,13 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		}
 		$this->addMessage ( '<div>phpBB version: <b style="color:green">' . $this->version . '</b></div>' );
 
+		// Check authentication method
 		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
 		$this->ext_database->setQuery ( $query );
 		$this->auth_method = $this->ext_database->loadResult () or die ( "<br />Invalid query:<br />$query<br />" . $this->ext_database->errorMsg () );
 		$this->addMessage ( '<div>phpBB authentication method: <b style="color:green">' . $this->auth_method . '</b></div>' );
 
+		// Find out which field is used as username
 		$fields = $this->ext_database->getTableFields('#__users');
 		$this->login_field = isset($fields['#__users']['login_name']);
 	}
@@ -93,9 +112,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
 		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
 		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
+		$importOps ['attachments'] = array ('count' => 'countAttachments', 'export' => 'exportAttachments' );
 		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
 		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
+		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
 		$this->importOps = $importOps;
 	}
 
@@ -345,6 +366,30 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $result;
 	}
 
+	public function countAttachments() {
+		$query = "SELECT COUNT(*) FROM `#__attachments`";
+		return $this->getCount ( $query );
+	}
+	public function &exportAttachments($start = 0, $limit = 0) {
+		$query = "SELECT
+			attach_id AS id,
+			post_msg_id AS mesid,
+			poster_id AS userid,
+			NULL AS hash,
+			filesize AS size,
+			'phpbb3' AS folder,
+			IF(LENGTH(mimetype)>0,mimetype,extension) AS filetype,
+			real_filename AS filename,
+			physical_filename AS location
+		FROM `#__attachments`
+		ORDER BY attach_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		foreach ( $result as &$row ) {
+			$row->location = "{$this->basepath}/files/{$row->location}";
+		}
+		return $result;
+	}
+
 	public function countSessions() {
 		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_lastvisit>0";
 		return $this->getCount ( $query );
@@ -396,7 +441,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			NULL AS banned,
 			0 AS ordering,
 			u.user_posts AS posts,
-			NULL AS avatar,
+			user_avatar AS avatar,
 			0 AS karma,
 			0 AS karma_time,
 			1 AS group_id,
@@ -425,14 +470,38 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			u.user_website AS websiteurl,
 			0 AS rank,
 			1 AS hideEmail,
-			1 AS showOnline
+			1 AS showOnline,
+			user_avatar_type AS avatartype
 		FROM `#__users` AS u
 		WHERE u.user_id > 0 AND u.user_type != 2
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 
+		$path = $this->config['avatar_path']->value;
+		$salt = $this->config['avatar_salt']->value;
 		foreach ( $result as &$row ) {
 			// Convert bbcode in signature
+			if ($row->avatar) {
+				switch ($row->avatartype) {
+					case 1:
+						// Uploaded
+						$filename = (int) $row->avatar;
+						$ext = substr(strrchr($row->avatar, '.'), 1);
+						$row->avatar = "users/{$row->avatar}";
+						$row->avatarpath = "{$this->basepath}/{$path}/{$salt}_{$filename}.{$ext}";
+						break;
+					case 2:
+						// URL not supported
+						$row->avatar = '';
+						break;
+					case 3:
+						// Gallery
+						$row->avatar = "gallery/{$row->avatar}";
+						break;
+					default:
+						$row->avatar = '';
+				}
+			}
 			$row->signature = $this->prep ( $row->signature );
 			$row->location = $this->prep ( $row->location );
 		}
@@ -470,6 +539,26 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$row->username = html_entity_decode ( $row->username );
 		}
 		return $result;
+	}
+
+	protected function &getAvatarGalleries() {
+		static $galleries = false;
+		if ($galleries === false) {
+			$path = "{$this->basepath}/{$this->config['avatar_gallery_path']->value}";
+			$galleries = array();
+			$folders = JFolder::folders($path);
+			foreach ($folders as $folder) {
+				$galleries[$folder] = "{$path}/{$folder}";
+			}
+		}
+		return $galleries;
+	}
+	public function countAvatarGalleries() {
+		return count($this->getAvatarGalleries());
+	}
+	public function &exportAvatarGalleries($start = 0, $limit = 0) {
+		$galleries = $this->getAvatarGalleries();
+		return array_slice($galleries, $start, $limit);
 	}
 
 	public function mapJoomlaUser($joomlauser) {
