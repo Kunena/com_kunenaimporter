@@ -527,7 +527,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			0 AS gid,
 			FROM_UNIXTIME(u.user_regdate) AS registerDate,
 			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
-			NULL AS params
+			NULL AS params,
+			u.user_pass_convert AS password_phpbb2
 		FROM `#__users` AS u
 		LEFT JOIN `#__banlist` AS b ON u.user_id = b.ban_userid
 		WHERE user_id > 0 AND u.user_type != 2
@@ -537,6 +538,16 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		foreach ( $result as &$row ) {
 			$row->name = html_entity_decode ( $row->name );
 			$row->username = html_entity_decode ( $row->username );
+			// Password hash check is described in phpBB3/includes/functions.php: phpbb_check_hash(),
+			// _hash_crypt_private() and _hash_encode64() if we want to add plugin for phpBB3 authentication.
+			// It works for all phpBB3 passwords, but phpBB2 passwords may need some extra work, which is
+			// described in phpBB3/includes/auth/auth_db.php. Basically phpBB2 passwords are encoded by using
+			// md5(utf8_to_cp1252(addslashes($password))).
+			if ($row->password_phpbb2) {
+				$row->password = 'phpbb2::'.$row->password;
+			} else {
+				$row->password = 'phpbb3::'.$row->password;
+			}
 		}
 		return $result;
 	}

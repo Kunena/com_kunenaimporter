@@ -33,6 +33,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+8-July-2011 Matias
++ [#5] phpBB3 support: Store passwords with some metadata (phpbb2/phpbb3)
+
 7-July-2011 Matias
 + [#5] phpBB3 support: migrate uploaded avatars and gallery
 
