@@ -39,6 +39,9 @@ KunenaImporter 1.6.5-DEV
 6-July-2011 Matias
 + [#5] phpBB3 support: migrate attachments
 
+8-July-2011 fxstein
++ [#8] Basic skelleton for KunenaImporter authentication plugin
+
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5
 
