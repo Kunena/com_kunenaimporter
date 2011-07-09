@@ -37,6 +37,9 @@ KunenaImporter 1.6.5-DEV
 # [#5] phpBB3 support: Detect that php3 directory exists
 + [#5] phpBB3 support: Remove dependence to rokBridge by adding missing functions
 + [#5] phpBB3 support: Add automatic user mapping
++ [#17] Enable SMF2 support
+# [#17] SMF2 support: Fix broken configuration import
++ [#17] SMF2 support: Import avatar galleries
 
 8-July-2011 Matias
 + [#5] phpBB3 support: Store passwords with some metadata (phpbb2/phpbb3)
