@@ -37,6 +37,7 @@ KunenaImporter 1.6.5
 + [#8] Basic skelleton for KunenaImporter authentication plugin
 # [#3] Update builder for new README.md
 ^ [#11] Update version info to 1.6.5
++ [#13] Add new flag to user migration table
 
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5
