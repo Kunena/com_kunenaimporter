@@ -38,6 +38,7 @@ KunenaImporter 1.6.5
 # [#3] Update builder for new README.md
 ^ [#11] Update version info to 1.6.5
 + [#13] Add new flag to user migration table
++ [#12] Add basic version check for Kunena and disable if not present
 
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5
