@@ -116,7 +116,7 @@
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/install.kunenaimporter.php" todir="${tmp_dir}" overwrite="true" filtering="false" />
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/uninstall.kunenaimporter.php" todir="${tmp_dir}" overwrite="true" filtering="false" />
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/kunenaimporter.xml" todir="${tmp_dir}" overwrite="true" filtering="true" />
-		<copy file="${project_dir}/README.txt" todir="${tmp_dir}" overwrite="true" filtering="true" />
+		<copy file="${project_dir}/README.md" tofile="${tmp_dir}/README.txt" overwrite="true" filtering="true" />
 		<copy todir="${tmp_dir}/languages" flatten="yes" includeEmptyDirs="no">
 			<fileset dir="${project_dir}/administrator/components/com_kunenaimporter/language">
 				<include name="**/*.ini"/>
