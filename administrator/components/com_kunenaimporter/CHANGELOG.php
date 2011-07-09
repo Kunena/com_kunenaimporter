@@ -44,6 +44,14 @@ KunenaImporter 1.6.5-DEV
 ^ [#5] phpBB3 support: Improve component parameter fetch
 ^ [#5] phpBB3 support: Make user import view easier to use
 
+8-July-2011 fxstein
++ [#8] Basic skelleton for KunenaImporter authentication plugin
+# [#3] Update builder for new README.md
+^ [#11] Update version info to 1.6.5
++ [#13] Add new flag to user migration table
++ [#12] Add basic version check for Kunena and disable if not present
+# [#14] Missing forum table prefix re-added
+
 7-July-2011 Matias
 + [#5] phpBB3 support: migrate uploaded avatars and gallery
 

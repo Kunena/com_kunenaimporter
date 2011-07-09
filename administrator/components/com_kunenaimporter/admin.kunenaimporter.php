@@ -24,6 +24,14 @@ define ( 'COM_KUNENAIMPORTER_BASEURL', JURI::root () . 'administrator/index.php?
 $document = JFactory::getDocument ();
 $document->addStyleSheet ( 'components/com_kunenaimporter/assets/importer.css' );
 
+// Test if Kunena is installed and if the minimum version requirement is met
+$app = JFactory::getApplication ();
+$minKunenaVersion = '1.6.4';
+if (!class_exists('Kunena') || Kunena::versionBuild() < 4344) {
+	$app->enqueueMessage( JText::sprintf ( 'COM_KUNENAIMPORTER_DEPENDENCY_FAIL', $minKunenaVersion ) );
+	return null;
+}
+
 // Require the base controller
 require_once JPATH_COMPONENT . DS . 'controller.php';
 

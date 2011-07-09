@@ -32,6 +32,7 @@ $update_queries = array (
   `params` text NOT NULL,
   `conflict` text,
   `error` text,
+  `migrated` tinyint(4) NOT NULL default '0',
   PRIMARY KEY  (`extid`),
   KEY `extusername` (`extusername`),
   KEY `id` (`id`),
