@@ -82,7 +82,8 @@ JHTML::_('behavior.tooltip');
 					<img src="images/<?php echo $img;?>" width="16" height="16" border="0" alt="<?php echo $alt; ?>" />
 				</td>
 				<td>
-					<?php echo $this->user->email; ?>
+					<a href="mailto:<?php echo $this->user->email; ?>">
+						<?php echo $this->user->email; ?></a>
 				</td>
 				<td nowrap="nowrap">
 					<?php echo $rdate; ?>
@@ -100,7 +101,6 @@ JHTML::_('behavior.tooltip');
 				$img = $row->block ? 'publish_x.png' : 'tick.png';
 				$task = $row->block ? 'unblock' : 'block';
 				$alt = $row->block ? JText::_( 'Enabled' ) : JText::_( 'Blocked' );
-				$link = 'index.php?option=com_kunenaimporter&amp;view=user&amp;task=edit&amp;cid[]='. $row->id. '';
 
 				if ($row->lastvisitDate == "0000-00-00 00:00:00") {
 					$lvisit = JText::_( 'Never' );
@@ -127,11 +127,14 @@ JHTML::_('behavior.tooltip');
 					<?php echo $row->id; ?>
 				</td>
 				<td>
-					<a href="<?php echo $link; ?>">
-						<?php echo $row->name; ?></a>
+					<a href="javascript:void(0);" onclick="return listItemTask('cb<?php echo $i;?>','select')">
+						<?php echo $row->name; ?>
+					</a>
 				</td>
 				<td>
-					<?php echo $row->username; ?>
+					<a href="javascript:void(0);" onclick="return listItemTask('cb<?php echo $i;?>','select')">
+						<?php echo $row->username; ?>
+					</a>
 				</td>
 				<td align="center">
 					<a href="javascript:void(0);" onclick="return listItemTask('cb<?php echo $i;?>','<?php echo $task;?>')">

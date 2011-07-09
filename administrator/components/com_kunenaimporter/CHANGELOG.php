@@ -33,8 +33,16 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+9-July-2011 Matias
+# [#5] phpBB3 support: Detect that php3 directory exists
++ [#5] phpBB3 support: Remove dependence to rokBridge by adding missing functions
++ [#5] phpBB3 support: Add automatic user mapping
+
 8-July-2011 Matias
 + [#5] phpBB3 support: Store passwords with some metadata (phpbb2/phpbb3)
+^ [#5] phpBB3 support: Change database import order
+^ [#5] phpBB3 support: Improve component parameter fetch
+^ [#5] phpBB3 support: Make user import view easier to use
 
 7-July-2011 Matias
 + [#5] phpBB3 support: migrate uploaded avatars and gallery
