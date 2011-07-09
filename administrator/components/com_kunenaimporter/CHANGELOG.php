@@ -36,6 +36,7 @@ KunenaImporter 1.6.5
 8-July-2011 fxstein
 + [#8] Basic skelleton for KunenaImporter authentication plugin
 # [#3] Update builder for new README.md
+^ [#11] Update version info to 1.6.5
 
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5
