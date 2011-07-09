@@ -2,7 +2,7 @@
 <!DOCTYPE install>
 <install type="component" version="1.5.19" method="upgrade">
 	<name>KunenaImporter</name>
-	<version>1.6.5</version>
+	<version>1.6.5-DEV</version>
 	<creationDate>@kunenaversiondate@</creationDate>
 	<build>@kunenaversionbuild@</build>
 	<author>Kunena Team</author>

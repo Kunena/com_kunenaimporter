@@ -31,7 +31,7 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.6.5
+KunenaImporter 1.6.5-DEV
 
 8-July-2011 fxstein
 + [#8] Basic skelleton for KunenaImporter authentication plugin
@@ -40,6 +40,12 @@ KunenaImporter 1.6.5
 + [#13] Add new flag to user migration table
 + [#12] Add basic version check for Kunena and disable if not present
 # [#14] Missing forum table prefix re-added
+
+7-July-2011 Matias
++ [#5] phpBB3 support: migrate uploaded avatars and gallery
+
+6-July-2011 Matias
++ [#5] phpBB3 support: migrate attachments
 
 5-July-2011 Matias
 ^ [#1] Convert component to PHP5

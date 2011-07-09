@@ -9,7 +9,7 @@
 		<option value='phpbb3'>phpBB3</option>
 		<!-- <option value='phpbb2'>phpBB2</option> -->
 		<!-- <option value='pnphpbb2'>PNphpBB2</option> -->
-		<option value='smf2'>SMF2</option>
+		<!-- <option value='smf2'>SMF2</option> -->
 	</param>
 	<param name='path' type='text' default='' label='Relative Path to Forum' description='Please enter the relative system path to the installation of the forum you want to import from.' size='30' />
 	<!-- <param name='db_host' type='text' default='localhost' label='Database Host' description='' size='30' />
