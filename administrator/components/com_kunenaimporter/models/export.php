@@ -81,8 +81,8 @@ class KunenaimporterModelExport extends JModel {
 		$this->addMessage ( '<h2>Importer Status</h2>' );
 
 		// Kunena detection and version check
-		$minKunenaVersion = '1.6.0-RC2';
-		if (! class_exists ( 'Kunena' ) || Kunena::versionBuild () < 3251) {
+		$minKunenaVersion = '1.6.4';
+		if (! class_exists ( 'Kunena' ) || Kunena::versionBuild () < 4344) {
 			$this->addMessage ( '<div>Kunena version: <b style="color:red">FAILED</b></div>' );
 			$this->addMessage ( '<br /><div><b>You need to install Kunena 1.6!</b></div><div><b>Error:</b> Kunena 1.6 not detected</div>' );
 			return false;
