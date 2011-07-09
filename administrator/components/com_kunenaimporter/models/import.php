@@ -32,7 +32,7 @@ class KunenaimporterModelImport extends JModel {
 
 	public function getImportOptions() {
 		// version
-		$options = array ('users','mapusers','config', 'userprofile', 'categories', 'messages', 'attachments', 'favorites', 'subscriptions', 'moderation', 'ranks', 'smilies', 'announcements', 'sessions', 'whoisonline', 'avatargalleries' );
+		$options = array ('config', 'users', 'mapusers','userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
 		return $options;
 	}
 
