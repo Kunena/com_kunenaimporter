@@ -48,20 +48,11 @@ $controller = new KunenaImporterController ();
 $controller->execute ( JRequest::getCmd ( 'task' ) );
 $controller->redirect ();
 
-function getKunenaImporterParams($component = "com_kunenaimporter") {
+function getKunenaImporterParams($component = 'com_kunenaimporter') {
 	static $instance = null;
-	if ($instance == null) {
-		$table = JTable::getInstance ( 'component' );
-		$table->loadByOption ( $component );
-
-		// work out file path
-		$option = preg_replace ( '#\W#', '', $table->option );
-		$path = JPATH_ADMINISTRATOR . DS . 'components' . DS . $option . DS . 'config.xml';
-		if (file_exists ( $path )) {
-			$instance = new JParameter ( $table->params, $path );
-		} else {
-			$instance = new JParameter ( $table->params );
-		}
+	if ($instance === null) {
+		$instance = JComponentHelper::getParams ( $component );
+		$instance->loadSetupFile(JPATH_ADMINISTRATOR . "/components/{$component}/config.xml");
 	}
 	return $instance;
 }

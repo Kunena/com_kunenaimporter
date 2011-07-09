@@ -16,6 +16,8 @@ defined ( '_JEXEC' ) or die ();
 // Import Joomla! libraries
 jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
+jimport ( 'joomla.filesystem.file' );
+jimport ( 'joomla.filesystem.folder' );
 
 // Kunena wide defines
 $kunena_defines = JPATH_ROOT . DS . 'components' . DS . 'com_kunena' . DS . 'lib' . DS . 'kunena.defines.php';

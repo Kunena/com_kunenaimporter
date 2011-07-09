@@ -24,6 +24,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	var $auth_method;
 	var $params;
 	protected $config = null;
+	protected $settings = null;
 
 	public function __construct() {
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
@@ -42,6 +43,16 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			$this->ext_database = false;
 		}
 		parent::__construct ();
+	}
+
+	protected function getSettings() {
+		if (empty($this->settings)) {
+			// Check if database settings are correct
+			$query = "SELECT variable, value FROM #__settings";
+			$this->ext_database->setQuery ( $query );
+			$this->settings = $this->ext_database->loadObjectList ('variable');
+		}
+		return $this->settings;
 	}
 
 	public function getConfiguration() {
@@ -89,7 +100,8 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			return false;
 		}
 		$this->addMessage ( '<div>SMF version: <b style="color:green">' . $this->version . '</b></div>' );
-			}
+		$this->getSettings();
+	}
 
 	public function getAuthMethod() {
 		return $this->auth_method;
@@ -106,6 +118,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
 		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
+		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
 		$this->importOps = $importOps;
 	}
 
@@ -203,15 +216,15 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
-		$query = "SELECT * FROM `#__settings`";
+		$query = "SELECT variable, value FROM `#__settings`";
 		$this->ext_database->setQuery ( $query );
-		$result = $this->ext_database->loadObjectList ();
+		$result = $this->ext_database->loadObjectList ('variable');
 
 		$config ['id'] = 1;
 		$config ['board_title'] = $this->config['mbname'];
 		$config ['email'] = $this->config['webmaster_email'];
 		$config ['board_offline'] = (bool)$this->config['maintenance'];
-		$config ['board_ofset'] = $result->time_offset; // + default_timezone
+		$config ['board_ofset'] = $result['time_offset']->value; // + default_timezone
 		$config ['offline_message'] = "<h1>{$this->config['mmessage']}</h1><p>{$this->config['mmessage']}</p>";
 		// $config ['default_view'] = null;
 		// $config ['enablerss'] = null;
@@ -272,19 +285,19 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		// $config ['avatarsmallwidth'] = null;
 		// $config ['avatarheight'] = null;
 		// $config ['avatarwidth'] = null;
-		$config ['avatarlargeheight'] = $result->avatar_max_height_upload;
-		$config ['avatarlargewidth'] = $result->avatar_max_width_upload;
+		$config ['avatarlargeheight'] = $result['avatar_max_height_upload']->value;
+		$config ['avatarlargewidth'] = $result['avatar_max_width_upload']->value;
 		// $config ['avatarquality'] = null;
 		// $config ['avatarsize'] = null;
-		$config ['allowimageupload'] = $result->attachmentEnable;
+		$config ['allowimageupload'] = $result['attachmentEnable']->value;
 		// $config ['allowimageregupload'] = null;
-		$config ['imageheight'] = $result->max_image_height;
-		$config ['imagewidth'] = $result->max_image_width;
-		$config ['imagesize'] = $result->attachmentSizeLimit;
-		$config ['allowfileupload'] = $result->attachmentEnable;
+		$config ['imageheight'] = $result['max_image_height']->value;
+		$config ['imagewidth'] = $result['max_image_width']->value;
+		$config ['imagesize'] = $result['attachmentSizeLimit']->value;
+		$config ['allowfileupload'] = $result['attachmentEnable']->value;
 		// $config ['allowfileregupload'] = null;
 		// $config ['filetypes'] = null;
-		$config ['filesize'] = $result->attachmentSizeLimit;
+		$config ['filesize'] = $result['attachmentSizeLimit']->value;
 		// $config ['showranking'] = null;
 		// $config ['rankimages'] = null;
 		// $config ['avatar_src'] = null;
@@ -315,7 +328,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		// $config ['latestshowhits'] = null;
 		// $config ['latestshowauthor'] = null;
 		// $config ['showstats'] = null;
-		$config ['showwhoisonline'] = $result->who_enabled;
+		$config ['showwhoisonline'] = $result['who_enabled']->value;
 		// $config ['showgenstats'] = null;
 		// $config ['showpopuserstats'] = null;
 		// $config ['popusercount'] = null;
@@ -368,8 +381,8 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		// $config ['checkmimetypes'] = null;
 		// $config ['imagemimetypes'] = null;
 		// $config ['imagequality'] = null;
-		$config ['thumbheight'] = $result->attachmentThumbHeight;
-		$config ['thumbwidth'] = $result->attachmentThumbWidth;
+		$config ['thumbheight'] = $result['attachmentThumbHeight']->value;
+		$config ['thumbwidth'] = $result['attachmentThumbWidth']->value;
 		// $config ['hideuserprofileinfo'] = null;
 		// $config ['integration_access'] = null;
 		// $config ['integration_login'] = null;
@@ -513,7 +526,23 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		FROM `#__members` AS u
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
+
+		if (!empty($this->settings['custom_avatar_enabled']->value)) {
+			$avatar_path = $this->settings['custom_avatar_dir']->value;
+		} elseif (!empty($this->settings['currentAttachmentUploadDir']->value)) {
+			$avatar_path = $this->settings['custom_avatar_dir']->value;
+		}
 		foreach ( $result as &$row ) {
+			if ($row->avatar) {
+				if (stristr($row->avatar, 'http://')) {
+					// URLs are not supported
+					$row->avatar = '';
+				} else {
+					// Gallery
+					$row->avatar = "gallery/{$row->avatar}";
+				}
+			}
+
 			// Convert bbcode in signature
 			$row->signature = $this->prep ( $row->signature );
 			$row->location = $this->prep ( $row->location );
@@ -533,7 +562,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			u.real_name AS name,
 			u.member_name AS username,
 			u.email_address AS email,
-			CONCAT(u.password_salt,':',u.passwd) AS password,
+			CONCAT('smf2::', u.password_salt,':',u.passwd) AS password,
 			'Registered' AS usertype,
 			IF(is_activated>0,0,1) AS block,
 			0 AS gid,
@@ -580,6 +609,26 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$this->ext_database->setQuery( $query );
 		$result = intval($this->ext_database->loadResult());
 		return $result;
+	}
+
+	protected function &getAvatarGalleries() {
+		static $galleries = false;
+		if ($galleries === false) {
+			$path = $this->settings['avatar_directory']->value;
+			$galleries = array();
+			$folders = JFolder::folders($path);
+			foreach ($folders as $folder) {
+				$galleries[$folder] = "{$path}/{$folder}";
+			}
+		}
+		return $galleries;
+	}
+	public function countAvatarGalleries() {
+		return count($this->getAvatarGalleries());
+	}
+	public function &exportAvatarGalleries($start = 0, $limit = 0) {
+		$galleries = $this->getAvatarGalleries();
+		return array_slice($galleries, $start, $limit);
 	}
 
 	protected function prep($s) {

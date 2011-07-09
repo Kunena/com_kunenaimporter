@@ -41,7 +41,10 @@ td.notes {
 	color: green;
 }
 div.info {
-	background:#FFFFDD; color:#333 ;padding:10px;
+	background:#FFFFDD;
+	color:#333;
+	padding:10px;
+	border: 1px solid #CCCC66;
 }
 div.info h2 {
 	margin-top: 2px;
