@@ -64,16 +64,17 @@ if (!empty($this->errormsg)) $disabled = ' disabled="disabled"';
 <?php
 $rowNum = 0;
 $state = JRequest::getVar('cid', array(), 'post', 'array');
-foreach($this->options as $item=>$option):
+if( $this->options ):
+	foreach($this->options as $item=>$option):
 
-	if (isset($state[$option['name']])) echo $option['name'],$checked = 'checked="checked"';
-	else $checked = '';
+		if (isset($state[$option['name']])) echo $option['name'],$checked = 'checked="checked"';
+		else $checked = '';
 
-	if (!$option['status'] && $option['total']) $statusmsg = '<font color="red">'.$option['status'].' / '.$option['total'].'</font>';
-	else if ($option['status'] < $option['total']) $statusmsg = '<font color="#b0b000">'.$option['status'].' / '.$option['total'].'</font>';
-	else $statusmsg = '<font color="green">'.$option['total'].'</font>';
+		if (!$option['status'] && $option['total']) $statusmsg = '<font color="red">'.$option['status'].' / '.$option['total'].'</font>';
+		else if ($option['status'] < $option['total']) $statusmsg = '<font color="#b0b000">'.$option['status'].' / '.$option['total'].'</font>';
+		else $statusmsg = '<font color="green">'.$option['total'].'</font>';
 
-	$id = '<input type="checkbox" id="cb'.$rowNum.'" name="cid[]" value="'.$option['name'].'" onclick="isChecked(this.checked);" $checked />';
+		$id = '<input type="checkbox" id="cb'.$rowNum.'" name="cid[]" value="'.$option['name'].'" onclick="isChecked(this.checked);" $checked />';
 ?>
 		<tr class="row<?php echo $rowNum++ % 2; ?>">
 			<td class="x"><?php echo $id; ?></td>
@@ -82,6 +83,7 @@ foreach($this->options as $item=>$option):
 			<td class="notes"><?php echo JText::_($option['desc']); ?></td>
 		</tr>
 <?php endforeach; ?>
+<?php endif; ?>
 <?php else: ?>
 		<tr><td style="color: red; text-align: left;" colspan="5">Import is currently not possible because of the above errors.</td></tr>
 <?php endif; ?>
