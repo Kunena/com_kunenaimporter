@@ -22,14 +22,40 @@ require_once( JPATH_COMPONENT . '/models/export.php' );
 class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function checkConfig() {
 		parent::checkConfig();
-		if (JError::isError($this->ext_database)) return;
 
+		$query = "SELECT conf_value FROM `#__agora_config` WHERE `conf_name` = 'o_cur_version'";
+		$this->setQuery ( $query );
+		$this->version = $this->ext_database->loadResult ();
+		if (! $this->version) {
+			$this->error = $this->getErrorMsg ();
+			if (! $this->error)
+				$this->error = 'Configuration information missing: Agora version not found';
+		}
+		if ($this->error) {
+			$this->addMessage ( '<div>Agora version: <b style="color:red">FAILED</b></div>' );
+			return false;
+		}
+
+		if (version_compare($this->version, '3.0.142', '<'))
+			$this->error = "Unsupported forum: Agora $this->version";
+		if ($this->error) {
+			$this->addMessage ( '<div>Agora version: <b style="color:red">' . $this->version . '</b></div>' );
+			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
+			return false;
+		}
+		$this->addMessage ( '<div>Agora version: <b style="color:green">' . $this->version . '</b></div>' );
 	}
 
 	public function buildImportOps() {
 		// query: (select, from, where, groupby), functions: (count, export)
 		$importOps = array();
+		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
 		$importOps['categories'] = array('count'=>'countCategories', 'export'=>'exportCategories');
+		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
+		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
+		$importOps ['smilies'] = array ('count' => 'countSmilies', 'export' => 'exportSmilies' );
+		$importOps ['ranks'] = array ('count' => 'countRanks', 'export' => 'exportRanks' );
+		$importOps ['userprofile'] = array ('count' => 'countUserprofile', 'export' => 'exportUserprofile' );
 		$this->importOps = $importOps;
 	}
 
@@ -223,6 +249,43 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		return $result;
 	}
 
+	public function countMessages() {
+		$query = "SELECT COUNT(*) FROM #__aogra_messages";
+		return $this->getCount ( $query );
+	}
+
+	public function &exportMessages($start = 0, $limit = 0) {
+		$query = "SELECT
+			t.id AS id,
+			t.poster AS name,
+			IF(p.topic_id=t.id,0,p.topic_id) AS parent,
+			t.sticky AS ordering,
+			t.subject AS subject,
+			t.num_views AS hits,
+			t.closed AS locked,
+			t.forum_id AS catid,
+			u.jos_id AS userid,
+			p.poster_ip AS ip,
+			p.poster_email AS email,
+			p.message AS message,
+			p.posted AS time,
+			p.topic_id AS thread
+			p.edited AS modified_time,
+			p.edited_by AS modified_by
+
+			FROM `#__aogra_topics` AS t
+			LEFT JOIN `#__agora_posts` AS p ON p.topic_id = t.id
+			LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
+			WHERE t.announcements='0'
+			ORDER BY t.id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		foreach ( $result as &$row ) {
+			$row->subject = $this->prep ( $row->subject );
+			$row->message = $this->prep ( $row->message );
+		}
+		return $result;
+	}
+
 	public function countSmilies() {
 		return false;
 
@@ -256,12 +319,12 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		return $result;
 	}
 
-	public function countUsers() {
+	public function countUserprofile() {
 		$query="SELECT COUNT(*) FROM #__agora_users";
 		return $this->getCount($query);
 	}
 
-	public function &exportUsers($start=0, $limit=0) {
+	public function &exportUserprofile($start=0, $limit=0) {
 		$query="SELECT
 			url AS websiteurl,
 			icq AS ICQ,
@@ -273,9 +336,13 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			signature,
 			gender,
 			birthday AS birhtdate,
-			aboutme AS personnalText
+			aboutme AS personnalText,
+			num_posts AS posts
 		FROM #__agora_users";
 		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $key => &$row ) {
+			//$row->avatarpath = JPATH_BASE . '/components/com_agora/img/pre_avatars/'. $row->id;
+		}
 	}
 
 	public function countPolls() {
@@ -284,8 +351,47 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function &exportPolls($start=0, $limit=0) {
-		$query="SELECT options, voters, votes FROM #__agora_polls";
+		$query="SELECT
+			p.pollid AS id,
+			p.options,
+			p.voters,
+			p.votes, 
+			t.question AS title
+		FROM #__agora_polls AS p
+		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
 		$result = $this->getExportData($query, $start, $limit);
+	}
+
+	public function countSubscriptions() {
+		$query = "SELECT COUNT(*) FROM `#__agora_subscriptions`";
+		return $this->getCount ( $query );
+	}
+
+	public function &exportSubscriptions($start = 0, $limit = 0) {
+		$query = "SELECT
+			w.topic_id AS thread,
+			w.user_id AS userid
+		FROM `#__agora_subscriptions` AS w";
+		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+
+	public function countBans() {
+		$query = "SELECT COUNT(*) FROM `#__agora_bans`";
+		return $this->getCount ( $query );
+	}
+
+	public function &exportBans($start = 0, $limit = 0) {
+		$query = "SELECT
+			ban.id AS id,
+			ban.ip AS ip,
+			u.jos_id AS userid,
+			ban.message AS comments,
+			ban.expire AS expiration
+		FROM `#__agora_bans` AS ban
+		LEFT JOIN `#__agora_users` AS u ON ban.username=u.username";
+		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
 	}
 
 	protected function prep($s) {

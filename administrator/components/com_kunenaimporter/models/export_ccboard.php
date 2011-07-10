@@ -28,8 +28,6 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		jimport ( 'joomla.filesystem.file' );
 
 		parent::checkConfig ();
-		if (JError::isError ( $this->ext_database ))
-			return;
 
 		// the ccboard config is only stored in ccboard.xml file
 		$xml = JPATH_ADMINISTRATOR . '/components/com_ccboard/ccboard.xml';
@@ -275,7 +273,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		FROM #__ccb_attachments";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
-			$row->userid = substr ( $row->userid, 0, 2 );
+			$row->location = JPATH_BASE.'/components/com_ccboard/assets/uploads/'.$row->ccb_name ;
 		}
 		return $result;
 	}
@@ -303,8 +301,8 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		$query = "SELECT rank_title, rank_min, rank_special, rank_image FROM #__ccb_ranks";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $rank ) {
-			if ( JFile::exists(JPATH_BASE . 'components/com_ccboard/assets/ranks/' . $rank->rank_image) ) {
-				JFile::copy ( JPATH_BASE . 'components/com_ccboard/assets/ranks/' . $rank->rank_image, JPATH_BASE . 'components/com_kunena/template/default/images/ranks' );
+			if ( JFile::exists(JPATH_BASE . '/components/com_ccboard/assets/ranks/' . $rank->rank_image) ) {
+				JFile::copy ( JPATH_BASE . '/components/com_ccboard/assets/ranks/' . $rank->rank_image, JPATH_BASE . '/components/com_kunena/template/default/images/ranks' );
 			}
 		}
 
@@ -387,6 +385,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		FROM #__ccb_users";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
+			$row->avatarpath = JPATH_BASE . '/components/com_ccboard/assets/avatar/'. $row->avatar;
 			$row->signature = $this->prep ( $row->signature );
 			$row->gender = $row->gender == 'Male' ? '1' : '2';
 		}
