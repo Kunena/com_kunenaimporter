@@ -17,7 +17,7 @@ defined ( '_JEXEC' ) or die ();
 jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
 
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export.php');
+require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	var $version;
@@ -45,7 +45,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		}
 
 		$version = substr ( $this->version, 0, 3 );
-		if ($version != 1.2)
+		if ($version != '1.2')
 			$this->error = "Unsupported forum: ccBoard " . $this->version;
 		if ($this->error) {
 			$this->addMessage ( '<div>ccBoard version: <b style="color:red">' . $this->version . '</b></div>' );
@@ -69,16 +69,33 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function countCategories() {
-		$query = "SELECT count(*) FROM #__ccb_category";
+		$query = "SELECT COUNT(*) FROM #__ccb_category";
 		$count = $this->getCount ( $query );
-		$query = "SELECT count(*) FROM #__ccb_forums";
+		$query = "SELECT COUNT(*) FROM #__ccb_forums";
 		$count2 = $this->getCount ( $query );
 		return $count + $count2;
 	}
 
 	public function &exportCategories($start = 0, $limit = 0) {
 		// Import the categories
-		$query = "SELECT cccategory.cat_name AS name, cccategory.ordering, ccforums.forum_name AS name, ccforums.forum_desc AS description, ccforums.cat_id AS parent, ccforums.topic_count AS numTopics, ccforums.post_count AS numPosts, ccforums.last_post_user, ccforums.last_post_time AS time_last_msg, ccforums.last_post_id AS id_last_msg, ccforums.published, ccforums.locked, ccforums.ordering, ccforums.moderated, ccforums.review FROM #__ccb_category AS cccategory LEFT JOIN #__ccb_forums AS ccforums ON cccategory.id=ccforums.cat_id";
+		$query = "SELECT
+			cccategory.cat_name AS name,
+			cccategory.ordering,
+			ccforums.forum_name AS name,
+			ccforums.forum_desc AS description,
+			ccforums.cat_id AS parent,
+			ccforums.topic_count AS numTopics,
+			ccforums.post_count AS numPosts,
+			ccforums.last_post_user,
+			ccforums.last_post_time AS time_last_msg,
+			ccforums.last_post_id AS id_last_msg,
+			ccforums.published,
+			ccforums.locked,
+			ccforums.ordering,
+			ccforums.moderated,
+			ccforums.review
+		FROM #__ccb_category AS cccategory
+		LEFT JOIN #__ccb_forums AS ccforums ON cccategory.id=ccforums.cat_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
 			$row->name = $this->prep ( $row->name );
@@ -243,13 +260,19 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function countAttachments() {
-		$query = "SELECT count(*) FROM #__ccb_attachments";
+		$query = "SELECT COUNT(*) FROM #__ccb_attachments";
 		$count = $this->getCount ( $query );
 		return $count;
 	}
 
 	public function &exportAttachments($start = 0, $limit = 0) {
-		$query = "SELECT post_id AS mesid, ccb_name AS userid, filesize AS size, real_name AS filename, mimetype AS filetype FROM #__ccb_attachments";
+		$query = "SELECT
+			post_id AS mesid,
+			ccb_name AS userid,
+			filesize AS size,
+			real_name AS filename,
+			mimetype AS filetype
+		FROM #__ccb_attachments";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
 			$row->userid = substr ( $row->userid, 0, 2 );
@@ -258,7 +281,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function countModeration() {
-		$query = "SELECT count(*) FROM #__ccb_moderators";
+		$query = "SELECT COUNT(*) FROM #__ccb_moderators";
 		$count = $this->getCount ( $query );
 		return $count;
 	}
@@ -271,13 +294,13 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function countRanks() {
-		$query = "SELECT count(*) FROM #__ccb_ranks";
+		$query = "SELECT COUNT(*) FROM #__ccb_ranks";
 		$count = $this->getCount ( $query );
 		return $count;
 	}
 
 	public function &exportRanks($start = 0, $limit = 0) {
-		$query = "SELECT rank_title,rank_min,rank_special,rank_image FROM #__ccb_ranks";
+		$query = "SELECT rank_title, rank_min, rank_special, rank_image FROM #__ccb_ranks";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $rank ) {
 			if ( JFile::exists(JPATH_BASE . 'components/com_ccboard/assets/ranks/' . $rank->rank_image) ) {
@@ -289,27 +312,79 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function countMessages() {
-		$query = "SELECT count(*) FROM #__ccb_posts";
+		$query = "SELECT COUNT(*) FROM #__ccb_posts";
 		$count = $this->getCount ( $query );
 		return $count;
 	}
 
 	public function &exportMessages($start = 0, $limit = 0) {
-		$query = "SELECT ccposts.id, ccposts.topic_id AS thread, ccposts.forum_id AS catid, ccposts.post_subject AS subject, ccposts.post_text AS message, ccposts.post_user AS userid, ccposts.post_time AS time, ccposts.ip, ccposts.hold, ccposts.modified_by, ccposts.modified_time, ccposts.modified_reason, ccposts.post_username AS name, cctopics.id,cctopics.forum_id,cctopics.post_subject,cctopics.reply_count,cctopics.hits,cctopics.post_time,cctopics.post_user,cctopics.last_post_time,cctopics.last_post_id,cctopics.last_post_user,cctopics.start_post_id,cctopics.topic_type,cctopics.locked,cctopics.topic_email,cctopics.hold,cctopics.topic_emoticon,cctopics.post_username,cctopics.last_post_username,cctopics.topic_favourite FROM #__ccb_posts AS ccposts
-		 LEFT JOIN #__ccb_topics AS cctopics ON ccposts.topic_id=cctopics.id";
+		$query = "SELECT
+			ccposts.id,
+			ccposts.topic_id AS thread,
+			ccposts.forum_id AS catid,
+			ccposts.post_subject AS subject,
+			ccposts.post_text AS message,
+			ccposts.post_user AS userid,
+			ccposts.post_time AS time,
+			ccposts.ip,
+			ccposts.hold,
+			ccposts.modified_by,
+			ccposts.modified_time,
+			ccposts.modified_reason,
+			ccposts.post_username AS name,
+			cctopics.id,
+			cctopics.forum_id,
+			cctopics.post_subject,
+			cctopics.reply_count,
+			cctopics.hits,
+			cctopics.post_time,
+			cctopics.post_user,
+			cctopics.last_post_time,
+			cctopics.last_post_id,
+			cctopics.last_post_user,
+			cctopics.start_post_id,
+			cctopics.topic_type,
+			cctopics.locked,
+			cctopics.topic_email,
+			cctopics.hold,
+			cctopics.topic_emoticon,
+			cctopics.post_username,
+			cctopics.last_post_username,
+			cctopics.topic_favourite
+		FROM #__ccb_posts AS ccposts
+		LEFT JOIN #__ccb_topics AS cctopics ON ccposts.topic_id=cctopics.id";
 		$result = $this->getExportData ( $query, $start, $limit );
 
 		return $result;
 	}
 
 	public function countUserprofile() {
-		$query = "SELECT count(*) FROM #__ccb_users";
+		$query = "SELECT COUNT(*) FROM #__ccb_users";
 		$count = $this->getCount ( $query );
 		return $count;
 	}
 
 	public function &exportUserprofile($start = 0, $limit = 0) {
-		$query = "SELECT user_id AS userid,location,signature,avatar,rank,post_count AS posts,gender,www,icq AS ICQ,aol AS AOL,msn AS MSN,yahoo AS YAHOO,jabber AS GTALK,skype AS SKYPE,showemail AS hideEmail,moderator,karma,karma_time,hits AS uhits FROM #__ccb_users";
+		$query = "SELECT
+			user_id AS userid,
+			location,
+			signature,
+			avatar,
+			rank,
+			post_count AS posts,
+			gender,
+			www,icq AS ICQ,
+			aol AS AOL,
+			msn AS MSN,
+			yahoo AS YAHOO,
+			jabber AS GTALK,
+			skype AS SKYPE,
+			showemail AS hideEmail,
+			moderator,
+			karma,
+			karma_time,
+			hits AS uhits
+		FROM #__ccb_users";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
 			$row->signature = $this->prep ( $row->signature );

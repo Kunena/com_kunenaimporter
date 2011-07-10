@@ -20,7 +20,7 @@ jimport ( 'joomla.filesystem.file' );
 jimport ( 'joomla.filesystem.folder' );
 
 // Kunena wide defines
-$kunena_defines = JPATH_ROOT . DS . 'components' . DS . 'com_kunena' . DS . 'lib' . DS . 'kunena.defines.php';
+$kunena_defines = JPATH_ROOT . '/components/com_kunena/lib/kunena.defines.php';
 if (file_exists ( $kunena_defines ))
 	require_once ($kunena_defines);
 

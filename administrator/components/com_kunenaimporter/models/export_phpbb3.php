@@ -17,7 +17,7 @@ defined ( '_JEXEC' ) or die ();
 jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
 
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export.php');
+require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	var $version;
@@ -382,9 +382,9 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			p.post_edit_time AS modified_time,
 			p.post_edit_reason AS modified_reason,
 			p.post_text AS message
-		FROM `#__posts` AS p
-		LEFT JOIN `#__topics` AS t ON p.topic_id = t.topic_id
-		LEFT JOIN `#__users` AS u ON p.poster_id = u.user_id
+		FROM #__posts AS p
+		LEFT JOIN #__topics AS t ON p.topic_id = t.topic_id
+		LEFT JOIN #__users AS u ON p.poster_id = u.user_id
 		ORDER BY p.post_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
@@ -401,7 +401,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	public function countAttachments() {
-		$query = "SELECT COUNT(*) FROM `#__attachments`";
+		$query = "SELECT COUNT(*) FROM #__attachments";
 		return $this->getCount ( $query );
 	}
 	public function &exportAttachments($start = 0, $limit = 0) {
@@ -425,7 +425,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	public function countSessions() {
-		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_lastvisit>0";
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_lastvisit>0";
 		return $this->getCount ( $query );
 	}
 	public function &exportSessions($start = 0, $limit = 0) {
@@ -435,7 +435,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			user_lastmark AS lasttime,
 			'' AS readtopics,
 			user_lastvisit AS currvisit
-		FROM `#__users`
+		FROM #__users
 		WHERE user_lastvisit>0";
 		$result = $this->getExportData ( $query, $start, $limit );
 
@@ -447,7 +447,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM `#__topics_watch`";
+		$query = "SELECT COUNT(*) FROM #__topics_watch";
 		return $this->getCount ( $query );
 	}
 	public function &exportSubscriptions($start = 0, $limit = 0) {
@@ -455,14 +455,14 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			t.topic_first_post_id AS thread,
 			w.user_id AS userid,
 			0 AS future1
-		FROM `#__topics_watch` AS w
-		LEFT JOIN `#__topics` AS t ON w.topic_id=t.topic_id";
+		FROM #__topics_watch AS w
+		LEFT JOIN #__topics AS t ON w.topic_id=t.topic_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
 
 	public function countUserProfile() {
-		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_id > 0 AND u.user_type != 2";
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
 		return $this->getCount ( $query );
 	}
 
@@ -506,7 +506,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			1 AS hideEmail,
 			1 AS showOnline,
 			user_avatar_type AS avatartype
-		FROM `#__users` AS u
+		FROM #__users AS u
 		WHERE u.user_id > 0 AND u.user_type != 2
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
@@ -543,7 +543,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	public function countUsers() {
-		$query = "SELECT COUNT(*) FROM `#__users` AS u WHERE user_id > 0 AND u.user_type != 2";
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
 		return $this->getCount ( $query );
 	}
 
@@ -563,8 +563,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
 			NULL AS params,
 			u.user_pass_convert AS password_phpbb2
-		FROM `#__users` AS u
-		LEFT JOIN `#__banlist` AS b ON u.user_id = b.ban_userid
+		FROM #__users AS u
+		LEFT JOIN #__banlist AS b ON u.user_id = b.ban_userid
 		WHERE user_id > 0 AND u.user_type != 2
 		GROUP BY u.user_id
 		ORDER BY u.user_id";

@@ -17,12 +17,9 @@ defined ( '_JEXEC' ) or die ();
 jimport('joomla.application.component.model');
 jimport('joomla.application.application');
 
-require_once( JPATH_COMPONENT.DS.'models'.DS.'export.php' );
+require_once( JPATH_COMPONENT . '/models/export.php' );
 
 class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
-	var $version;
-	var $pnversion;
-
 	public function checkConfig() {
 		parent::checkConfig();
 		if (JError::isError($this->ext_database)) return;
@@ -192,16 +189,31 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countCategories() {
-		$query="SELECT count(*) FROM #__agora_categories";
+		$query="SELECT COUNT(*) FROM #__agora_categories";
 		$count = $this->getCount($query);
-		$query="SELECT count(*) FROM #__agora_forums";
+		$query="SELECT COUNT(*) FROM #__agora_forums";
 		return $count + $this->getCount($query);
 	}
 
 	public function &exportCategories($start=0, $limit=0) {
 		// Import the categories
-		$query="(SELECT cat_name AS name, disp_position AS ordering, enable AS published FROM #__agora_categories) UNION ALL
-		(SELECT enable AS published, forum_name AS name, forum_desc AS description, forum_mdesc AS headerdesc, moderators, num_topics AS numTopics, num_posts AS numPosts, last_post_id AS id_last_msg, cat_id AS id, parent_forum_id AS parent FROM #__agora_forums)
+		$query="(SELECT
+			cat_name AS name,
+			disp_position AS ordering,
+			enable AS published
+		FROM #__agora_categories) UNION ALL
+		(SELECT
+			enable AS published,
+			forum_name AS name,
+			forum_desc AS description,
+			forum_mdesc AS headerdesc,
+			moderators,
+			num_topics AS numTopics,
+			num_posts AS numPosts,
+			last_post_id AS id_last_msg,
+			cat_id AS id,
+			parent_forum_id AS parent
+		FROM #__agora_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {
@@ -214,13 +226,13 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function countSmilies() {
 		return false;
 
-		$query="SELECT count(*) FROM #__agora_smilies";
+		$query="SELECT COUNT(*) FROM #__agora_smilies";
 		return $this->getCount($query);
 	}
 
 	public function &exportSmilies($start=0, $limit=0)
 	{
-		$query="SELECT image AS location,text FROM `#__agora_smilies` ";
+		$query="SELECT image AS location, text FROM #__agora_smilies";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
@@ -228,34 +240,51 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function countRanks() {
 		return false;
 
-		$query="SELECT count(*) FROM #__agora_ranks";
+		$query="SELECT COUNT(*) FROM #__agora_ranks";
 		return $this->getCount($query);
 	}
 
 	public function &exportRanks($start=0, $limit=0)
 	{
-		$query="SELECT rank AS rank_title, min_posts AS rank_min, image AS rank_image, user_type AS rank_special FROM `#__agora_ranks` ";
+		$query="SELECT
+			rank AS rank_title,
+			min_posts AS rank_min,
+			image AS rank_image,
+			user_type AS rank_special
+		FROM #__agora_ranks";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
 
 	public function countUsers() {
-		$query="SELECT count(*) FROM #__agora_users";
+		$query="SELECT COUNT(*) FROM #__agora_users";
 		return $this->getCount($query);
 	}
 
 	public function &exportUsers($start=0, $limit=0) {
-		$query="SELECT url AS websiteurl, icq AS ICQ, msn AS MSN, aim AS AIM, yahoo AS YAHOO, skype AS SKYPE, location, signature, gender, birthday AS birhtdate, aboutme AS personnalText FROM #__agora_users";
+		$query="SELECT
+			url AS websiteurl,
+			icq AS ICQ,
+			msn AS MSN,
+			aim AS AIM,
+			yahoo AS YAHOO,
+			skype AS SKYPE,
+			location,
+			signature,
+			gender,
+			birthday AS birhtdate,
+			aboutme AS personnalText
+		FROM #__agora_users";
 		$result = $this->getExportData($query, $start, $limit);
 	}
 
 	public function countPolls() {
-		$query="SELECT count(*) FROM #__agora_polls";
+		$query="SELECT COUNT(*) FROM #__agora_polls";
 		return $this->getCount($query);
 	}
 
 	public function &exportPolls($start=0, $limit=0) {
-		$query="SELECT options,voters,votes FROM #__agora_polls";
+		$query="SELECT options, voters, votes FROM #__agora_polls";
 		$result = $this->getExportData($query, $start, $limit);
 	}
 

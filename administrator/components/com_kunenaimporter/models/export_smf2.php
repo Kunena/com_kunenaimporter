@@ -17,7 +17,7 @@ defined ( '_JEXEC' ) or die ();
 jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
 
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export.php');
+require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	var $version;
@@ -79,7 +79,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			return false;
 		}
 
-		$query = "SELECT value FROM `#__settings` WHERE `variable` = 'smfVersion'";
+		$query = "SELECT value FROM #__settings WHERE variable='smfVersion'";
 		$this->ext_database->setQuery ( $query );
 		$this->version = $this->ext_database->loadResult ();
 		if (! $this->version) {
@@ -216,7 +216,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
-		$query = "SELECT variable, value FROM `#__settings`";
+		$query = "SELECT variable, value FROM #__settings";
 		$this->ext_database->setQuery ( $query );
 		$result = $this->ext_database->loadObjectList ('variable');
 
@@ -435,9 +435,9 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			m.modified_time AS modified_time,
 			'' AS modified_reason,
 			m.body AS message
-		FROM `#__messages` AS m
-		LEFT JOIN `#__topics` AS t ON m.id_topic = t.id_topic
-		LEFT JOIN `#__members` AS u ON m.id_member = u.id_member
+		FROM #__messages AS m
+		LEFT JOIN #__topics AS t ON m.id_topic = t.id_topic
+		LEFT JOIN #__members AS u ON m.id_member = u.id_member
 		ORDER BY m.id_msg";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
@@ -448,7 +448,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	}
 
 	public function countSessions() {
-		$query = "SELECT COUNT(*) FROM `#__members` WHERE last_login>0";
+		$query = "SELECT COUNT(*) FROM #__members WHERE last_login>0";
 		return $this->getCount ( $query );
 	}
 	public function &exportSessions($start = 0, $limit = 0) {
@@ -458,14 +458,14 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			last_login AS lasttime,
 			'' AS readtopics,
 			last_login AS currvisit
-		FROM `#__members`
+		FROM #__members
 		WHERE last_login>0";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
 
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM `#__log_notify`";
+		$query = "SELECT COUNT(*) FROM #__log_notify";
 		return $this->getCount ( $query );
 	}
 	public function &exportSubscriptions($start = 0, $limit = 0) {
@@ -473,14 +473,14 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			t.id_first_msg AS thread,
 			s.id_member AS userid,
 			0 AS future1
-		FROM `#__log_notify` AS s
-		INNER JOIN `#__topics` AS t ON s.id_topic=t.id_topic";
+		FROM #__log_notify AS s
+		INNER JOIN #__topics AS t ON s.id_topic=t.id_topic";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
 
 	public function countUserProfile() {
-		$query = "SELECT COUNT(*) FROM `#__members`";
+		$query = "SELECT COUNT(*) FROM #__members";
 		return $this->getCount ( $query );
 	}
 
@@ -523,7 +523,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			0 AS rank,
 			hide_email AS hideEmail,
 			show_online AS showOnline
-		FROM `#__members` AS u
+		FROM #__members AS u
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 
@@ -551,7 +551,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	}
 
 	public function countUsers() {
-		$query = "SELECT COUNT(*) FROM `#__members`";
+		$query = "SELECT COUNT(*) FROM #__members";
 		return $this->getCount ( $query );
 	}
 
@@ -569,7 +569,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			FROM_UNIXTIME(u.date_registered) AS registerDate,
 			IF(u.last_login>0, FROM_UNIXTIME(u.last_login), '0000-00-00 00:00:00') AS lastvisitDate,
 			NULL AS params
-		FROM `#__members` AS u
+		FROM #__members AS u
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
 		foreach ( $result as &$row ) {
@@ -590,7 +590,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			id_folder AS folder,
 			IF(LENGTH(mime_type)>0,mime_type,fileext) AS filetype,
 			filename AS filename
-		FROM `#__attachments`
+		FROM #__attachments
 		WHERE attachment_type=0
 		ORDER BY a.id_attach";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
