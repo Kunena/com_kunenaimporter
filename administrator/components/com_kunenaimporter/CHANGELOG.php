@@ -35,6 +35,7 @@ KunenaImporter 1.6.5-DEV
 
 10-July-2011 Matias
 ^ [#20] Add support for Joomla 1.7: Code cleanup, DS removal and small fixes
+^ [#20] Add support for Joomla 1.7: Convert language strings to the new format
 
 10-July-2011 Xillibit
 # [#18] Notice: Undefined property: KunenaimporterViewDefault::$options in \views\default\tmpl\default.php on line 47
