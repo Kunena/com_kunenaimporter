@@ -35,6 +35,7 @@ KunenaImporter 1.6.5-DEV
 
 10-July-2011 Xillibit
 # [#18] Notice: Undefined property: KunenaimporterViewDefault::$options in \views\default\tmpl\default.php on line 47
+^ [#21] Improve ccboard and agora support
 
 9-July-2011 Matias
 # [#5] phpBB3 support: Detect that php3 directory exists
