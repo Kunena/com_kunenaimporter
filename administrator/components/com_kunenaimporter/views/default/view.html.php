@@ -25,6 +25,8 @@ class KunenaimporterViewDefault extends JView {
 
 		$importer = $this->getModel ( 'import' );
 		$exporter = $this->getModel ( 'export_' . $params->get ( 'extforum' ) );
+
+		$this->options = '';
 		if (is_object ( $exporter )) {
 
 			$exporter->checkConfig ();

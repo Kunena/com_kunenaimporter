@@ -33,6 +33,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+10-July-2011 Xillibit
+# [#18] Notice: Undefined property: KunenaimporterViewDefault::$options in \views\default\tmpl\default.php on line 47
+
 9-July-2011 Matias
 # [#5] phpBB3 support: Detect that php3 directory exists
 + [#5] phpBB3 support: Remove dependence to rokBridge by adding missing functions
