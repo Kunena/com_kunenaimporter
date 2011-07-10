@@ -79,18 +79,29 @@ class KunenaimporterModelExport extends JModel {
 		return $exportOpt;
 	}
 
+	public function buildImportOps() {
+		$this->importOps = array();
+	}
+	
 	public function checkConfig() {
 		$this->addMessage ( '<h2>Importer Status</h2>' );
 
 		// Kunena detection and version check
 		$minKunenaVersion = '1.6.4';
-		if (! class_exists ( 'Kunena' ) || Kunena::versionBuild () < 4344) {
+		if (! class_exists ( 'Kunena' ) || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
 			$this->addMessage ( '<div>Kunena version: <b style="color:red">FAILED</b></div>' );
-			$this->addMessage ( '<br /><div><b>You need to install Kunena 1.6!</b></div><div><b>Error:</b> Kunena 1.6 not detected</div>' );
+			$this->addMessage ( '<br /><div><b>You need to install Kunena '.$minKunenaVersion.'!</b></div>' );
+			$this->error = 'Kunena not detected!';
 			return false;
 		}
-		$this->addMessage ( '<div>Kunena version: <b style="color:green">' . KUNENA_VERSION . '</b></div>' );
+		$this->addMessage ( '<div>Kunena version: <b style="color:green">' . Kunena::version() . '</b></div>' );
 
+		if (empty($this->importOps)) {
+			$this->addMessage ( '<br /><div><b>Please select forum software!</b></div>' );
+			$this->error = 'Forum not selected!';
+			return false;
+		}
+		
 		if (JError::isError ( $this->ext_database ))
 			$this->error = $this->ext_database->toString ();
 		else if (!$this->ext_database) {

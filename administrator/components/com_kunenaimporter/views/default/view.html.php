@@ -24,7 +24,8 @@ class KunenaimporterViewDefault extends JView {
 		$this->assign ( 'params', $params );
 
 		$importer = $this->getModel ( 'import' );
-		$exporter = $this->getModel ( 'export_' . $params->get ( 'extforum' ) );
+		$extforum = $params->get ( 'extforum' );
+		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 
 		$this->options = '';
 		if (is_object ( $exporter )) {
@@ -47,7 +48,6 @@ class KunenaimporterViewDefault extends JView {
 			JToolBarHelper::divider ();
 		}
 		JToolBarHelper::save ( 'save', JText::_ ( 'Save Settings' ) );
-		JToolBarHelper::cancel ( 'cancel', JText::_ ( 'Reset' ) );
 
 		parent::display ( $tpl );
 	}

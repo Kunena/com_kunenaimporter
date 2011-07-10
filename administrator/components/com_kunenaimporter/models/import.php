@@ -27,7 +27,7 @@ class KunenaimporterModelImport extends JModel {
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
-		$this->db->setDebug(0);
+		// $this->db->setDebug(0);
 	}
 
 	public function getImportOptions() {
