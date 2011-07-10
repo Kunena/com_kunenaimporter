@@ -21,13 +21,13 @@ defined ( '_JEXEC' ) or die ();
 jimport ( 'joomla.application.component.model' );
 
 // Everything else than user import can be found from here:
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
+require_once (JPATH_COMPONENT . '/models/kunena.php');
 
 class KunenaimporterModelImport extends JModel {
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
-		$this->db->debug = 0;
+		// $this->db->setDebug(0);
 	}
 
 	public function getImportOptions() {
