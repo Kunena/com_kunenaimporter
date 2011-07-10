@@ -38,6 +38,7 @@ KunenaImporter 1.6.5-DEV
 ^ [#20] Add support for Joomla 1.7: Convert language strings to the new format
 ^ [#20] Add new option - Select Forum - and use default exporter with failing message
 ^ [#20] Add configuration fields for Joomla 1.7
+^ [#21] Improve ccboard and agora support: fix 2 typos
 
 10-July-2011 Xillibit
 # [#18] Notice: Undefined property: KunenaimporterViewDefault::$options in \views\default\tmpl\default.php on line 47

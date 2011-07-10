@@ -250,7 +250,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__aogra_messages";
+		$query = "SELECT COUNT(*) FROM #__agora_messages";
 		return $this->getCount ( $query );
 	}
 
@@ -273,7 +273,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			p.edited AS modified_time,
 			p.edited_by AS modified_by
 
-			FROM `#__aogra_topics` AS t
+			FROM `#__agora_topics` AS t
 			LEFT JOIN `#__agora_posts` AS p ON p.topic_id = t.id
 			LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
 			WHERE t.announcements='0'
