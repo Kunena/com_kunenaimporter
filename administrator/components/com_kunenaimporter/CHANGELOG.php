@@ -33,6 +33,9 @@ KunenaImporter 1.6.5-DEV
 
 10-July-2011 fxstein
 ^ [#4] Update file headers, remove $Id, 2010->2011 and kunena.com->.org
++ [#25] Add basic skeleton for Ninjaboard support
++ [#26] Enable Agora options
++ [#27] Enable ccBoard options
 
 10-July-2011 Matias
 ^ [#20] Add support for Joomla 1.7: Code cleanup, DS removal and small fixes
