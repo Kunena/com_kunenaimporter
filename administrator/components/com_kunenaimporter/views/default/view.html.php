@@ -28,9 +28,9 @@ class KunenaimporterViewDefault extends JView {
 		$this->options = '';
 		if (is_object ( $exporter )) {
 
-			$exporter->checkConfig ();
+			$success = $exporter->detect ();
 			$errormsg = $exporter->getError ();
-			if (! $errormsg) {
+			if ($success && ! $errormsg) {
 				$options = $exporter->getExportOptions ( $importer );
 				$this->assign ( 'options', $options );
 			}
