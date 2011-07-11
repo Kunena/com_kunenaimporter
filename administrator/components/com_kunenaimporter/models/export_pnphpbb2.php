@@ -18,7 +18,7 @@ jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
 
 // Everything else than user import can be found from here:
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export_phpbb2.php');
+require_once (JPATH_COMPONENT . '/models/export_phpbb2.php');
 
 class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB2 {
 	var $version;
@@ -88,7 +88,10 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 		$prefix = $this->ext_database->_table_prefix;
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
-		$query = "SELECT count(*) FROM #__users AS f LEFT JOIN {$prefix}_users AS u ON u.pn_uid = user_id WHERE user_id > 0 && user_lastvisit>0 ";
+		$query = "SELECT COUNT(*)
+		FROM #__users AS f
+		LEFT JOIN {$prefix}_users AS u ON u.pn_uid = user_id
+		WHERE user_id > 0 && user_lastvisit>0";
 		return $this->getCount ( $query );
 	}
 
@@ -97,7 +100,19 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
 		// PostNuke
-		$query = "SELECT u.pn_uid AS extuserid, u.pn_uname AS username, pn_email AS email, pn_pass AS password, pn_user_regdate, f.*, (b.ban_userid>0) AS blocked FROM #__users AS f LEFT JOIN {$prefix}_users AS u ON u.pn_uid = user_id LEFT OUTER JOIN #__banlist AS b ON u.pn_uid = b.ban_userid WHERE user_id > 0 && user_lastvisit>0 ORDER BY u.pn_uid";
+		$query = "SELECT
+			u.pn_uid AS extuserid,
+			u.pn_uname AS username,
+			pn_email AS email,
+			pn_pass AS password,
+			pn_user_regdate,
+			f.*,
+			(b.ban_userid>0) AS blocked
+		FROM #__users AS f
+		LEFT JOIN {$prefix}_users AS u ON u.pn_uid = user_id
+		LEFT OUTER JOIN #__banlist AS b ON u.pn_uid = b.ban_userid
+		WHERE user_id > 0 && user_lastvisit>0
+		ORDER BY u.pn_uid";
 
 		$result = $this->getExportData ( $query, $start, $limit, 'extuserid' );
 

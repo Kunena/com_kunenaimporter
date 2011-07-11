@@ -17,12 +17,9 @@ defined ( '_JEXEC' ) or die ();
 jimport('joomla.application.component.model');
 jimport('joomla.application.application');
 
-require_once( JPATH_COMPONENT.DS.'models'.DS.'export.php' );
+require_once( JPATH_COMPONENT . '/models/export.php' );
 
 class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
-	var $version;
-	var $pnversion;
-
 	public function checkConfig() {
 		parent::checkConfig();
 
@@ -218,16 +215,31 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countCategories() {
-		$query="SELECT count(*) FROM #__agora_categories";
+		$query="SELECT COUNT(*) FROM #__agora_categories";
 		$count = $this->getCount($query);
-		$query="SELECT count(*) FROM #__agora_forums";
+		$query="SELECT COUNT(*) FROM #__agora_forums";
 		return $count + $this->getCount($query);
 	}
 
 	public function &exportCategories($start=0, $limit=0) {
 		// Import the categories
-		$query="(SELECT cat_name AS name, disp_position AS ordering, enable AS published FROM #__agora_categories) UNION ALL
-		(SELECT enable AS published, forum_name AS name, forum_desc AS description, forum_mdesc AS headerdesc, moderators, num_topics AS numTopics, num_posts AS numPosts, last_post_id AS id_last_msg, cat_id AS id, parent_forum_id AS parent FROM #__agora_forums)
+		$query="(SELECT
+			cat_name AS name,
+			disp_position AS ordering,
+			enable AS published
+		FROM #__agora_categories) UNION ALL
+		(SELECT
+			enable AS published,
+			forum_name AS name,
+			forum_desc AS description,
+			forum_mdesc AS headerdesc,
+			moderators,
+			num_topics AS numTopics,
+			num_posts AS numPosts,
+			last_post_id AS id_last_msg,
+			cat_id AS id,
+			parent_forum_id AS parent
+		FROM #__agora_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {
@@ -238,7 +250,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__aogra_messages";
+		$query = "SELECT COUNT(*) FROM #__agora_messages";
 		return $this->getCount ( $query );
 	}
 
@@ -261,7 +273,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			p.edited AS modified_time,
 			p.edited_by AS modified_by
 
-			FROM `#__aogra_topics` AS t
+			FROM `#__agora_topics` AS t
 			LEFT JOIN `#__agora_posts` AS p ON p.topic_id = t.id
 			LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
 			WHERE t.announcements='0'
@@ -277,13 +289,13 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function countSmilies() {
 		return false;
 
-		$query="SELECT count(*) FROM #__agora_smilies";
+		$query="SELECT COUNT(*) FROM #__agora_smilies";
 		return $this->getCount($query);
 	}
 
 	public function &exportSmilies($start=0, $limit=0)
 	{
-		$query="SELECT image AS location,text FROM `#__agora_smilies` ";
+		$query="SELECT image AS location, text FROM #__agora_smilies";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
@@ -291,24 +303,42 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function countRanks() {
 		return false;
 
-		$query="SELECT count(*) FROM #__agora_ranks";
+		$query="SELECT COUNT(*) FROM #__agora_ranks";
 		return $this->getCount($query);
 	}
 
 	public function &exportRanks($start=0, $limit=0)
 	{
-		$query="SELECT rank AS rank_title, min_posts AS rank_min, image AS rank_image, user_type AS rank_special FROM `#__agora_ranks` ";
+		$query="SELECT
+			rank AS rank_title,
+			min_posts AS rank_min,
+			image AS rank_image,
+			user_type AS rank_special
+		FROM #__agora_ranks";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
 
 	public function countUserprofile() {
-		$query="SELECT count(*) FROM #__agora_users";
+		$query="SELECT COUNT(*) FROM #__agora_users";
 		return $this->getCount($query);
 	}
 
 	public function &exportUserprofile($start=0, $limit=0) {
-		$query="SELECT url AS websiteurl, icq AS ICQ, msn AS MSN, aim AS AIM, yahoo AS YAHOO, skype AS SKYPE, location, signature, gender, birthday AS birhtdate, aboutme AS personnalText, num_posts AS posts FROM #__agora_users";
+		$query="SELECT
+			url AS websiteurl,
+			icq AS ICQ,
+			msn AS MSN,
+			aim AS AIM,
+			yahoo AS YAHOO,
+			skype AS SKYPE,
+			location,
+			signature,
+			gender,
+			birthday AS birhtdate,
+			aboutme AS personnalText,
+			num_posts AS posts
+		FROM #__agora_users";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ( $result as $key => &$row ) {
 			//$row->avatarpath = JPATH_BASE . '/components/com_agora/img/pre_avatars/'. $row->id;
@@ -316,12 +346,17 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countPolls() {
-		$query="SELECT count(*) FROM #__agora_polls";
+		$query="SELECT COUNT(*) FROM #__agora_polls";
 		return $this->getCount($query);
 	}
 
 	public function &exportPolls($start=0, $limit=0) {
-		$query="SELECT p.pollid AS id,p.options,p.voters,p.votes, t.question AS title
+		$query="SELECT
+			p.pollid AS id,
+			p.options,
+			p.voters,
+			p.votes, 
+			t.question AS title
 		FROM #__agora_polls AS p
 		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
 		$result = $this->getExportData($query, $start, $limit);

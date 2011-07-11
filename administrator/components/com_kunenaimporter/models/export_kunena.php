@@ -17,7 +17,7 @@ defined ( '_JEXEC' ) or die ();
 jimport ( 'joomla.application.component.model' );
 jimport ( 'joomla.application.application' );
 
-require_once (JPATH_COMPONENT . DS . 'models' . DS . 'export.php');
+require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_Kunena extends KunenaimporterModelExport {
 	var $version = null;

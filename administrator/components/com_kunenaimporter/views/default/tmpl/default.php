@@ -13,6 +13,7 @@
  */
 defined('_JEXEC') or die();
 
+JHTML::_('behavior.tooltip');
 $disabled = '';
 if (!empty($this->errormsg)) $disabled = ' disabled="disabled"';
 ?>

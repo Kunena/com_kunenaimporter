@@ -38,7 +38,7 @@ class KunenaimporterViewMapUsers extends JView {
 
 		if (! $errormsg) {
 			$data = $app->getUserState ( 'com_kunenaimporter.MapUsersRes' );
-			$options [] = array ('name' => 'mapusers', 'task' => 'KnImporter_Task_MapUsers', 'desc' => 'KnImporter_Description_MapUsers', 'status' => ( int ) $data['all'], 'total' => (int) $data['total'] );
+			$options [] = array ('name' => 'mapusers', 'task' => 'COM_KUNENAIMPORTER_TASK_MAPUSERS', 'desc' => 'COM_KUNENAIMPORTER_DESCRIPTION_MAPUSERS', 'status' => ( int ) $data['all'], 'total' => (int) $data['total'] );
 			$this->assign ( 'options', $options );
 		}
 		$this->assign ( 'params', $params );

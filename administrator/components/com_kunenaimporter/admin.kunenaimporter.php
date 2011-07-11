@@ -13,7 +13,7 @@
  */
 defined ( '_JEXEC' ) or die ();
 
-set_time_limit ( 120 );
+@set_time_limit ( 120 );
 
 /*
  * Define constants for all pages

@@ -82,7 +82,8 @@ class KunenaImporterController extends JController {
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
-		$exporter = $this->getModel ( 'export_' . $params->get ( 'extforum' ) );
+		$extforum = $params->get ( 'extforum' );
+		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 		$exporter->checkConfig ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
@@ -149,7 +150,8 @@ class KunenaImporterController extends JController {
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
-		$exporter = $this->getModel ( 'export_' . $params->get ( 'extforum' ) );
+		$extforum = $params->get ( 'extforum' );
+		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 		$exporter->checkConfig ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
@@ -242,7 +244,8 @@ class KunenaImporterController extends JController {
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
 		$view->setModel ( $this->getModel ( 'import' ), true );
-		$view->setModel ( $this->getModel ( 'export_' . $params->get ( 'extforum', 'kunena' ) ), false );
+		$extforum = $params->get ( 'extforum' );
+		$view->setModel ( $this->getModel ( $extforum ? 'export_' . $extforum : 'export' ), false );
 
 		JSubMenuHelper::addEntry ( JText::_ ( 'Importer Configuration' ), 'index.php?option=com_kunenaimporter', $cmd == 'default' );
 		JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );

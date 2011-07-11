@@ -13,8 +13,8 @@
  */
 defined ( '_JEXEC' ) or die ();
 
-require_once (JPATH_ROOT . DS . 'components' . DS . 'com_kunena' . DS . 'lib' . DS . 'kunena.defines.php');
-require_once (KUNENA_PATH_LIB . DS . 'kunena.config.class.php');
+require_once (JPATH_ROOT . '/components/com_kunena/lib/kunena.defines.php');
+require_once (KUNENA_PATH_LIB . '/kunena.config.class.php');
 
 class KunenaImporterTable extends JTable {
 	protected $_exists;
