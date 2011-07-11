@@ -73,35 +73,49 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	}
 
 	public function &exportCategories($start = 0, $limit = 0) {
+		$query = "SELECT MAX(id) FROM #__ccb_category";
+		$this->ext_database->setQuery ( $query );
+		$maxboard = $this->ext_database->loadResult ();
 		// Import the categories
-		$query = "SELECT
-			cccategory.cat_name AS name,
-			cccategory.ordering,
-			ccforums.forum_name AS name,
-			ccforums.forum_desc AS description,
-			ccforums.cat_id AS parent,
-			ccforums.topic_count AS numTopics,
-			ccforums.post_count AS numPosts,
-			ccforums.last_post_user,
-			ccforums.last_post_time AS time_last_msg,
-			ccforums.last_post_id AS id_last_msg,
-			ccforums.published,
-			ccforums.locked,
-			ccforums.ordering,
-			ccforums.moderated,
-			ccforums.review
-		FROM #__ccb_category AS cccategory
-		LEFT JOIN #__ccb_forums AS ccforums ON cccategory.id=ccforums.cat_id";
+		$query = "(SELECT
+			id AS id,
+			forum_name AS name,
+			forum_desc AS description,
+			moderated,
+			0 AS parent,
+			topic_count AS numTopics,
+			post_count AS numPosts,
+			last_post_user,
+			last_post_time AS time_last_msg,
+			last_post_id AS id_last_msg,
+			published,
+			locked,
+			ordering,
+			moderated,
+			review
+		FROM #__ccb_forums) UNION ALL (SELECT
+			cat_id+{$maxboard} AS id,
+			cat.cat_name AS name,
+			NULL AS description,
+			0 AS moderated,
+			0 AS numTopics,
+			0 AS numPosts,
+			0 AS last_post_user,
+			0 AS time_last_msg,
+			0 AS id_last_msg,
+			IF(cat.id=f.cat_id,cat.id,0) AS parent,
+			cat.ordering,
+			1 AS published,
+			0 AS locked,
+			0 AS moderated,
+			0 AS review
+		FROM #__ccb_category AS cat
+		LEFT JOIN #__ccb_forums AS f ON cat.id=f.cat_id)";
 		$result = $this->getExportData ( $query, $start, $limit );
 		foreach ( $result as $key => &$row ) {
 			$row->name = $this->prep ( $row->name );
-			if (! $row->parent) {
-				$row->parent = 0;
-				$row->pub_access = 0;
-				$row->published = 1;
-			} else {
-				$row->description = $this->prep ( $row->description );
-			}
+			$row->pub_access = 0;
+			$row->description = $this->prep ( $row->description );
 		}
 		return $result;
 	}

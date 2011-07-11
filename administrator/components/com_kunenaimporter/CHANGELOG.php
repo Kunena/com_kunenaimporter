@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+11-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (ccboard categories import)
+
 10-July-2011 fxstein
 ^ [#4] Update file headers, remove $Id, 2010->2011 and kunena.com->.org
 + [#25] Add basic skeleton for Ninjaboard support
