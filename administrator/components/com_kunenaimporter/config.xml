@@ -5,8 +5,9 @@
 	<params>
 		<param name="extforum" type="list" default="localhost" label="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_LABEL" description="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_DESC" size="30">
 			<option value="">COM_KUNENAIMPORTER_EXTFORUM_OPTION_EMPTY</option>
-			<!-- <option value="agora">Agora</option> -->
-			<!-- <option value="ccboard">ccBoard</option> -->
+			<option value="agora">Agora</option>
+			<option value="ccboard">ccBoard</option>
+			<option value="ninjaboard">NinjaBoard</option>
 			<!-- <option value="kunena">Kunena</option> -->
 			<option value="phpbb3">phpBB3</option>
 			<!-- <option value="phpbb2">phpBB2</option> -->
@@ -25,8 +26,9 @@
 	<fieldset name="config" label="COM_KUNENAIMPORTER_CONFIG_LABEL" description="COM_KUNENAIMPORTER_CONFIG_DESC">
 		<field name="extforum" type="list" default="" label="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_LABEL" description="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_DESC" size="30">
 			<option value="">COM_KUNENAIMPORTER_EXTFORUM_OPTION_EMPTY</option>
-			<!-- <option value="agora">Agora</option> -->
-			<!-- <option value="ccboard">ccBoard</option> -->
+			<option value="agora">Agora</option>
+			<option value="ccboard">ccBoard</option>
+			<option value="ninjaboard">NinjaBoard</option>
 			<!-- <option value="kunena">Kunena</option> -->
 			<option value="phpbb3">phpBB3</option>
 			<!-- <option value="phpbb2">phpBB2</option> -->
