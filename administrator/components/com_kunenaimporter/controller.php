@@ -82,12 +82,12 @@ class KunenaImporterController extends JController {
 		$params = new JParameter ( $component->params );
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
-		$exporter->checkConfig ();
+		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
 		$importer->setAuthMethod ( $exporter->getAuthMethod () );
 
-		if ($errormsg)
+		if (!$success || $errormsg)
 			return;
 
 		$empty = array('start'=>0, 'all'=>0, 'new'=>0, 'conflict'=>0, 'failed'=>0, 'total'=>0);
@@ -150,7 +150,7 @@ class KunenaImporterController extends JController {
 		$params = new JParameter ( $component->params );
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
-		$exporter->checkConfig ();
+		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
 		$importer->setAuthMethod ( $exporter->getAuthMethod () );
@@ -158,7 +158,7 @@ class KunenaImporterController extends JController {
 		$options = $importer->getImportOptions ();
 		$state = $this->getParams ();
 
-		if ($errormsg)
+		if (!$success || $errormsg)
 			return;
 
 		foreach ( $options as $option ) {

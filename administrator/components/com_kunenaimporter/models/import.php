@@ -222,6 +222,7 @@ class KunenaimporterModelImport extends JModel {
 				$newConfig = end ( $data );
 				if (is_object ( $newConfig ))
 					$newConfig = $newConfig->GetClassVars ();
+				$newConfig['id'] = 1;
 				$kunenaConfig = new KunenaImporterTableConfig ();
 				$kunenaConfig->save ( $newConfig );
 				break;
@@ -293,15 +294,15 @@ class KunenaimporterModelImport extends JModel {
 				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
 			}
 			$item->folder = 'media/kunena/attachments/'.$item->folder;
-			if (file_exists($item->location)) {
+			if (file_exists($item->copypath)) {
 				$path = JPATH_ROOT."/{$item->folder}";
 
 				// Create upload folder and index.html
 				if (!JFolder::exists($path) && JFolder::create($path)) {
 					JFile::write("{$path}/index.html",'<html><body></body></html>');
 				}
-				$item->hash = md5_file ( $item->location );
-				JFile::copy($item->location, "{$path}/{$item->filename}");
+				$item->hash = md5_file ( $item->copypath );
+				JFile::copy($item->copypath, "{$path}/{$item->filename}");
 			}
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
@@ -335,8 +336,8 @@ class KunenaimporterModelImport extends JModel {
 			if (isset($idmap[$item->userid])) {
 				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
 			}
-			if (!empty($item->avatarpath) && file_exists($item->avatarpath)) {
-				JFile::copy($item->avatarpath, JPATH_ROOT."/media/kunena/avatars/users/{$item->avatar}");
+			if (!empty($item->copypath) && file_exists($item->copypath)) {
+				JFile::copy($item->copypath, JPATH_ROOT."/media/kunena/avatars/users/{$item->avatar}");
 			}
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
@@ -360,6 +361,17 @@ class KunenaimporterModelImport extends JModel {
 		foreach ( $data as $item ) {
 			if (isset($idmap[$item->userid])) {
 				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
+			}
+			if (!empty($item->copypath) && file_exists($item->copypath)) {
+				switch ($option) {
+					case 'ranks':
+						$destpath = JPATH_ROOT . '/components/com_kunena/template/default/images/ranks';
+						break;
+					default:
+				}
+				if (!empty($destpath)) {
+					JFile::copy($item->copypath, $destpath);
+				}
 			}
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
