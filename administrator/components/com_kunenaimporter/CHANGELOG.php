@@ -1,14 +1,12 @@
 <?php
 /**
- * @version $Id$
- * Kunena Forum Importer Component
  * @package com_kunenaimporter
  *
  * Imports forum data into Kunena
  *
- * @Copyright (C) 2009 - 2010 Kunena Team All rights reserved
+ * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
- * @link http://www.kunena.com
+ * @link http://www.kunena.org
  *
  */
 die();
@@ -32,6 +30,9 @@ Legend:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 KunenaImporter 1.6.5-DEV
+
+10-July-2011 fxstein
+^ [#4] Update file headers, remove $Id, 2010->2011 and kunena.com->.org
 
 10-July-2011 Matias
 ^ [#20] Add support for Joomla 1.7: Code cleanup, DS removal and small fixes
