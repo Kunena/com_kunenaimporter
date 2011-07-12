@@ -18,12 +18,35 @@ jimport ( 'joomla.application.application' );
 require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
-	var $version;
+	/**
+	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * @var string
+	 */
+	public $name = 'phpbb3';
+	/**
+	 * Display name
+	 * @var string
+	 */
+	public $title = 'phpBB3';
+	/**
+	 * Minimum required version
+	 * @var string or null
+	 */
+	protected $versionmin = '3.0.0';
+	/**
+	 * Maximum accepted version
+	 * @var string or null
+	 */
+	protected $versionmax = '3.0.999';
+
 	var $auth_method;
 	var $rokbridge = null;
 	protected $relpath = null;
 	protected $basepath = null;
 
+	/**
+	 * Custom constructor to initialize phpBB3 export
+	 */
 	public function __construct() {
 		global $phpbb_root_path, $phpEx;
 
@@ -49,37 +72,36 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			// Initialize database object
 			$options = array('driver' => $dbms, 'host' => $dbhost, 'user' => $dbuser, 'password' => $dbpasswd, 'database' => $dbname, 'prefix' => $table_prefix);
 			$this->ext_database = JDatabase::getInstance($options);
+
+			if(!defined('IN_PHPBB')) {
+				define('IN_PHPBB', true);
+			}
+	
+			if(!defined('STRIP')) {
+				define('STRIP', (get_magic_quotes_gpc()) ? true : false);
+			}
+	
+			$phpbb_root_path = $this->basepath.'/';
+			$phpEx = substr(strrchr(__FILE__, '.'), 1);
+	
+		} else {
+			$this->ext_database = false;
 		}
-
-		if(!defined('IN_PHPBB')) {
-			define('IN_PHPBB', true);
-		}
-
-		if(!defined('STRIP')) {
-			define('STRIP', (get_magic_quotes_gpc()) ? true : false);
-		}
-
-		$phpbb_root_path = $this->basepath.'/';
-		$phpEx = substr(strrchr(__FILE__, '.'), 1);
-
 		parent::__construct ();
 	}
 
-	protected function getConfig() {
-		if (empty($this->config)) {
-			// Check if database settings are correct
-			$query = "SELECT config_name, config_value AS value FROM #__config";
-			$this->ext_database->setQuery ( $query );
-			$this->config = $this->ext_database->loadObjectList ('config_name');
-		}
-		return $this->config;
-	}
-
-	public function checkConfig() {
-		// Check Kunena compatibility
-		parent::checkConfig ();
-		if (JError::isError ( $this->ext_database ))
-			return;
+	/**
+	 * Full detection and initialization
+	 * 
+	 * Make sure that everything is ready for full import.
+	 * Use $this->addMessage($html) to add status messages.
+	 * If you return false, remember also to fill $this->error
+	 * 
+	 * @return bool
+	 */
+	public function detect() {
+		// Initialize detection (also calls $this->detectComponent())
+		if (!parent::detect()) return false;
 
 		// Check RokBridge
 		if ($this->rokbridge->get('phpbb3_path')) {
@@ -95,31 +117,9 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			return false;
 		}
 
-		// Check if database settings are correct
-		$config = $this->getConfig();
-		if (empty($config['version'])) {
-			$this->error = $this->ext_database->getErrorMsg ();
-			if (! $this->error)
-				$this->error = 'Configuration information missing: phpBB version not found';
-		}
-		if ($this->error) {
-			$this->addMessage ( '<div>phpBB version: <b style="color:red">FAILED</b></div>' );
-			return false;
-		}
-
-		// Check version number
-		$this->version = $config['version']->value;
-		if ($this->version [0] == '.')
-			$this->version = '2' . $this->version;
-		$version = explode ( '.', $this->version, 3 );
-		if ($version [0] != 3 || $version [1] != 0)
-			$this->error = "Unsupported forum: phpBB {$this->version}";
-		if ($this->error) {
-			$this->addMessage ( '<div>phpBB version: <b style="color:red">' . $this->version . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>phpBB version: <b style="color:green">' . $this->version . '</b></div>' );
+		// Check if version is compatible with importer
+		$this->version = $this->getVersion();
+		if (!parent::isCompatible($this->version)) return false;
 
 		// Check authentication method
 		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
@@ -130,6 +130,42 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// Find out which field is used as username
 		$fields = $this->ext_database->getTableFields('#__users');
 		$this->login_field = isset($fields['#__users']['login_name']);
+		return true;
+	}
+
+	/**
+	 * Detect if component exists
+	 * 
+	 * By default this function uses Joomla function to detect components.
+	 * 
+	 * @param mixed $success Force detection to succeed/fail
+	 * @return bool
+	 */
+	public function detectComponent($success=null) {
+		// Set $success = true/false to use custom detection
+		return parent::detectComponent((bool) $this->ext_database);
+	}
+
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
+		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
+		$this->ext_database->setQuery ( $query );
+		$version = $this->ext_database->loadResult ();
+		if ($this->version [0] == '.')
+			$this->version = '2' . $this->version;
+		return $version;
+	}
+
+	protected function getConfig() {
+		if (empty($this->config)) {
+			// Check if database settings are correct
+			$query = "SELECT config_name, config_value AS value FROM #__config";
+			$this->ext_database->setQuery ( $query );
+			$this->config = $this->ext_database->loadObjectList ('config_name');
+		}
+		return $this->config;
 	}
 
 	public function getAuthMethod() {
@@ -218,7 +254,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['board_offline'] = $result ['board_disable']->value;
 		$config ['board_ofset'] = $result ['board_timezone']->value;
 		// $config['offline_message'] = null;
-		// $config['default_view'] = null;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
 		$config ['threads_per_page'] = $result ['topics_per_page']->value;
@@ -227,29 +262,22 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['showhistory'] = null;
 		// $config['historylimit'] = null;
 		// $config['shownew'] = null;
-		// $config['newchar'] = null;
 		// $config['jmambot'] = null;
 		$config ['disemoticons'] = $result ['allow_smilies']->value ^ 1;
 		// $config['template'] = null;
-		// $config['templateimagepath'] = null;
-		// $config['joomlastyle'] = null;
 		// $config['showannouncement'] = null;
 		// $config['avataroncat'] = null;
 		// $config['catimagepath'] = null;
-		// $config['numchildcolumn'] = null;
 		// $config['showchildcaticon'] = null;
 		// $config['annmodid'] = null;
 		// $config['rtewidth'] = null;
 		// $config['rteheight'] = null;
-		// $config['enablerulespage'] = null;
 		// $config['enableforumjump'] = null;
 		// $config['reportmsg'] = null;
 		// $config['username'] = null;
 		// $config['askemail'] = null;
 		// $config['showemail'] = null;
 		// $config['showuserstats'] = null;
-		// $config['poststats'] = null;
-		// $config['statscolor'] = null;
 		// $config['showkarma'] = null;
 		// $config['useredit'] = null;
 		// $config['useredittime'] = null;
@@ -258,7 +286,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['allowsubscriptions'] = $result ['allow_topic_notify']->value;
 		// $config['subscriptionschecked'] = null;
 		// $config['allowfavorites'] = null;
-		// $config['wrap'] = null;
 		// $config['maxsubject'] = null;
 		$config ['maxsig'] = $result ['allow_sig']->value ? $result ['max_sig_chars']->value : 0;
 		// $config['regonly'] = null;
@@ -272,13 +299,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['allowavatar'] = $result ['allow_avatar_upload']->value || $result ['allow_avatar_local']->value;
 		$config ['allowavatarupload'] = $result ['allow_avatar_upload']->value;
 		$config ['allowavatargallery'] = $result ['allow_avatar_local']->value;
-		// $config['imageprocessor'] = null;
-		$config ['avatarsmallheight'] = $result ['avatar_max_height']->value > 50 ? 50 : $result ['avatar_max_height']->value;
-		$config ['avatarsmallwidth'] = $result ['avatar_max_width']->value > 50 ? 50 : $result ['avatar_max_width']->value;
-		$config ['avatarheight'] = $result ['avatar_max_height']->value > 100 ? 100 : $result ['avatar_max_height']->value;
-		$config ['avatarwidth'] = $result ['avatar_max_width']->value > 100 ? 100 : $result ['avatar_max_width']->value;
-		$config ['avatarlargeheight'] = $result ['avatar_max_height']->value;
-		$config ['avatarlargewidth'] = $result ['avatar_max_width']->value;
 		// $config['avatarquality'] = null;
 		$config ['avatarsize'] = ( int ) ($result ['avatar_filesize']->value / 1000);
 		// $config['allowimageupload'] = null;
@@ -293,7 +313,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['showranking'] = null;
 		// $config['rankimages'] = null;
 		// $config['avatar_src'] = null;
-		// $config['fb_profile'] = null;
 		// $config['pm_component'] = null;
 		// $config['discussbot'] = null;
 		// $config['userlist_rows'] = null;
@@ -301,7 +320,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['userlist_avatar'] = null;
 		// $config['userlist_name'] = null;
 		// $config['userlist_username'] = null;
-		// $config['userlist_group'] = null;
 		// $config['userlist_posts'] = null;
 		// $config['userlist_karma'] = null;
 		// $config['userlist_email'] = null;
@@ -309,16 +327,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['userlist_joindate'] = null;
 		// $config['userlist_lastvisitdate'] = null;
 		// $config['userlist_userhits'] = null;
-		// $config['showlatest'] = null;
-		// $config['latestcount'] = null;
-		// $config['latestcountperpage'] = null;
 		// $config['latestcategory'] = null;
-		// $config['latestsinglesubject'] = null;
-		// $config['latestreplysubject'] = null;
-		// $config['latestsubjectlength'] = null;
-		// $config['latestshowdate'] = null;
-		// $config['latestshowhits'] = null;
-		// $config['latestshowauthor'] = null;
 		// $config['showstats'] = null;
 		// $config['showwhoisonline'] = null;
 		// $config['showgenstats'] = null;
@@ -329,11 +338,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['usernamechange'] = null;
 		// $config['rules_infb'] = null;
 		// $config['rules_cid'] = null;
-		// $config['rules_link'] = null;
-		// $config['enablehelppage'] = null;
 		// $config['help_infb'] = null;
 		// $config['help_cid'] = null;
-		// $config['help_link'] = null;
 		// $config['showspoilertag'] = null;
 		// $config['showvideotag'] = null;
 		// $config['showebaytag'] = null;
@@ -345,10 +351,80 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['ebaylanguagecode'] = null;
 		$config ['fbsessiontimeout'] = $result ['session_length']->value;
 		// $config['highlightcode'] = null;
-		// $config['rsstype'] = null;
-		// $config['rsshistory'] = null;
-		$config ['fbdefaultpage'] = 'categories';
+		// $config['rss_type'] = null;
+		// $config['rss_timelimit'] = null;
+		// $config['rss_limit'] = null;
+		// $config['rss_included_categories'] = null;
+		// $config['rss_excluded_categories'] = null;
+		// $config['rss_specification'] = null;
+		// $config['rss_allow_html'] = null;
+		// $config['rss_author_format'] = null;
+		// $config['rss_author_in_title'] = null;
+		// $config['rss_word_count'] = null;
+		// $config['rss_old_titles'] = null;
+		// $config['rss_cache'] = null;
+		$config['fbdefaultpage'] = 'categories';
 		// $config['default_sort'] = null;
+		// $config['alphauserpointsnumchars'] = null;
+		// $config['sef'] = null;
+		// $config['sefcats'] = null;
+		// $config['sefutf8'] = null;
+		// $config['showimgforguest'] = null;
+		// $config['showfileforguest'] = null;
+		// $config['pollnboptions'] = null;
+		// $config['pollallowvoteone'] = null;
+		// $config['pollenabled'] = null;
+		// $config['poppollscount'] = null;
+		// $config['showpoppollstats'] = null;
+		// $config['polltimebtvotes'] = null;
+		// $config['pollnbvotesbyuser'] = null;
+		// $config['pollresultsuserslist'] = null;
+		// $config['maxpersotext'] = null;
+		// $config['ordering_system'] = null;
+		// $config['post_dateformat'] = null;
+		// $config['post_dateformat_hover'] = null;
+		// $config['hide_ip'] = null;
+		// $config['js_actstr_integration'] = null;
+		// $config['imagetypes'] = null;
+		// $config['checkmimetypes'] = null;
+		// $config['imagemimetypes'] = null;
+		// $config['imagequality'] = null;
+		// $config['thumbheight'] = null;
+		// $config['thumbwidth'] = null;
+		// $config['hideuserprofileinfo'] = null;
+		// $config['integration_access'] = null;
+		// $config['integration_login'] = null;
+		// $config['integration_avatar'] = null;
+		// $config['integration_profile'] = null;
+		// $config['integration_private'] = null;
+		// $config['integration_activity'] = null;
+		// $config['boxghostmessage'] = null;
+		// $config['userdeletetmessage'] = null;
+		// $config['latestcategory_in'] = null;
+		// $config['topicicons'] = null;
+		// $config['onlineusers'] = null;
+		// $config['debug'] = null;
+		// $config['catsautosubscribed'] = null;
+		// $config['showbannedreason'] = null;
+		// $config['version_check'] = null;
+		// $config['showthankyou'] = null;
+		// $config['showpopthankyoustats'] = null;
+		// $config['popthankscount'] = null;
+		// $config['mod_see_deleted'] = null;
+		// $config['bbcode_img_secure'] = null;
+		// $config['listcat_show_moderators'] = null;
+		// $config['lightbox'] = null;
+		// $config['activity_limit'] = null;
+		// $config['show_list_time'] = null;
+		// $config['show_session_type'] = null;
+		// $config['show_session_starttime'] = null;
+		// $config['userlist_allowed'] = null;
+		// $config['userlist_count_users'] = null;
+		// $config['enable_threaded_layouts'] = null;
+		// $config['category_subscriptions'] = null;
+		// $config['topic_subscriptions'] = null;
+		// $config['pubprofile'] = null;
+		// $config['thankyou_max'] = null;
 		$result = array ('1' => $config );
 		return $result;
 	}
@@ -412,12 +488,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			'phpbb3' AS folder,
 			IF(LENGTH(mimetype)>0,mimetype,extension) AS filetype,
 			real_filename AS filename,
-			physical_filename AS location
+			physical_filename AS realfile
 		FROM `#__attachments`
 		ORDER BY attach_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
-			$row->location = "{$this->basepath}/files/{$row->location}";
+			$row->copypath = "{$this->basepath}/files/{$row->realfile}";
 		}
 		return $result;
 	}
@@ -520,7 +596,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 						$filename = (int) $row->avatar;
 						$ext = substr(strrchr($row->avatar, '.'), 1);
 						$row->avatar = "users/{$row->avatar}";
-						$row->avatarpath = "{$this->basepath}/{$path}/{$salt}_{$filename}.{$ext}";
+						$row->copypath = "{$this->basepath}/{$path}/{$salt}_{$filename}.{$ext}";
 						break;
 					case 2:
 						// URL not supported

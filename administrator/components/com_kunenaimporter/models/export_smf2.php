@@ -18,7 +18,27 @@ jimport ( 'joomla.application.application' );
 require_once (JPATH_COMPONENT . '/models/export.php');
 
 class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
-	var $version;
+	/**
+	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * @var string
+	 */
+	public $name = 'smf2';
+	/**
+	 * Display name
+	 * @var string
+	 */
+	public $title = 'SMF2';
+	/**
+	 * Minimum required version
+	 * @var string or null
+	 */
+	protected $versionmin = '2.0 RC3';
+	/**
+	 * Maximum accepted version
+	 * @var string or null
+	 */
+	protected $versionmax = '2.0.999';
+	
 	var $auth_method;
 	var $params;
 	protected $config = null;
@@ -41,6 +61,49 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			$this->ext_database = false;
 		}
 		parent::__construct ();
+	}
+
+	/**
+	 * Full detection and initialization
+	 * 
+	 * Make sure that everything is ready for full import.
+	 * Use $this->addMessage($html) to add status messages.
+	 * If you return false, remember also to fill $this->error
+	 * 
+	 * @return bool
+	 */
+	public function detect() {
+		// Initialize detection (also calls $this->detectComponent())
+		if (!parent::detect()) return false;
+
+		// Check if version is compatible with importer
+		$this->version = $this->getVersion();
+		if (!$this->isCompatible($this->version)) return false;
+		$this->getSettings();
+		return true;
+	}
+
+	/**
+	 * Detect if component exists
+	 * 
+	 * By default this function uses Joomla function to detect components.
+	 * 
+	 * @param mixed $success Force detection to succeed/fail
+	 * @return bool
+	 */
+	public function detectComponent($success=null) {
+		// Set $success = true/false to use custom detection
+		return parent::detectComponent((bool) $this->ext_database);
+	}
+
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
+		$query = "SELECT value FROM #__settings WHERE variable='smfVersion'";
+		$this->ext_database->setQuery ( $query );
+		$version = $this->ext_database->loadResult ();
+		return $version;
 	}
 
 	protected function getSettings() {
@@ -66,41 +129,6 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $this->config;
 	}
 
-	public function checkConfig() {
-		parent::checkConfig ();
-		if ($this->error)
-			return false;
-
-		if (empty($this->config)) {
-			$this->error = "Settings.php not found from " . JPATH_ROOT . '/' . $this->params->get('path') . '';
-			$this->addMessage ( '<div>SMF found: <b style="color:red">NO</b></div>' );
-			return false;
-		}
-
-		$query = "SELECT value FROM #__settings WHERE variable='smfVersion'";
-		$this->ext_database->setQuery ( $query );
-		$this->version = $this->ext_database->loadResult ();
-		if (! $this->version) {
-			$this->error = $this->ext_database->getErrorMsg ();
-			if (! $this->error)
-				$this->error = 'Configuration information missing: SMF version not found';
-		}
-		if ($this->error) {
-			$this->addMessage ( '<div>SMF version: <b style="color:red">FAILED</b></div>' );
-			return false;
-		}
-
-		if (version_compare($this->version, '2.0 RC3', '<'))
-			$this->error = "Unsupported forum: SMF $this->version";
-		if ($this->error) {
-			$this->addMessage ( '<div>SMF version: <b style="color:red">' . $this->version . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>SMF version: <b style="color:green">' . $this->version . '</b></div>' );
-		$this->getSettings();
-	}
-
 	public function getAuthMethod() {
 		return $this->auth_method;
 	}
@@ -118,6 +146,200 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
 		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
 		$this->importOps = $importOps;
+	}
+
+	public function countConfig() {
+		return 1;
+	}
+
+	public function &exportConfig($start = 0, $limit = 0) {
+		$config = array ();
+		if ($start)
+			return $config;
+		$query = "SELECT variable, value FROM #__settings";
+		$this->ext_database->setQuery ( $query );
+		$result = $this->ext_database->loadObjectList ('variable');
+
+		$config['id'] = 1;
+
+		$config['board_title'] = $this->config['mbname'];
+		$config['email'] = $this->config['webmaster_email'];
+		$config['board_offline'] = (bool)$this->config['maintenance'];
+		$config['board_ofset'] = $result['time_offset']->value; // + default_timezone
+		$config['offline_message'] = "<h1>{$this->config['mmessage']}</h1><p>{$this->config['mmessage']}</p>";
+		// $config['enablerss'] = null;
+		// $config['enablepdf'] = null;
+		// $config['threads_per_page'] = null;
+		// $config['messages_per_page'] = null;
+		// $config['messages_per_page_search'] = null;
+		// $config['showhistory'] = null;
+		// $config['historylimit'] = null;
+		// $config['shownew'] = null;
+		// $config['jmambot'] = null;
+		// $config['disemoticons'] = null;
+		// $config['template'] = null;
+		// $config['showannouncement'] = null;
+		// $config['avataroncat'] = null;
+		// $config['catimagepath'] = null;
+		// $config['showchildcaticon'] = null;
+		// $config['annmodid'] = null;
+		// $config['rtewidth'] = null;
+		// $config['rteheight'] = null;
+		// $config['enableforumjump'] = null;
+		// $config['reportmsg'] = null;
+		// $config['username'] = null;
+		// $config['askemail'] = null;
+		// $config['showemail'] = null;
+		// $config['showuserstats'] = null;
+		// $config['showkarma'] = null;
+		// $config['useredit'] = null;
+		// $config['useredittime'] = null;
+		// $config['useredittimegrace'] = null;
+		// $config['editmarkup'] = null;
+		// $config['allowsubscriptions'] = null;
+		// $config['subscriptionschecked'] = null;
+		// $config['allowfavorites'] = null;
+		// $config['maxsubject'] = null;
+		// $config['maxsig'] = null;
+		// $config['regonly'] = null;
+		// $config['changename'] = null;
+		// $config['pubwrite'] = null;
+		// $config['floodprotection'] = null;
+		// $config['mailmod'] = null;
+		// $config['mailadmin'] = null;
+		// $config['captcha'] = null;
+		// $config['mailfull'] = null;
+		// $config['allowavatar'] = null;
+		// $config['allowavatarupload'] = null;
+		// $config['allowavatargallery'] = null;
+		// $config['avatarquality'] = null;
+		// $config['avatarsize'] = null;
+		$config['allowimageupload'] = $result['attachmentEnable']->value;
+		// $config['allowimageregupload'] = null;
+		$config['imageheight'] = $result['max_image_height']->value;
+		$config['imagewidth'] = $result['max_image_width']->value;
+		$config['imagesize'] = $result['attachmentSizeLimit']->value;
+		$config['allowfileupload'] = $result['attachmentEnable']->value;
+		// $config['allowfileregupload'] = null;
+		// $config['filetypes'] = null;
+		$config['filesize'] = $result['attachmentSizeLimit']->value;
+		// $config['showranking'] = null;
+		// $config['rankimages'] = null;
+		// $config['avatar_src'] = null;
+		// $config['pm_component'] = null;
+		// $config['discussbot'] = null;
+		// $config['userlist_rows'] = null;
+		// $config['userlist_online'] = null;
+		// $config['userlist_avatar'] = null;
+		// $config['userlist_name'] = null;
+		// $config['userlist_username'] = null;
+		// $config['userlist_posts'] = null;
+		// $config['userlist_karma'] = null;
+		// $config['userlist_email'] = null;
+		// $config['userlist_usertype'] = null;
+		// $config['userlist_joindate'] = null;
+		// $config['userlist_lastvisitdate'] = null;
+		// $config['userlist_userhits'] = null;
+		// $config['latestcategory'] = null;
+		// $config['showstats'] = null;
+		$config['showwhoisonline'] = $result['who_enabled']->value;
+		// $config['showgenstats'] = null;
+		// $config['showpopuserstats'] = null;
+		// $config['popusercount'] = null;
+		// $config['showpopsubjectstats'] = null;
+		// $config['popsubjectcount'] = null;
+		// $config['usernamechange'] = null;
+		// $config['rules_infb'] = null;
+		// $config['rules_cid'] = null;
+		// $config['help_infb'] = null;
+		// $config['help_cid'] = null;
+		// $config['showspoilertag'] = null;
+		// $config['showvideotag'] = null;
+		// $config['showebaytag'] = null;
+		// $config['trimlongurls'] = null;
+		// $config['trimlongurlsfront'] = null;
+		// $config['trimlongurlsback'] = null;
+		// $config['autoembedyoutube'] = null;
+		// $config['autoembedebay'] = null;
+		// $config['ebaylanguagecode'] = null;
+		// $config['fbsessiontimeout'] = null;
+		// $config['highlightcode'] = null;
+		// $config['rss_type'] = null;
+		// $config['rss_timelimit'] = null;
+		// $config['rss_limit'] = null;
+		// $config['rss_included_categories'] = null;
+		// $config['rss_excluded_categories'] = null;
+		// $config['rss_specification'] = null;
+		// $config['rss_allow_html'] = null;
+		// $config['rss_author_format'] = null;
+		// $config['rss_author_in_title'] = null;
+		// $config['rss_word_count'] = null;
+		// $config['rss_old_titles'] = null;
+		// $config['rss_cache'] = null;
+		// $config['fbdefaultpage'] = null;
+		// $config['default_sort'] = null;
+		// $config['alphauserpointsnumchars'] = null;
+		// $config['sef'] = null;
+		// $config['sefcats'] = null;
+		// $config['sefutf8'] = null;
+		// $config['showimgforguest'] = null;
+		// $config['showfileforguest'] = null;
+		// $config['pollnboptions'] = null;
+		// $config['pollallowvoteone'] = null;
+		// $config['pollenabled'] = null;
+		// $config['poppollscount'] = null;
+		// $config['showpoppollstats'] = null;
+		// $config['polltimebtvotes'] = null;
+		// $config['pollnbvotesbyuser'] = null;
+		// $config['pollresultsuserslist'] = null;
+		// $config['maxpersotext'] = null;
+		// $config['ordering_system'] = null;
+		// $config['post_dateformat'] = null;
+		// $config['post_dateformat_hover'] = null;
+		// $config['hide_ip'] = null;
+		// $config['js_actstr_integration'] = null;
+		// $config['imagetypes'] = null;
+		// $config['checkmimetypes'] = null;
+		// $config['imagemimetypes'] = null;
+		// $config['imagequality'] = null;
+		$config['thumbheight'] = $result['attachmentThumbHeight']->value;
+		$config['thumbwidth'] = $result['attachmentThumbWidth']->value;
+		// $config['hideuserprofileinfo'] = null;
+		// $config['integration_access'] = null;
+		// $config['integration_login'] = null;
+		// $config['integration_avatar'] = null;
+		// $config['integration_profile'] = null;
+		// $config['integration_private'] = null;
+		// $config['integration_activity'] = null;
+		// $config['boxghostmessage'] = null;
+		// $config['userdeletetmessage'] = null;
+		// $config['latestcategory_in'] = null;
+		// $config['topicicons'] = null;
+		// $config['onlineusers'] = null;
+		// $config['debug'] = null;
+		// $config['catsautosubscribed'] = null;
+		// $config['showbannedreason'] = null;
+		// $config['version_check'] = null;
+		// $config['showthankyou'] = null;
+		// $config['showpopthankyoustats'] = null;
+		// $config['popthankscount'] = null;
+		// $config['mod_see_deleted'] = null;
+		// $config['bbcode_img_secure'] = null;
+		// $config['listcat_show_moderators'] = null;
+		// $config['lightbox'] = null;
+		// $config['activity_limit'] = null;
+		// $config['show_list_time'] = null;
+		// $config['show_session_type'] = null;
+		// $config['show_session_starttime'] = null;
+		// $config['userlist_allowed'] = null;
+		// $config['userlist_count_users'] = null;
+		// $config['enable_threaded_layouts'] = null;
+		// $config['category_subscriptions'] = null;
+		// $config['topic_subscriptions'] = null;
+		// $config['pubprofile'] = null;
+		// $config['thankyou_max'] = null;
+		$result = array ('1' => $config );
+		return $result;
 	}
 
 	public function countCategories() {
@@ -203,206 +425,6 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			$row->name = $this->prep ( $row->name );
 			$row->description = $this->prep ( $row->description );
 		}
-		return $result;
-	}
-
-	public function countConfig() {
-		return 1;
-	}
-
-	public function &exportConfig($start = 0, $limit = 0) {
-		$config = array ();
-		if ($start)
-			return $config;
-		$query = "SELECT variable, value FROM #__settings";
-		$this->ext_database->setQuery ( $query );
-		$result = $this->ext_database->loadObjectList ('variable');
-
-		$config ['id'] = 1;
-		$config ['board_title'] = $this->config['mbname'];
-		$config ['email'] = $this->config['webmaster_email'];
-		$config ['board_offline'] = (bool)$this->config['maintenance'];
-		$config ['board_ofset'] = $result['time_offset']->value; // + default_timezone
-		$config ['offline_message'] = "<h1>{$this->config['mmessage']}</h1><p>{$this->config['mmessage']}</p>";
-		// $config ['default_view'] = null;
-		// $config ['enablerss'] = null;
-		// $config ['enablepdf'] = null;
-		// $config ['threads_per_page'] = null;
-		// $config ['messages_per_page'] = null;
-		// $config ['messages_per_page_search'] = null;
-		// $config ['showhistory'] = null;
-		// $config ['historylimit'] = null;
-		// $config ['shownew'] = null;
-		// $config ['newchar'] = null;
-		// $config ['jmambot'] = null;
-		// $config ['disemoticons'] = null;
-		// $config ['template'] = null;
-		// $config ['templateimagepath'] = null;
-		// $config ['joomlastyle'] = null;
-		// $config ['showannouncement'] = null;
-		// $config ['avataroncat'] = null;
-		// $config ['catimagepath'] = null;
-		// $config ['numchildcolumn'] = null;
-		// $config ['showchildcaticon'] = null;
-		// $config ['annmodid'] = null;
-		// $config ['rtewidth'] = null;
-		// $config ['rteheight'] = null;
-		// $config ['enablerulespage'] = null;
-		// $config ['enableforumjump'] = null;
-		// $config ['reportmsg'] = null;
-		// $config ['username'] = null;
-		// $config ['askemail'] = null;
-		// $config ['showemail'] = null;
-		// $config ['showuserstats'] = null;
-		// $config ['poststats'] = null;
-		// $config ['statscolor'] = null;
-		// $config ['showkarma'] = null;
-		// $config ['useredit'] = null;
-		// $config ['useredittime'] = null;
-		// $config ['useredittimegrace'] = null;
-		// $config ['editmarkup'] = null;
-		// $config ['allowsubscriptions'] = null;
-		// $config ['subscriptionschecked'] = null;
-		// $config ['allowfavorites'] = null;
-		// $config ['wrap'] = null;
-		// $config ['maxsubject'] = null;
-		// $config ['maxsig'] = null;
-		// $config ['regonly'] = ! allow_guestAccess;
-		// $config ['changename'] = null;
-		// $config ['pubwrite'] = ;
-		// $config ['floodprotection'] = ;
-		// $config ['mailmod'] = null;
-		// $config ['mailadmin'] = null;
-		// $config ['captcha'] = null;
-		// $config ['mailfull'] = null;
-		// $config ['allowavatar'] = null;
-		// $config ['allowavatarupload'] = null;
-		// $config ['allowavatargallery'] = null;
-		// $config ['imageprocessor'] = null;
-		// $config ['avatarsmallheight'] = null;
-		// $config ['avatarsmallwidth'] = null;
-		// $config ['avatarheight'] = null;
-		// $config ['avatarwidth'] = null;
-		$config ['avatarlargeheight'] = $result['avatar_max_height_upload']->value;
-		$config ['avatarlargewidth'] = $result['avatar_max_width_upload']->value;
-		// $config ['avatarquality'] = null;
-		// $config ['avatarsize'] = null;
-		$config ['allowimageupload'] = $result['attachmentEnable']->value;
-		// $config ['allowimageregupload'] = null;
-		$config ['imageheight'] = $result['max_image_height']->value;
-		$config ['imagewidth'] = $result['max_image_width']->value;
-		$config ['imagesize'] = $result['attachmentSizeLimit']->value;
-		$config ['allowfileupload'] = $result['attachmentEnable']->value;
-		// $config ['allowfileregupload'] = null;
-		// $config ['filetypes'] = null;
-		$config ['filesize'] = $result['attachmentSizeLimit']->value;
-		// $config ['showranking'] = null;
-		// $config ['rankimages'] = null;
-		// $config ['avatar_src'] = null;
-		// $config ['fb_profile'] = null;
-		// $config ['pm_component'] = null;
-		// $config ['discussbot'] = null;
-		// $config ['userlist_rows'] = null;
-		// $config ['userlist_online'] = null;
-		// $config ['userlist_avatar'] = null;
-		// $config ['userlist_name'] = null;
-		// $config ['userlist_username'] = null;
-		// $config ['userlist_group'] = null;
-		// $config ['userlist_posts'] = null;
-		// $config ['userlist_karma'] = null;
-		// $config ['userlist_email'] = null;
-		// $config ['userlist_usertype'] = null;
-		// $config ['userlist_joindate'] = null;
-		// $config ['userlist_lastvisitdate'] = null;
-		// $config ['userlist_userhits'] = null;
-		// $config ['showlatest'] = null;
-		// $config ['latestcount'] = null;
-		// $config ['latestcountperpage'] = null;
-		// $config ['latestcategory'] = null;
-		// $config ['latestsinglesubject'] = null;
-		// $config ['latestreplysubject'] = null;
-		// $config ['latestsubjectlength'] = null;
-		// $config ['latestshowdate'] = null;
-		// $config ['latestshowhits'] = null;
-		// $config ['latestshowauthor'] = null;
-		// $config ['showstats'] = null;
-		$config ['showwhoisonline'] = $result['who_enabled']->value;
-		// $config ['showgenstats'] = null;
-		// $config ['showpopuserstats'] = null;
-		// $config ['popusercount'] = null;
-		// $config ['showpopsubjectstats'] = null;
-		// $config ['popsubjectcount'] = null;
-		// $config ['usernamechange'] = null;
-		// $config ['rules_infb'] = null;
-		// $config ['rules_cid'] = null;
-		// $config ['rules_link'] = null;
-		// $config ['enablehelppage'] = null;
-		// $config ['help_infb'] = null;
-		// $config ['help_cid'] = null;
-		// $config ['help_link'] = null;
-		// $config ['showspoilertag'] = null;
-		// $config ['showvideotag'] = null;
-		// $config ['showebaytag'] = null;
-		// $config ['trimlongurls'] = null;
-		// $config ['trimlongurlsfront'] = null;
-		// $config ['trimlongurlsback'] = null;
-		// $config ['autoembedyoutube'] = null;
-		// $config ['autoembedebay'] = null;
-		// $config ['ebaylanguagecode'] = null;
-		// $config ['fbsessiontimeout'] = null;
-		// $config ['highlightcode'] = null;
-		// $config ['rsstype'] = null;
-		// $config ['rsshistory'] = null;
-		// $config ['fbdefaultpage'] = null;
-		// $config ['default_sort'] = null;
-
-		// $config ['alphauserpointsnumchars'] = null;
-		// $config ['sef'] = null;
-		// $config ['sefcats'] = null;
-		// $config ['sefutf8'] = null;
-		// $config ['showimgforguest'] = null;
-		// $config ['showfileforguest'] = null;
-		// $config ['pollnboptions'] = null;
-		// $config ['pollallowvoteone'] = null;
-		// $config ['pollenabled'] = null;
-		// $config ['poppollscount'] = null;
-		// $config ['showpoppollstats'] = null;
-		// $config ['polltimebtvotes'] = null;
-		// $config ['pollnbvotesbyuser'] = null;
-		// $config ['pollresultsuserslist'] = null;
-		// $config ['maxpersotext'] = null;
-		// $config ['ordering_system'] = null;
-		// $config ['post_dateformat'] = null;
-		// $config ['post_dateformat_hover'] = null;
-		// $config ['hide_ip'] = null;
-		// $config ['imagetypes'] = null;
-		// $config ['checkmimetypes'] = null;
-		// $config ['imagemimetypes'] = null;
-		// $config ['imagequality'] = null;
-		$config ['thumbheight'] = $result['attachmentThumbHeight']->value;
-		$config ['thumbwidth'] = $result['attachmentThumbWidth']->value;
-		// $config ['hideuserprofileinfo'] = null;
-		// $config ['integration_access'] = null;
-		// $config ['integration_login'] = null;
-		// $config ['integration_avatar'] = null;
-		// $config ['integration_profile'] = null;
-		// $config ['integration_private'] = null;
-		// $config ['integration_activity'] = null;
-		// $config ['boxghostmessage'] = null;
-		// $config ['userdeletetmessage'] = null;
-		// $config ['latestcategory_in'] = null;
-		// $config ['topicicons'] = null;
-		// $config ['onlineusers'] = null;
-		// $config ['debug'] = null;
-		// $config ['catsautosubscribed'] = null;
-		// $config ['showbannedreason'] = null;
-		// $config ['version_check'] = null;
-		// $config ['showthankyou'] = null;
-		// $config ['showpopthankysoustats'] = null;
-		// $config ['popthankscount'] = null;
-		// $config ['mod_see_deleted'] = null;
-		// $config ['bbcode_img_secure'] = null;
-		$result = array ('1' => $config );
 		return $result;
 	}
 
@@ -594,7 +616,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
 			$row->folder = 'smf2/'.$row->folder;
-			$row->location = $config->attachmentUploadDir;
+			$row->copypath = $config->attachmentUploadDir;
 		}
 		return $result;
 	}

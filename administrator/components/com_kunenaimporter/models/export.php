@@ -23,10 +23,40 @@ if (file_exists ( $kunena_defines ))
 	require_once ($kunena_defines);
 
 class KunenaimporterModelExport extends JModel {
+	/**
+	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * @var string
+	 */
+	public $name = null;
+	/**
+	 * Display name
+	 * @var string
+	 */
+	public $title = null;
+	/**
+	 * Minimum required version
+	 * @var string or null
+	 */
+	protected $versionmin = null;
+	/**
+	 * Maximum accepted version
+	 * @var string or null
+	 */
+	protected $versionmax = null;
+	/**
+	 * Current version
+	 * @var string
+	 */
+	protected $version = null;
+	/**
+	 * Error message
+	 * @var string or null
+	 */
+	protected $error = null;
+	
 	var $ext_database = null;
 	var $ext_same = false;
 	var $messages = array ();
-	var $error = '';
 	var $importOps = array ();
 	var $auth_method;
 
@@ -39,7 +69,9 @@ class KunenaimporterModelExport extends JModel {
 		if ($this->ext_database === null) {
 			$db_name = $params->get ( 'db_name' );
 			$db_tableprefix = $params->get ( 'db_tableprefix' );
-			if (empty ( $db_name )) {
+			if ($this->ext_database === false) {
+				// Do nothing
+			} elseif (empty ( $db_name )) {
 				$this->ext_database = JFactory::getDBO ();
 				$this->ext_same = 1;
 			} else {
@@ -53,9 +85,6 @@ class KunenaimporterModelExport extends JModel {
 				$this->ext_database = JDatabase::getInstance ( $option );
 			}
 		}
-		// TODO: make this to work
-		//jimport('joomla.error.exception');
-		//$this->ext_database->debug(0);
 		$this->buildImportOps ();
 	}
 
@@ -81,7 +110,30 @@ class KunenaimporterModelExport extends JModel {
 		$this->importOps = array();
 	}
 	
-	public function checkConfig() {
+	public function detectComponent($force=null) {
+		if ($force !== true && ($force === false || !JComponentHelper::getComponent ( "com_{$this->name}", true )->enabled)) {
+			$this->error = $this->title.' has not been installed into your system!';
+			$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:red">FAILED</b></div>' );
+			$this->addMessage ( '<br /><div><b>Error:</b> ' . $this->error . '</div>' );
+			return false;
+		}
+		$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:green">OK</b></div>' );
+		return true;
+	}
+
+	public function isCompatible($version) {
+		if ((!empty($this->versionmin) && version_compare($version, $this->versionmin, '<')) ||
+			(!empty($this->versionmax) && version_compare($version, $this->versionmax, '>'))) {
+			$this->error = "Unsupported forum: {$this->title} {$version}";
+			$this->addMessage ( '<div>'.$this->title.' version: <b style="color:red">' . $version . '</b></div>' );
+			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
+			return false;
+		}
+		$this->addMessage ( '<div>'.$this->title.' version: <b style="color:green">' . $version . '</b></div>' );
+		return true;
+	}
+
+	public function detect() {
 		$this->addMessage ( '<h2>Importer Status</h2>' );
 
 		// Kunena detection and version check
@@ -100,6 +152,8 @@ class KunenaimporterModelExport extends JModel {
 			return false;
 		}
 		
+		if (!$this->detectComponent()) return false;
+
 		if (JError::isError ( $this->ext_database ))
 			$this->error = $this->ext_database->toString ();
 		else if (!$this->ext_database) {
@@ -111,6 +165,7 @@ class KunenaimporterModelExport extends JModel {
 			return false;
 		}
 		$this->addMessage ( '<div>Database connection: <b style="color:green">OK</b></div>' );
+		return true;
 	}
 
 	public function getAuthMethod() {
@@ -129,6 +184,14 @@ class KunenaimporterModelExport extends JModel {
 		return $this->error;
 	}
 
+	/**
+	 * Convert HTML to Kunena BBCode
+	 *
+	 * @param string $s String
+	 */
+	protected function parseHTML(&$s) {
+	}
+	
 	public function getCount($query) {
 		$this->ext_database->setQuery ( $query );
 		$result = $this->ext_database->loadResult ();
@@ -192,7 +255,7 @@ class KunenaimporterModelExport extends JModel {
 
 	public function &exportMapUsers($start = 0, $limit = 0) {
 		$db = JFactory::getDBO();
-		$query = "SELECT id, username FROM #__users";
+		$query = "SELECT id, username, email FROM #__users";
 		$db->setQuery ( $query, $start, $limit );
 		$users = $db->loadObjectList ( 'id' );
 		$count = 0;

@@ -11,75 +11,71 @@
  */
 defined ( '_JEXEC' ) or die ();
 
-// Import Joomla! libraries
-jimport ( 'joomla.application.component.model' );
-jimport ( 'joomla.application.application' );
-
 // Everything else than user import can be found from here:
 require_once (JPATH_COMPONENT . '/models/export_phpbb2.php');
 
 class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB2 {
-	var $version;
-	var $pnversion;
+	/**
+	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * @var string
+	 */
+	public $name = 'pnphpbb2';
+	/**
+	 * Display name
+	 * @var string
+	 */
+	public $title = 'PNphpBB2';
+	/**
+	 * Minimum required version
+	 * @var string or null
+	 */
+	protected $versionmin = '2.2i-p3';
+	/**
+	 * Maximum accepted version
+	 * @var string or null
+	 */
+	protected $versionmax = null;
+	
+	/**
+	 * Full detection and initialization
+	 * 
+	 * Make sure that everything is ready for full import.
+	 * Use $this->addMessage($html) to add status messages.
+	 * If you return false, remember also to fill $this->error
+	 * 
+	 * @return bool
+	 */
+	public function detect() {
+		// Initialize detection (also calls $this->detectComponent())
+		if (!parent::detect()) return false;
 
-	public function checkConfig() {
-		$this->addMessage ( '<h2>Importer Status</h2>' );
-		if (JError::isError ( $this->ext_database ))
-			$this->error = $this->ext_database->toString ();
-		if ($this->error) {
-			$this->addMessage ( '<div>Database connection: <b style="color:red">FAILED</b></div>' );
-			$this->addMessage ( '<br /><div><b>Please check that your external database settings are correct!</b></div><div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>Database connection: <b style="color:green">OK</b></div>' );
+		// Check if version is compatible with importer
+		$this->version = $this->getVersion();
+		if (!parent::isCompatible($this->version)) return false;
+		return true;
+	}
 
-		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
-		$this->ext_database->setQuery ( $query );
-		$this->version = $this->ext_database->loadResult ();
-		if (! $this->version) {
-			$this->error = $this->ext_database->getErrorMsg ();
-			if (! $this->error)
-				$this->error = 'Configuration information missing: phpBB version not found';
-		}
-		if ($this->error) {
-			$this->addMessage ( '<div>phpBB version: <b style="color:red">FAILED</b></div>' );
-			return false;
-		}
+	/**
+	 * Detect if component exists
+	 * 
+	 * By default this function uses Joomla function to detect components.
+	 * 
+	 * @param mixed $success Force detection to succeed/fail
+	 * @return bool
+	 */
+	public function detectComponent($success=null) {
+		// Set $success = true/false if you want to use custom detection
+		return parent::detectComponent($success);
+	}
 
-		if ($this->version [0] == '.')
-			$this->version = '2' . $this->version;
-		$version = explode ( '.', $this->version, 3 );
-		if ($version [0] != 2 || $version [1] != 0 || $version [2] < '15')
-			$this->error = "Unsupported forum: phpBB $this->version";
-		if ($this->error) {
-			$this->addMessage ( '<div>phpBB version: <b style="color:red">' . $this->version . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>phpBB version: <b style="color:green">' . $this->version . '</b></div>' );
-
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
 		$query = "SELECT config_value FROM #__config WHERE config_name='pnphpbb2_version'";
 		$this->ext_database->setQuery ( $query );
-		$this->pnversion = $this->ext_database->loadResult ();
-		if (! $this->pnversion) {
-			$this->error = $this->ext_database->getErrorMsg ();
-			if (! $this->error)
-				$this->error = 'Configuration information missing: PNphpBB2 version not found';
-		}
-		if ($this->error) {
-			$this->addMessage ( '<div>PNphpBB2 version: <b style="color:red">FAILED</b></div>' );
-			return false;
-		}
-
-		$version = explode ( '.', $this->pnversion, 2 );
-		if ($version [0] != 1 || $version [1] != '2i-p3')
-			$this->error = "Unsupported forum: PNphpBB2 $this->version";
-		if ($this->error) {
-			$this->addMessage ( '<div>PNphpBB2 version: <b style="color:red">' . $this->pnversion . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>PNphpBB2 version: <b style="color:green">' . $this->pnversion . '</b></div>' );
+		$version = $this->ext_database->loadResult ();
+		return $version;
 	}
 
 	public function countUsers() {

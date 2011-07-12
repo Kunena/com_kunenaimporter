@@ -31,6 +31,14 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+11-July-2011 Matias
++ [#30] Add example exporter which can be used to create new exporters
+^ [#30] Rename KunenaimporterModelExport::checkConfig() to detect()
++ [#30] Add function KunenaimporterModelExport::detectComponent()
++ [#30] Add function KunenaimporterModelExport::isCompatible()
+^ [#30] Update exportConfig() for all existing exporters
+^ [#30] Convert detection code from all existing exporters
+
 11-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (ccboard categories import)
 

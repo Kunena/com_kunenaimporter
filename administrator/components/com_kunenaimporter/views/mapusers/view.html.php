@@ -20,11 +20,11 @@ class KunenaimporterViewMapUsers extends JView {
 		$params = getKunenaImporterParams ();
 		$importer = $this->getModel ( 'import' );
 		$exporter = $this->getModel ( 'export_' . $params->get ( 'extforum' ) );
-		$exporter->checkConfig ();
+		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$messages = $exporter->getMessages ();
 
-		if ($errormsg) {
+		if (!$success || $errormsg) {
 			$status = 'fail';
 			$statusmsg = '???';
 			$action = '<a href="' . JRoute::_ ( COM_KUNENAIMPORTER_BASEURL ) . '">Check again</a>';
