@@ -33,6 +33,11 @@ KunenaImporter 1.6.5-DEV
 
 12-July-2011 Matias
 - [#30] Remove deprecated Kunena exporter
++ [#30] Example exporter: Add functions needed by phpBB3/SMF2
++ [#30] Add missing functions to KunenaimporterModelExport
+- [#30] KunenaimporterModelExport: remove the need of buildImportOps()
+^ [#30] Move all message generation to KunenaimporterModelExport::detect()
+- [#30] Example exporter: remove function buildImportOps()
 
 11-July-2011 Matias
 + [#30] Add example exporter which can be used to create new exporters
