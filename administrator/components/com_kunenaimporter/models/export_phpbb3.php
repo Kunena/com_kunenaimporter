@@ -29,6 +29,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	public $title = 'phpBB3';
 	/**
+	 * External application
+	 * @var bool
+	 */
+	public $external = true;
+	/**
 	 * Minimum required version
 	 * @var string or null
 	 */
@@ -39,55 +44,82 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	protected $versionmax = '3.0.999';
 
-	var $auth_method;
-	var $rokbridge = null;
-	protected $relpath = null;
-	protected $basepath = null;
+	public $auth_method;
+	protected $rokbridge = null;
+	protected $dbconfig = null;
 
 	/**
-	 * Custom constructor to initialize phpBB3 export
+	 * Get forum path from importer configuration
+	 * 
+	 * @return bool
 	 */
-	public function __construct() {
-		global $phpbb_root_path, $phpEx;
-
-		// Get component parameters
-		$this->params = getKunenaImporterParams();
-
+	public function getPath($absolute = false) {
 		// Load rokBridge configuration (if exists)
 		$this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
-		if (!$this->params->get('path')) {
+		$path = $this->rokbridge->get('phpbb3_path');
+		if (!$this->params->get('path') && $path) {
 			// Get phpBB3 path from rokBridge
-			$this->params->set('path', $this->rokbridge->get('phpbb3_path'));
+			$this->relpath = $path;
+			$this->basepath = JPATH_ROOT."/{$this->relpath}";
+			return $absolute ? $this->basepath : $this->relpath;
 		}
+		return parent::getPath($absolute);
+	}
 
-		$this->relpath = $this->params->get('path');
-		$this->basepath = JPATH_ROOT."/{$this->relpath}";
+	/**
+	 * Detect if component and config.php exists
+	 * 
+	 * @return bool
+	 */
+	public function detectComponent($path=null) {
+		if ($path === null) $path = $this->basepath;
+		// Make sure that configuration file exist, but check also something else
+		if (!JFile::exists("{$path}/config.php")
+			|| !JFile::exists("{$path}/adm/swatch.php")
+			|| !JFile::exists("{$path}/viewtopic.php")) {
+			return false;
+		}
+		return true;
+	}
 
-		if (JFile::exists("{$this->basepath}/config.php")) {
-			//Include the phpBB3 configuration
+	/**
+	 * Get database object
+	 */
+	public function getDatabase() {
+		$config = $this->getDBConfig();
+		$database = null;
+		if ($config) {
+			$app = JFactory::getApplication ();
+			$option ['driver'] = $app->getCfg ( 'dbtype' );
+			$option ['host'] = $config['dbhost'];
+			$option ['user'] = $config['dbuser'];
+			$option ['password'] = $config['dbpasswd'];
+			$option ['database'] = $config['dbname'];
+			$option ['prefix'] = $config['table_prefix'];
+			$database = JDatabase::getInstance ( $option );
+		}
+		return $database;
+	}
+
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
+		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
+		$this->ext_database->setQuery ( $query );
+		$version = $this->ext_database->loadResult ();
+		// phpBB2 version
+		if ($this->version [0] == '.')
+			$this->version = '2' . $this->version;
+		return $version;
+	}
+
+	protected function &getDBConfig() {
+		if (!$this->dbconfig) {
 			require "{$this->basepath}/config.php";
+			$this->dbconfig = get_defined_vars();
 		}
-
-		if (isset($dbms, $dbhost, $dbuser, $dbpasswd, $dbname, $table_prefix)) {
-			// Initialize database object
-			$options = array('driver' => $dbms, 'host' => $dbhost, 'user' => $dbuser, 'password' => $dbpasswd, 'database' => $dbname, 'prefix' => $table_prefix);
-			$this->ext_database = JDatabase::getInstance($options);
-
-			if(!defined('IN_PHPBB')) {
-				define('IN_PHPBB', true);
-			}
-	
-			if(!defined('STRIP')) {
-				define('STRIP', (get_magic_quotes_gpc()) ? true : false);
-			}
-	
-			$phpbb_root_path = $this->basepath.'/';
-			$phpEx = substr(strrchr(__FILE__, '.'), 1);
-	
-		} else {
-			$this->ext_database = false;
-		}
-		parent::__construct ();
+		return $this->dbconfig;
 	}
 
 	/**
@@ -108,19 +140,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
 		}
 
-		if (is_dir($this->basepath)) {
-			$this->addMessage ( '<div>phpBB path: <b style="color:green">' . $this->relpath . '</b></div>' );
-		} else {
-			$this->error = "phpBB3 not found from {$this->basepath}";
-			$this->addMessage ( '<div>phpBB path: <b style="color:red">' . $this->relpath . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-
-		// Check if version is compatible with importer
-		$this->version = $this->getVersion();
-		if (!parent::isCompatible($this->version)) return false;
-
 		// Check authentication method
 		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
 		$this->ext_database->setQuery ( $query );
@@ -133,31 +152,21 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return true;
 	}
 
-	/**
-	 * Detect if component exists
-	 * 
-	 * By default this function uses Joomla function to detect components.
-	 * 
-	 * @param mixed $success Force detection to succeed/fail
-	 * @return bool
-	 */
-	public function detectComponent($success=null) {
-		// Set $success = true/false to use custom detection
-		return parent::detectComponent((bool) $this->ext_database);
-	}
+	public function initialize() {
+		global $phpbb_root_path, $phpEx;
 
-	/**
-	 * Get component version
-	 */
-	public function getVersion() {
-		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
-		$this->ext_database->setQuery ( $query );
-		$version = $this->ext_database->loadResult ();
-		if ($this->version [0] == '.')
-			$this->version = '2' . $this->version;
-		return $version;
-	}
+		if(!defined('IN_PHPBB')) {
+			define('IN_PHPBB', true);
+		}
 
+		if(!defined('STRIP')) {
+			define('STRIP', (get_magic_quotes_gpc()) ? true : false);
+		}
+
+		$phpbb_root_path = $this->basepath.'/';
+		$phpEx = substr(strrchr(__FILE__, '.'), 1);
+	}
+	
 	protected function getConfig() {
 		if (empty($this->config)) {
 			// Check if database settings are correct
@@ -170,22 +179,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	public function getAuthMethod() {
 		return $this->auth_method;
-	}
-
-	public function buildImportOps() {
-		// query: (select, from, where, groupby), functions: (count, export)
-		$importOps = array ();
-		$importOps ['users'] = array ('count' => 'countUsers', 'export' => 'exportUsers' );
-		$importOps ['mapusers'] = array ('count' => 'countMapUsers', 'export' => 'exportMapUsers' );
-		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
-		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
-		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
-		$importOps ['attachments'] = array ('count' => 'countAttachments', 'export' => 'exportAttachments' );
-		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
-		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
-		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
-		$this->importOps = $importOps;
 	}
 
 	public function countCategories() {
@@ -663,11 +656,13 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	protected function &getAvatarGalleries() {
 		static $galleries = false;
 		if ($galleries === false) {
-			$path = "{$this->basepath}/{$this->config['avatar_gallery_path']->value}";
 			$galleries = array();
-			$folders = JFolder::folders($path);
-			foreach ($folders as $folder) {
-				$galleries[$folder] = "{$path}/{$folder}";
+			if (isset($this->config['avatar_gallery_path'])) {
+				$path = "{$this->basepath}/{$this->config['avatar_gallery_path']->value}";
+				$folders = JFolder::folders($path);
+				foreach ($folders as $folder) {
+					$galleries[$folder] = "{$path}/{$folder}";
+				}
 			}
 		}
 		return $galleries;

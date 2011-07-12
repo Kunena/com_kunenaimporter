@@ -18,6 +18,8 @@ require_once (JPATH_COMPONENT . '/models/export.php');
  * 
  * This class can be used as a base to export all data from your favorite forum software.
  * If you want to migrate something else than Joomla component, check also phpBB3 and SMF2 exporters.
+ * 
+ * NOTE: Sor simplicity, please remove functions which you haven't modified!
  */
 class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	/**
@@ -31,6 +33,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 */
 	public $title = 'Example';
 	/**
+	 * External application (non-Joomla)
+	 * @var bool
+	 */
+	public $external = false;
+	/**
 	 * Minimum required version
 	 * @var string or null
 	 */
@@ -42,39 +49,65 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	protected $versionmax = null;
 	
 	/**
-	 * Full detection and initialization
+	 * Get external forum path from importer configuration
 	 * 
-	 * Make sure that everything is ready for full import.
+	 * You can usually remove this function if you are exporting Joomla component.
+	 * 
+	 * @return string Relative path
+	 */
+	public function getPath($absolute = false) {
+		if (!$this->external) return;
+		return parent::getPath($absolute);
+	}
+
+	/**
+	 * Detect if component exists
+	 * 
+	 * You can usually remove this function if you are exporting Joomla component.
+	 * 
+	 * @return bool
+	 */
+	public function detectComponent() {
+		// use Joomla function to detect if component exists
+		return parent::detectComponent();
+	}
+
+	/**
+	 * Get database object
+	 * 
+	 * You can usually remove this function if you are exporting Joomla component.
+	 * 
+	 * @return JDatabase or JError or null
+	 */
+	public function getDatabase() {
+		return JFactory::getDBO ();
+	}
+	
+	/**
+	 * Initialization needed by exporter
+	 */
+	public function initialize() {
+	}
+
+	/**
+	 * Full detection
+	 * 
+	 * Make sure that everything is OK for full import.
 	 * Use $this->addMessage($html) to add status messages.
 	 * If you return false, remember also to fill $this->error
 	 * 
 	 * @return bool
 	 */
 	public function detect() {
-		// Initialize detection (also calls $this->detectComponent())
+		// Initialize detection (calls $this->detectComponent() and $this->getVersion())
 		if (!parent::detect()) return false;
-
-		// Check if version is compatible with importer
-		$this->version = $this->getVersion();
-		if (!parent::isCompatible($this->version)) return false;
 		return true;
 	}
 
 	/**
-	 * Detect if component exists
-	 * 
-	 * By default this function uses Joomla function to detect components.
-	 * 
-	 * @param mixed $success Force detection to succeed/fail
-	 * @return bool
-	 */
-	public function detectComponent($success=null) {
-		// Set $success = true/false if you want to use custom detection
-		return parent::detectComponent($success);
-	}
-
-	/**
 	 * Get component version
+	 * 
+	 * You can usually remove this function if you are exporting Joomla component.
 	 */
 	public function getVersion() {
 		// Version can usually be found from <name>.xml file
@@ -115,38 +148,13 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	/**
 	 * Map Joomla user to external user
 	 *
+	 * You can usually remove this function if you are exporting Joomla component.
+	 * 
 	 * @param object $joomlauser StdClass(id, username, email)
 	 * @return int External user ID
 	 */
 	public function mapJoomlaUser($joomlauser) {
 		return $joomlauser->id;
-	}
-
-	/**
-	 * Build list of all supported export operations
-	 */
-	public function buildImportOps() {
-		$importOps = array ();
-		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
-		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		//$importOps ['usersbanned'] = array ('count' => 'countUsersBanned', 'export' => 'exportUsersBanned' );
-		$importOps ['ranks'] = array ('count' => 'countRanks', 'export' => 'exportRanks' );
-		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
-		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
-		$importOps ['moderation'] = array ('count' => 'countModeration', 'export' => 'exportModeration' );
-		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
-		//$importOps ['polls'] = array ('count' => 'countPolls', 'export' => 'exportPolls' );
-		//$importOps ['polls_options'] = array ('count' => 'countPollsOptions', 'export' => 'exportPollsOptions' );
-		//$importOps ['polls_users'] = array ('count' => 'countPollsUsers', 'export' => 'exportPollsUsers' );
-		$importOps ['attachments'] = array ('count' => 'countAttachments', 'export' => 'exportAttachments' );
-		//$importOps ['thankyou'] = array ('count' => 'countThankyou', 'export' => 'exportThankyou' );
-		$importOps ['favorites'] = array ('count' => 'countFavorites', 'export' => 'exportFavorites' );
-		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
-		//$importOps ['subscriptions_categories'] = array ('count' => 'countCatSubscriptions', 'export' => 'exportCatSubscriptions' );
-		//$importOps ['smilies'] = array ('count' => 'count', 'exportSmilies' => 'exportSmilies' );
-		$importOps ['announcements'] = array ('count' => 'countAnnouncements', 'export' => 'exportAnnouncements' );
-		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
-		$this->importOps = $importOps;
 	}
 
 	/**

@@ -278,8 +278,6 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function importAttachments(&$data) {
 		$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
-		if (! $table)
-			die ( $option );
 
 		$extids = array();
 		foreach ( $data as $item ) {
@@ -321,8 +319,6 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function importUserProfile(&$data) {
 		$table = JTable::getInstance ( 'UserProfile', 'KunenaImporterTable' );
-		if (! $table)
-			die ( $option );
 
 		$extids = array();
 		foreach ( $data as $item ) {
