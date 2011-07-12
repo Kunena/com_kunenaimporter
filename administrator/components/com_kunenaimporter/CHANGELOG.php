@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+12-July-2011 Matias
+- [#30] Remove deprecated Kunena exporter
+
 11-July-2011 Matias
 + [#30] Add example exporter which can be used to create new exporters
 ^ [#30] Rename KunenaimporterModelExport::checkConfig() to detect()
