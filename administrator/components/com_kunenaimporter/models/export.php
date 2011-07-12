@@ -34,6 +34,11 @@ class KunenaimporterModelExport extends JModel {
 	 */
 	public $title = null;
 	/**
+	 * External application
+	 * @var bool
+	 */
+	public $external = false;
+	/**
 	 * Minimum required version
 	 * @var string or null
 	 */
@@ -53,7 +58,10 @@ class KunenaimporterModelExport extends JModel {
 	 * @var string or null
 	 */
 	protected $error = null;
-	
+
+	public $params = null;
+	protected $relpath = null;
+	protected $basepath = null;
 	var $ext_database = null;
 	var $ext_same = false;
 	var $messages = array ();
@@ -63,29 +71,52 @@ class KunenaimporterModelExport extends JModel {
 	public function __construct() {
 		parent::__construct ();
 
-		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
-		$params = new JParameter ( $component->params );
+		// Get component parameters
+		$this->params = getKunenaImporterParams();
 
-		if ($this->ext_database === null) {
-			$db_name = $params->get ( 'db_name' );
-			$db_tableprefix = $params->get ( 'db_tableprefix' );
-			if ($this->ext_database === false) {
-				// Do nothing
-			} elseif (empty ( $db_name )) {
-				$this->ext_database = JFactory::getDBO ();
-				$this->ext_same = 1;
-			} else {
-				$app = JFactory::getApplication ();
-				$option ['driver'] = $app->getCfg ( 'dbtype' );
-				$option ['host'] = $params->get ( 'db_host' );
-				$option ['user'] = $params->get ( 'db_user' );
-				$option ['password'] = $params->get ( 'db_passwd' );
-				$option ['database'] = $params->get ( 'db_name' );
-				$option ['prefix'] = $params->get ( 'db_prefix' );
-				$this->ext_database = JDatabase::getInstance ( $option );
+		$this->getPath();		
+		if (!$this->detectComponent()) return;
+
+		$this->ext_database = $this->getDatabase();
+		$this->buildImportOps ();
+		$this->initialize();
+	}
+
+	/**
+	 * Get forum path from importer configuration
+	 * 
+	 * @return string Relative path
+	 */
+	public function getPath($absolute = false) {
+		if (!$this->external) return;
+		// No path set, try auto detecting forum
+		if (!$this->params->get('path')) {
+			$folders = JFolder::folders(JPATH_ROOT);
+			foreach ($folders as $folder) {
+				if ($this->detectComponent(JPATH_ROOT."/{$folder}")) {
+					$path = $folder;
+					break;
+				}
 			}
 		}
-		$this->buildImportOps ();
+
+		$this->relpath = isset($path) ? $path : $this->params->get('path');
+		$this->basepath = JPATH_ROOT."/{$this->relpath}";
+		return $absolute ? $this->basepath : $this->relpath;
+	}
+	
+	public function detectComponent() {
+		if ($this->external || !JComponentHelper::getComponent ( "com_{$this->name}", true )->enabled) {
+			return false;
+		}
+		return true;
+	}
+
+	public function getDatabase() {
+		return JFactory::getDBO ();
+	}
+	
+	public function initialize() {
 	}
 
 	public function getExportOptions($importer) {
@@ -110,26 +141,11 @@ class KunenaimporterModelExport extends JModel {
 		$this->importOps = array();
 	}
 	
-	public function detectComponent($force=null) {
-		if ($force !== true && ($force === false || !JComponentHelper::getComponent ( "com_{$this->name}", true )->enabled)) {
-			$this->error = $this->title.' has not been installed into your system!';
-			$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:red">FAILED</b></div>' );
-			$this->addMessage ( '<br /><div><b>Error:</b> ' . $this->error . '</div>' );
-			return false;
-		}
-		$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:green">OK</b></div>' );
-		return true;
-	}
-
 	public function isCompatible($version) {
 		if ((!empty($this->versionmin) && version_compare($version, $this->versionmin, '<')) ||
 			(!empty($this->versionmax) && version_compare($version, $this->versionmax, '>'))) {
-			$this->error = "Unsupported forum: {$this->title} {$version}";
-			$this->addMessage ( '<div>'.$this->title.' version: <b style="color:red">' . $version . '</b></div>' );
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
 			return false;
 		}
-		$this->addMessage ( '<div>'.$this->title.' version: <b style="color:green">' . $version . '</b></div>' );
 		return true;
 	}
 
@@ -146,17 +162,34 @@ class KunenaimporterModelExport extends JModel {
 		}
 		$this->addMessage ( '<div>Kunena version: <b style="color:green">' . Kunena::version() . '</b></div>' );
 
-		if (empty($this->importOps)) {
+		if (get_class($this) == __CLASS__) {
 			$this->addMessage ( '<br /><div><b>Please select forum software!</b></div>' );
 			$this->error = 'Forum not selected!';
 			return false;
 		}
 		
-		if (!$this->detectComponent()) return false;
+		if ($this->external) {
+			if (is_dir($this->basepath)) {
+				$this->addMessage ( '<div>Using relative path: <b style="color:green">./' . $this->relpath . '</b></div>' );
+			} else {
+				$this->error = $this->title." not found from {$this->basepath}";
+				$this->addMessage ( '<div>Using relative path: <b style="color:red">./' . $this->relpath . '</b></div>' );
+				$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
+				return false;
+			}
+		}
+
+		if (!$this->detectComponent()) {
+			$this->error = $this->title.' has not been installed into your system!';
+			$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:red">FAILED</b></div>' );
+			$this->addMessage ( '<br /><div><b>Error:</b> ' . $this->error . '</div>' );
+			return false;
+		}
+		$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:green">OK</b></div>' );
 
 		if (JError::isError ( $this->ext_database ))
 			$this->error = $this->ext_database->toString ();
-		else if (!$this->ext_database) {
+		elseif (!$this->ext_database) {
 			$this->error = 'Database not configured.';
 		}
 		if ($this->error) {
@@ -165,7 +198,32 @@ class KunenaimporterModelExport extends JModel {
 			return false;
 		}
 		$this->addMessage ( '<div>Database connection: <b style="color:green">OK</b></div>' );
+
+		// Check if version is compatible with importer
+		$this->version = $this->getVersion();
+		if (!$this->isCompatible($this->version)) {
+			$this->error = "Unsupported forum: {$this->title} {$this->version}";
+			$this->addMessage ( '<div>'.$this->title.' version: <b style="color:red">' . $this->version . '</b></div>' );
+			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
+			return false;
+		}
+		$this->addMessage ( '<div>'.$this->title.' version: <b style="color:green">' . $this->version . '</b></div>' );
+		
 		return true;
+	}
+	
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
+		// Version can usually be found from <name>.xml file
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/{$this->name}.xml";
+		if (!JFile::exists ( $xml )) {
+			return false;
+		}
+		$parser = JFactory::getXMLParser ( 'Simple' );
+		$parser->loadFile ( $xml );
+		return $parser->document->getElementByPath ( 'version' )->data ();
 	}
 
 	public function getAuthMethod() {
@@ -185,6 +243,22 @@ class KunenaimporterModelExport extends JModel {
 	}
 
 	/**
+	 * Remove htmlentities, addslashes etc
+	 * 
+	 * @param string $s String
+	 */
+	protected function parseText(&$s) {
+	}
+
+	/**
+	 * Convert BBCode to Kunena BBCode
+	 *
+	 * @param string $s String
+	 */
+	protected function parseBBCode(&$s) {
+	}
+	
+	/**
 	 * Convert HTML to Kunena BBCode
 	 *
 	 * @param string $s String
@@ -192,6 +266,16 @@ class KunenaimporterModelExport extends JModel {
 	protected function parseHTML(&$s) {
 	}
 	
+	/**
+	 * Map Joomla user to external user
+	 *
+	 * @param object $joomlauser StdClass(id, username, email)
+	 * @return int External user ID
+	 */
+	public function mapJoomlaUser($joomlauser) {
+		return $joomlauser->id;
+	}
+
 	public function getCount($query) {
 		$this->ext_database->setQuery ( $query );
 		$result = $this->ext_database->loadResult ();
@@ -214,8 +298,13 @@ class KunenaimporterModelExport extends JModel {
 
 	public function countData($operation) {
 		$result = 0;
-		if (empty ( $this->importOps [$operation] ))
+		if (empty ( $this->importOps [$operation] )) {
+			$func = "count{$operation}";
+			if (method_exists($this, $func)) {
+				return $this->$func ();
+			}
 			return false;
+		}
 		$info = $this->importOps [$operation];
 		if (! empty ( $info ['from'] )) {
 			$query = "SELECT COUNT(*) FROM " . $info ['from'];
@@ -231,8 +320,13 @@ class KunenaimporterModelExport extends JModel {
 
 	public function &exportData($operation, $start = 0, $limit = 0) {
 		$result = array ();
-		if (empty ( $this->importOps [$operation] ))
+		if (empty ( $this->importOps [$operation] )) {
+			$func = "export{$operation}";
+			if (method_exists($this, $func)) {
+				$result = $this->$func ( $start, $limit );
+			}
 			return $result;
+		}
 		$info = $this->importOps [$operation];
 		if (! empty ( $info ['select'] ) && ! empty ( $info ['from'] )) {
 			$query = "SELECT " . $info ['select'] . " FROM " . $info ['from'];
@@ -279,5 +373,4 @@ class KunenaimporterModelExport extends JModel {
 	public function &exportJoomlaUsers($start = 0, $limit = 0) {
 
 	}
-
 }

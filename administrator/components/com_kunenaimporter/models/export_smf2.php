@@ -29,6 +29,11 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 */
 	public $title = 'SMF2';
 	/**
+	 * External application
+	 * @var bool
+	 */
+	public $external = true;
+	/**
 	 * Minimum required version
 	 * @var string or null
 	 */
@@ -40,112 +45,67 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	protected $versionmax = '2.0.999';
 	
 	var $auth_method;
-	var $params;
+	protected $dbconfig = null;
 	protected $config = null;
-	protected $settings = null;
-
-	public function __construct() {
-		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
-		$this->params = new JParameter ( $component->params );
-		$this->getConfiguration();
-		if ($this->config) {
-			$app = JFactory::getApplication ();
-			$option ['driver'] = $app->getCfg ( 'dbtype' );
-			$option ['host'] = $this->config['db_server'];
-			$option ['user'] = $this->config['db_user'];
-			$option ['password'] = $this->config['db_passwd'];
-			$option ['database'] = $this->config['db_name'];
-			$option ['prefix'] = $this->config['db_prefix'];
-			$this->ext_database = JDatabase::getInstance ( $option );
-		} else {
-			$this->ext_database = false;
-		}
-		parent::__construct ();
-	}
-
-	/**
-	 * Full detection and initialization
-	 * 
-	 * Make sure that everything is ready for full import.
-	 * Use $this->addMessage($html) to add status messages.
-	 * If you return false, remember also to fill $this->error
-	 * 
-	 * @return bool
-	 */
-	public function detect() {
-		// Initialize detection (also calls $this->detectComponent())
-		if (!parent::detect()) return false;
-
-		// Check if version is compatible with importer
-		$this->version = $this->getVersion();
-		if (!$this->isCompatible($this->version)) return false;
-		$this->getSettings();
-		return true;
-	}
 
 	/**
 	 * Detect if component exists
 	 * 
-	 * By default this function uses Joomla function to detect components.
-	 * 
-	 * @param mixed $success Force detection to succeed/fail
 	 * @return bool
 	 */
-	public function detectComponent($success=null) {
-		// Set $success = true/false to use custom detection
-		return parent::detectComponent((bool) $this->ext_database);
+	public function detectComponent($path = null) {
+		if ($path === null) $path = $this->basepath;
+		// Make sure that configuration file exist, but check also something else
+		if (!JFile::exists("{$path}/Settings.php") 
+			|| !JFile::exists("{$path}/Sources/BoardIndex.php")) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Get database object
+	 */
+	public function getDatabase() {
+		$config = $this->getDBConfig();
+		$database = null;
+		if ($config) {
+			$app = JFactory::getApplication ();
+			$option ['driver'] = $app->getCfg ( 'dbtype' );
+			$option ['host'] = $config['db_server'];
+			$option ['user'] = $config['db_user'];
+			$option ['password'] = $config['db_passwd'];
+			$option ['database'] = $config['db_name'];
+			$option ['prefix'] = $config['db_prefix'];
+			$database = JDatabase::getInstance ( $option );
+		}
+		return $database;
 	}
 
 	/**
 	 * Get component version
 	 */
 	public function getVersion() {
-		$query = "SELECT value FROM #__settings WHERE variable='smfVersion'";
-		$this->ext_database->setQuery ( $query );
-		$version = $this->ext_database->loadResult ();
+		$config = $this->getConfig();
+		$version = isset($config['smfVersion']) ? $config['smfVersion']->value : '';
 		return $version;
 	}
 
-	protected function getSettings() {
-		if (empty($this->settings)) {
-			// Check if database settings are correct
+	protected function &getDBConfig() {
+		if (!$this->dbconfig) {
+			require "{$this->basepath}/Settings.php";
+			$this->dbconfig = get_defined_vars();
+		}
+		return $this->dbconfig;
+	}
+
+	protected function &getConfig() {
+		if (empty($this->config)) {
 			$query = "SELECT variable, value FROM #__settings";
 			$this->ext_database->setQuery ( $query );
-			$this->settings = $this->ext_database->loadObjectList ('variable');
-		}
-		return $this->settings;
-	}
-
-	public function getConfiguration() {
-		if (!$this->config) {
-			$configFile = JPATH_ROOT . '/' . $this->params->get('path') . '/Settings.php';
-			if (!is_file($configFile)) {
-				return null;
-			}
-			include ($configFile);
-			unset($configFile);
-			$this->config = get_defined_vars();
+			$this->config = $this->ext_database->loadObjectList ('variable');
 		}
 		return $this->config;
-	}
-
-	public function getAuthMethod() {
-		return $this->auth_method;
-	}
-
-	public function buildImportOps() {
-		// query: (select, from, where, groupby), functions: (count, export)
-		$importOps = array ();
-		$importOps ['users'] = array ('count' => 'countUsers', 'export' => 'exportUsers' );
-		$importOps ['mapusers'] = array ('count' => 'countMapUsers', 'export' => 'exportMapUsers' );
-		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
-		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
-		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
-		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
-		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
-		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$importOps ['avatargalleries'] = array ('count' => 'countAvatarGalleries', 'export' => 'exportAvatarGalleries' );
-		$this->importOps = $importOps;
 	}
 
 	public function countConfig() {
@@ -156,17 +116,19 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
+			
+		$dbconfig = $this->getDBConfig();
 		$query = "SELECT variable, value FROM #__settings";
 		$this->ext_database->setQuery ( $query );
 		$result = $this->ext_database->loadObjectList ('variable');
 
 		$config['id'] = 1;
 
-		$config['board_title'] = $this->config['mbname'];
-		$config['email'] = $this->config['webmaster_email'];
-		$config['board_offline'] = (bool)$this->config['maintenance'];
+		$config['board_title'] = $dbconfig['mbname'];
+		$config['email'] = $dbconfig['webmaster_email'];
+		$config['board_offline'] = (bool)$dbconfig['maintenance'];
 		$config['board_ofset'] = $result['time_offset']->value; // + default_timezone
-		$config['offline_message'] = "<h1>{$this->config['mmessage']}</h1><p>{$this->config['mmessage']}</p>";
+		$config['offline_message'] = "<h1>{$dbconfig['mmessage']}</h1><p>{$dbconfig['mmessage']}</p>";
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
 		// $config['threads_per_page'] = null;
@@ -547,10 +509,11 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		ORDER BY u.id_member";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 
-		if (!empty($this->settings['custom_avatar_enabled']->value)) {
-			$avatar_path = $this->settings['custom_avatar_dir']->value;
-		} elseif (!empty($this->settings['currentAttachmentUploadDir']->value)) {
-			$avatar_path = $this->settings['custom_avatar_dir']->value;
+		$config = $this->getConfig();
+		if (!empty($config['custom_avatar_enabled']->value)) {
+			$avatar_path = $config['custom_avatar_dir']->value;
+		} elseif (!empty($config['currentAttachmentUploadDir']->value)) {
+			$avatar_path = $config['custom_avatar_dir']->value;
 		}
 		foreach ( $result as &$row ) {
 			if ($row->avatar) {
@@ -634,7 +597,8 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	protected function &getAvatarGalleries() {
 		static $galleries = false;
 		if ($galleries === false) {
-			$path = $this->settings['avatar_directory']->value;
+			$config = $this->getConfig();
+			$path = $config['avatar_directory']->value;
 			$galleries = array();
 			$folders = JFolder::folders($path);
 			foreach ($folders as $folder) {

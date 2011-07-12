@@ -35,63 +35,6 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	 */
 	protected $versionmax = null;
 	
-	/**
-	 * Full detection and initialization
-	 * 
-	 * Make sure that everything is ready for full import.
-	 * Use $this->addMessage($html) to add status messages.
-	 * If you return false, remember also to fill $this->error
-	 * 
-	 * @return bool
-	 */
-	public function detect() {
-		// Initialize detection (also calls $this->detectComponent())
-		if (!parent::detect()) return false;
-
-		// Check if version is compatible with importer
-		$this->version = $this->getVersion();
-		if (!parent::isCompatible($this->version)) return false;
-		return true;
-	}
-
-	/**
-	 * Detect if component exists
-	 * 
-	 * By default this function uses Joomla function to detect components.
-	 * 
-	 * @param mixed $success Force detection to succeed/fail
-	 * @return bool
-	 */
-	public function detectComponent($success=null) {
-		// Set $success = true/false if you want to use custom detection
-		return parent::detectComponent($success);
-	}
-
-	/**
-	 * Get component version
-	 */
-	public function getVersion() {
-		// Version can usually be found from <name>.xml file
-		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/{$this->name}.xml";
-		if (!JFile::exists ( $xml )) {
-			return false;
-		}
-		$parser = JFactory::getXMLParser ( 'Simple' );
-		$parser->loadFile ( $xml );
-		return $parser->document->getElementByPath ( 'version' )->data ();
-	}
-
-	public function buildImportOps() {
-		// query: (select, from, where, groupby), functions: (count, export)
-		$importOps = array();
-		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
-		$importOps ['categories'] = array('count'=>'countCategories', 'export'=>'exportCategories');
-		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
-		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
-		$importOps ['userprofile'] = array ('count' => 'countUserprofile', 'export' => 'exportUserprofile' );
-		$this->importOps = $importOps;
-	}
-
 	public function countConfig() {
 		return 1;
 	}
