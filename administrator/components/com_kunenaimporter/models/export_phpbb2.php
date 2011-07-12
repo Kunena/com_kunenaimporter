@@ -25,6 +25,11 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 */
 	public $title = 'phpBB2';
 	/**
+	 * External application
+	 * @var bool
+	 */
+	public $external = true;
+	/**
 	 * Minimum required version
 	 * @var string or null
 	 */
@@ -34,37 +39,41 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 * @var string or null
 	 */
 	protected $versionmax = '2.0.999';
-	
+	protected $dbconfig = null;
+
 	/**
-	 * Full detection and initialization
-	 * 
-	 * Make sure that everything is ready for full import.
-	 * Use $this->addMessage($html) to add status messages.
-	 * If you return false, remember also to fill $this->error
+	 * Detect if component and config.php exists
 	 * 
 	 * @return bool
 	 */
-	public function detect() {
-		// Initialize detection (also calls $this->detectComponent())
-		if (!parent::detect()) return false;
-
-		// Check if version is compatible with importer
-		$this->version = $this->getVersion();
-		if (!parent::isCompatible($this->version)) return false;
+	public function detectComponent($path=null) {
+		if ($path === null) $path = $this->basepath;
+		// Make sure that configuration file exist, but check also something else
+		if (!JFile::exists("{$path}/config.php")
+			|| !JFile::exists("{$path}/adm/swatch.php")
+			|| !JFile::exists("{$path}/viewtopic.php")) {
+			return false;
+		}
 		return true;
 	}
 
 	/**
-	 * Detect if component exists
-	 * 
-	 * By default this function uses Joomla function to detect components.
-	 * 
-	 * @param mixed $success Force detection to succeed/fail
-	 * @return bool
+	 * Get database object
 	 */
-	public function detectComponent($success=null) {
-		// Set $success = true/false if you want to use custom detection
-		return parent::detectComponent($success);
+	public function getDatabase() {
+		$config = $this->getDBConfig();
+		$database = null;
+		if ($config) {
+			$app = JFactory::getApplication ();
+			$option ['driver'] = $app->getCfg ( 'dbtype' );
+			$option ['host'] = $config['dbhost'];
+			$option ['user'] = $config['dbuser'];
+			$option ['password'] = $config['dbpasswd'];
+			$option ['database'] = $config['dbname'];
+			$option ['prefix'] = $config['table_prefix'];
+			$database = JDatabase::getInstance ( $option );
+		}
+		return $database;
 	}
 
 	/**
@@ -79,17 +88,12 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $version;
 	}
 
-	public function buildImportOps() {
-		// query: (select, from, where, groupby), functions: (count, export)
-		$importOps = array ();
-		$importOps ['categories'] = array ('count' => 'countCategories', 'export' => 'exportCategories' );
-		$importOps ['config'] = array ('count' => 'countConfig', 'export' => 'exportConfig' );
-		$importOps ['messages'] = array ('count' => 'countMessages', 'export' => 'exportMessages' );
-		//$importOps['smilies'] = array('count'=>'countSmilies', 'export'=>'exportSmilies');
-		$importOps ['sessions'] = array ('count' => 'countSessions', 'export' => 'exportSessions' );
-		$importOps ['subscriptions'] = array ('count' => 'countSubscriptions', 'export' => 'exportSubscriptions' );
-		$importOps ['userprofile'] = array ('count' => 'countUserProfile', 'export' => 'exportUserProfile' );
-		$this->importOps = $importOps;
+	protected function &getDBConfig() {
+		if (!$this->dbconfig) {
+			require "{$this->basepath}/config.php";
+			$this->dbconfig = get_defined_vars();
+		}
+		return $this->dbconfig;
 	}
 
 	public function countCategories() {

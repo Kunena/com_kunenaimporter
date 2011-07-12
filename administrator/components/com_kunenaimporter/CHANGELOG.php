@@ -39,6 +39,7 @@ KunenaImporter 1.6.5-DEV
 ^ [#30] Move all message generation to KunenaimporterModelExport::detect()
 - [#30] Example exporter: remove function buildImportOps()
 - [#30] All Joomla exporters: remove functions that are now defined in parent class
+^ [#30] phpBB2/3 and SMF2: convert code to follow more closely example exporter
 
 11-July-2011 Matias
 + [#30] Add example exporter which can be used to create new exporters
