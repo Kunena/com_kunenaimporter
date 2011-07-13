@@ -31,6 +31,17 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+13-July-2011 Matias
++ [#27] Full support for ccBoard 1.2-RC
++ [#27] ccBoard: Convert all code to use example exporter as a base
++ [#27] KunenaimporterModelExport: Add HTML to BBCode conversion functions
+^ [#27] Importer: Improve and generalize userid mapping (get rid of custom import functions)
+# [#27] Importer: Add time delta correction to messages
+# [#27] KunenaimporterModelExport: Disable external user conversion for Joomla components
+# [#27] KunenaimporterModelExport: Better error detection if export fails
+# [#30] example: Fix some issues found while exporting ccBoard
++ [#30] Add default function getConfig() to both example and parent class
+
 12-July-2011 Matias
 - [#30] Remove deprecated Kunena exporter
 + [#30] Example exporter: Add functions needed by phpBB3/SMF2

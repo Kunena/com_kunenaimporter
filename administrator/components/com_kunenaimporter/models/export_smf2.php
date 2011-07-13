@@ -99,7 +99,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return $this->dbconfig;
 	}
 
-	protected function &getConfig() {
+	public function &getConfig() {
 		if (empty($this->config)) {
 			$query = "SELECT variable, value FROM #__settings";
 			$this->ext_database->setQuery ( $query );

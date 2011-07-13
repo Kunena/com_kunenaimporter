@@ -13,9 +13,18 @@ defined ( '_JEXEC' ) or die ();
 
 require_once (JPATH_COMPONENT . '/models/export.php');
 
+/**
+ * ccBoard Exporter Class
+ * 
+ * Exports almost all data from ccBoard.
+ * @todo Some emoticons are missing
+ * @todo Configuration import needs some work
+ * @todo Are all topic icons mapped to right images?
+ * @todo BBCodes: [LIST=1] and [SIZE=0/7]
+ */
 class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	/**
-	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * Extension name
 	 * @var string
 	 */
 	public $name = 'ccboard';
@@ -36,7 +45,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	protected $versionmax = null;
 
 	/**
-	 * Get component version
+	 * Get ccBoard version
 	 */
 	public function getVersion() {
 		// ccBoard version can be found from ccboard.xml file
@@ -49,6 +58,144 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		return $parser->document->getElementByPath ( 'version' )->data ();
 	}
 
+	/**
+	 * Get ccBoard configuration
+	 */
+	public function &getConfig() {
+		if (empty($this->config)) {
+			require_once (JPATH_ADMINISTRATOR . '/components/com_ccboard/ccboard-config.php');
+			$this->config = new ccboardConfig ();
+		}
+		return $this->config;
+	}
+
+	/**
+	 * Count total number of user profiles to be exported
+	 */
+	public function countUserProfile() {
+		$query = "SELECT COUNT(*) FROM #__ccb_users";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export user profiles
+	 * 
+	 * Returns list of user profile objects containing database fields 
+	 * to #__kunena_users.
+	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserProfile($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS userid,
+			'flat' AS view,
+			signature AS signature,
+			moderator AS moderator,
+			NULL AS banned,
+			0 AS ordering,
+			post_count AS posts,
+			avatar AS avatar,
+			karma AS karma,
+			karma_time AS karma_time,
+			1 AS group_id,
+			hits AS uhits,
+			'' AS personalText,
+			gender AS gender,
+			NULL AS birthdate,
+			location AS location,
+			icq AS ICQ,
+			NULL AS AIM,
+			NULL AS YIM,
+			msn AS MSN,
+			skype AS SKYPE,
+			NULL AS TWITTER,
+			NULL AS FACEBOOK,
+			jabber AS GTALK,
+			NULL AS MYSPACE,
+			NULL AS LINKEDIN,
+			NULL AS DELICIOUS,
+			NULL AS FRIENDFEED,
+			NULL AS DIGG,
+			NULL AS BLOGSPOT,
+			NULL AS FLICKR,
+			NULL AS BEBO,
+			NULL AS websitename,
+			www AS websiteurl,
+			rank AS rank,
+			showemail^1 AS hideEmail,
+			1 AS showOnline
+		FROM #__ccb_users
+		ORDER BY userid";
+		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
+
+		foreach ( $result as &$row ) {
+			if ($row->avatar) {
+				$avatar = explode('/', $row->avatar);
+				if ($avatar[0] == 'personal') {
+					// Full path to the original file
+					$row->copypath = JPATH_ROOT . '/components/com_ccboard/assets/avatar/'. $row->avatar;
+					$row->avatar = 'users/'.$avatar[1];
+				} else {
+					$row->avatar = 'gallery/'.$row->avatar;
+				}
+			}
+			$this->parseBBCode ( $row->signature );
+			$this->parseText ( $row->personalText );
+			$row->gender = $row->gender == 'Male' ? '1' : '2';
+			// Parse also all social data
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of ranks to be exported
+	 */
+	public function countRanks() {
+		$query = "SELECT COUNT(*) FROM #__ccb_ranks";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export user ranks
+	 * 
+	 * Returns list of rank objects containing database fields 
+	 * to #__kunena_ranks.
+	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportRanks($start = 0, $limit = 0) {
+		$query = "SELECT
+			id AS rank_id,
+			rank_title AS rank_title,
+			rank_min AS rank_min,
+			rank_special AS rank_special,
+			rank_image AS rank_image
+		FROM #__ccb_ranks
+		ORDER BY rank_id";
+		$result = $this->getExportData ( $query, $start, $limit );
+		foreach ( $result as $row ) {
+			$this->parseText ( $row->rank_title );
+			// Full path to the original file
+			$row->copypath = JPATH_ROOT . '/components/com_ccboard/assets/ranks/' . $row->rank_image;
+			if ($row->rank_special) {
+				if ($row->rank_image == 'ccbadmin.png') $row->rank_image = 'rankadmin.png';
+				if ($row->rank_image == 'ccbmoderator.png') $row->rank_image = 'rankmod.png';
+			}
+		}
+		return $result;
+	}
+	
+	/**
+	 * Count total number of categories to be exported
+	 */
 	public function countCategories() {
 		$query = "SELECT COUNT(*) FROM #__ccb_category";
 		$count = $this->getCount ( $query );
@@ -57,68 +204,283 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		return $count + $count2;
 	}
 
+	/**
+	 * Export sections and categories
+	 * 
+	 * Returns list of category objects containing database fields 
+	 * to #__kunena_categories.
+	 * All categories without parent are sections.
+	 * 
+	 * NOTE: it's very important to keep category IDs (containing topics) the same!
+	 * If there are two tables for sections and categories, change IDs on sections..
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
 	public function &exportCategories($start = 0, $limit = 0) {
-		$query = "SELECT MAX(id) FROM #__ccb_category";
+		$query = "SELECT MAX(id) FROM #__ccb_forums";
 		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
+		$maxforum = $this->ext_database->loadResult ();
 		// Import the categories
 		$query = "(SELECT
 			id AS id,
+			cat_id+{$maxforum} AS parent,
 			forum_name AS name,
+			0 AS cat_emoticon,
+			locked AS locked,
+			moderated AS moderated,
+			IF(view_for=0 AND post_for=18,0,post_for) AS pub_access,
+			1 AS pub_recurse,
+			0 AS admin_access,
+			1 AS admin_recurse,
+			ordering AS ordering,
+			published AS published,
+			review AS review,
+			0 AS allow_anonymous,
+			0 AS post_anonymous,
+			0 AS hits,
 			forum_desc AS description,
-			moderated,
+			'' AS headerdesc,
+			'' AS class_sfx,
+			0 AS allow_polls
+			
+		FROM #__ccb_forums) 
+		UNION ALL 
+		(SELECT
+			id+{$maxforum} AS id,
 			0 AS parent,
-			topic_count AS numTopics,
-			post_count AS numPosts,
-			last_post_user,
-			last_post_time AS time_last_msg,
-			last_post_id AS id_last_msg,
-			published,
-			locked,
-			ordering,
-			moderated,
-			review
-		FROM #__ccb_forums) UNION ALL (SELECT
-			cat_id+{$maxboard} AS id,
-			cat.cat_name AS name,
-			NULL AS description,
-			0 AS moderated,
-			0 AS numTopics,
-			0 AS numPosts,
-			0 AS last_post_user,
-			0 AS time_last_msg,
-			0 AS id_last_msg,
-			IF(cat.id=f.cat_id,cat.id,0) AS parent,
-			cat.ordering,
-			1 AS published,
+			cat_name AS name,
+			0 AS cat_emoticon,
 			0 AS locked,
-			0 AS moderated,
-			0 AS review
-		FROM #__ccb_category AS cat
-		LEFT JOIN #__ccb_forums AS f ON cat.id=f.cat_id)";
-		$result = $this->getExportData ( $query, $start, $limit );
+			1 AS moderated,
+			0 AS pub_access,
+			1 AS pub_recurse,
+			0 AS admin_access,
+			1 AS admin_recurse,
+			ordering AS ordering,
+			1 AS published,
+			0 AS review,
+			0 AS allow_anonymous,
+			0 AS post_anonymous,
+			0 AS hits,
+			'' AS description,
+			'' AS headerdesc,
+			'' AS class_sfx,
+			0 AS allow_polls
+		FROM #__ccb_category)
+		ORDER BY id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as $key => &$row ) {
-			$row->name = $this->prep ( $row->name );
-			$row->pub_access = 0;
-			$row->description = $this->prep ( $row->description );
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->description );
+			$this->parseText ( $row->headerdesc );
+			$this->parseText ( $row->class_sfx );
 		}
 		return $result;
 	}
 
+	/**
+	 * Count total number of moderator columns to be exported
+	 */
+	public function countModeration() {
+		$query = "SELECT COUNT(*) FROM #__ccb_moderators";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export moderator columns
+	 * 
+	 * Returns list of moderator objects containing database fields 
+	 * to #__kunena_moderation.
+	 * NOTE: Global moderator doesn't have columns in this table!
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportModeration($start = 0, $limit = 0) {
+		$query = "SELECT 
+			user_id AS userid, 
+			forum_id AS catid
+		FROM #__ccb_moderators";
+		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+	
+	/**
+	 * Count total number of messages to be exported
+	 */
+	public function countMessages() {
+		$query = "SELECT COUNT(*) FROM #__ccb_posts";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export messages
+	 * 
+	 * Returns list of message objects containing database fields 
+	 * to #__kunena_messages (and #__kunena_messages_text.message).
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportMessages($start = 0, $limit = 0) {
+		$config = $this->getConfig();
+		$query = "SELECT
+			p.id AS id,
+			IF(t.start_post_id=p.id,0,t.start_post_id) AS parent,
+			t.start_post_id AS thread,
+			t.forum_id AS catid,
+			p.post_username AS name,
+			p.post_user AS userid,
+			'' AS email,
+			p.post_subject AS subject,
+			p.post_time AS time,
+			p.ip AS ip,
+			t.topic_emoticon AS topic_emoticon,
+			IF(t.start_post_id=p.id,t.locked,0) AS locked,
+			(t.hold OR p.hold) AS hold,
+			0 AS ordering,
+			IF(t.start_post_id=p.id,t.hits,0) AS hits,
+			0 AS moved,
+			p.modified_by AS modified_by,
+			p.modified_time AS modified_time,
+			p.modified_reason AS modified_reason,
+			p.post_text AS message
+		FROM #__ccb_posts AS p
+		INNER JOIN #__ccb_topics AS t ON p.topic_id=t.id
+		ORDER BY p.id";
+		$result = $this->getExportData ( $query, $start, $limit );
+		foreach ( $result as $key => &$row ) {
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->email );
+			$this->parseText ( $row->subject );
+			$this->parseText ( $row->modified_reason );
+			if ($config->ccbeditor == 'ccboard') {
+				$this->parseBBCode ( $row->message );
+			} else {
+				$this->parseHTML ( $row->message );
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of attachments to be exported
+	 */
+	public function countAttachments() {
+		$query = "SELECT COUNT(*) FROM #__ccb_attachments";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export attachments in messages
+	 * 
+	 * Returns list of attachment objects containing database fields 
+	 * to #__kunena_attachments.
+	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAttachments($start = 0, $limit = 0) {
+		$query = "SELECT
+			a.id AS id,
+			a.post_id AS mesid,
+			p.post_user AS userid,
+			NULL AS hash,
+			a.filesize AS size,
+			'ccboard' AS folder,
+			a.mimetype AS filetype,
+			a.real_name AS filename,
+			a.ccb_name AS realfile
+		FROM #__ccb_attachments AS a
+		INNER JOIN #__ccb_posts AS p ON a.post_id=p.id
+		ORDER BY a.id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		foreach ( $result as $key => &$row ) {
+			$row->copypath = JPATH_ROOT . '/components/com_ccboard/assets/uploads/'.$row->realfile;
+		}
+		return $result;
+	}
+
+	/**
+	 * Count global configurations to be exported
+	 * @return 1
+	 */
 	public function countConfig() {
 		return 1;
 	}
 
+	/**
+	 * Count total number of avatar galleries to be exported
+	 */
+	public function countAvatarGalleries() {
+		return count($this->getAvatarGalleries());
+	}
+
+	/**
+	 * Export avatar galleries
+	 * 
+	 * Returns list of folder=>fullpath to be copied, where fullpath points
+	 * to the directory in the filesystem.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAvatarGalleries($start = 0, $limit = 0) {
+		$galleries = $this->getAvatarGalleries();
+		return array_slice($galleries, $start, $limit);
+	}
+
+	/**
+	 * Internal function to fetch all avatar galleries
+	 * 
+	 * @return array (folder=>full path, ...)
+	 */
+	protected function &getAvatarGalleries() {
+		static $galleries = false;
+		if ($galleries === false) {
+			$copypath = JPATH_ROOT.'/components/com_ccboard/assets/avatar';
+			$galleries = array();
+			$files = JFolder::files($copypath, '\.(?i)(gif|jpg|jpeg|png)$');
+			foreach ($files as $file) {
+				$galleries[$file] = "{$copypath}/{$file}";
+			}
+		}
+		return $galleries;
+	}
+
+	/**
+	 * Export global configuration
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array (1=>(array(option=>value, ...)))
+	 */
 	public function &exportConfig($start = 0, $limit = 0) {
-		require_once (JPATH_ADMINISTRATOR . '/components/com_ccboard/ccboard-config.php');
+		$config = array ();
+		if ($start)
+			return $config;
+		
+		$ccBoardConfig = $this->getConfig ();
 
-		$ccBoardConfig = new ccboardConfig ();
-
-		$config['id'] = 1;
+		// Save HTML/BBCode setting
+		$ccBoardConfig->ccbeditor;
+		
+		// time delta in seconds from UTC (=JFactory::getDate()->toUnix())
+		$config['timedelta'] = JFactory::getDate()->toUnix() - time() - $ccBoardConfig->timeoffset*60*60;
+		
 		$config['board_title'] = $ccBoardConfig->boardname;
 		// $config['email'] = null;
 		$config['board_offline'] = $ccBoardConfig->boardlocked;
-		$config['board_ofset'] = $ccBoardConfig->timeoffset;
 		$config['offline_message'] = $ccBoardConfig->lockedmsg;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
@@ -294,142 +656,4 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		$result = array ('1' => $config );
 		return $result;
 	}
-
-	public function countAttachments() {
-		$query = "SELECT COUNT(*) FROM #__ccb_attachments";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	public function &exportAttachments($start = 0, $limit = 0) {
-		$query = "SELECT
-			post_id AS mesid,
-			ccb_name AS userid,
-			filesize AS size,
-			real_name AS filename,
-			mimetype AS filetype
-		FROM #__ccb_attachments";
-		$result = $this->getExportData ( $query, $start, $limit );
-		foreach ( $result as $key => &$row ) {
-			$row->copypath = JPATH_BASE.'/components/com_ccboard/assets/uploads/'.$row->ccb_name ;
-		}
-		return $result;
-	}
-
-	public function countModeration() {
-		$query = "SELECT COUNT(*) FROM #__ccb_moderators";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	public function &exportModeration($start = 0, $limit = 0) {
-		$query = "SELECT user_id AS userid, forum_id AS catid FROM #__ccb_moderators";
-		$result = $this->getExportData ( $query, $start, $limit );
-
-		return $result;
-	}
-
-	public function countRanks() {
-		$query = "SELECT COUNT(*) FROM #__ccb_ranks";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	public function &exportRanks($start = 0, $limit = 0) {
-		$query = "SELECT rank_title, rank_min, rank_special, rank_image FROM #__ccb_ranks";
-		$result = $this->getExportData ( $query, $start, $limit );
-		foreach ( $result as $rank ) {
-			$rank->copypath = JPATH_BASE . '/components/com_ccboard/assets/ranks/' . $rank->rank_image;
-		}
-
-		return $result;
-	}
-
-	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__ccb_posts";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	public function &exportMessages($start = 0, $limit = 0) {
-		$query = "SELECT
-			ccposts.id,
-			ccposts.topic_id AS thread,
-			ccposts.forum_id AS catid,
-			ccposts.post_subject AS subject,
-			ccposts.post_text AS message,
-			ccposts.post_user AS userid,
-			ccposts.post_time AS time,
-			ccposts.ip,
-			ccposts.hold,
-			ccposts.modified_by,
-			ccposts.modified_time,
-			ccposts.modified_reason,
-			ccposts.post_username AS name,
-			cctopics.id,
-			cctopics.forum_id,
-			cctopics.post_subject,
-			cctopics.reply_count,
-			cctopics.hits,
-			cctopics.post_time,
-			cctopics.post_user,
-			cctopics.last_post_time,
-			cctopics.last_post_id,
-			cctopics.last_post_user,
-			cctopics.start_post_id,
-			cctopics.topic_type,
-			cctopics.locked,
-			cctopics.topic_email,
-			cctopics.hold,
-			cctopics.topic_emoticon,
-			cctopics.post_username,
-			cctopics.last_post_username,
-			cctopics.topic_favourite
-		FROM #__ccb_posts AS ccposts
-		LEFT JOIN #__ccb_topics AS cctopics ON ccposts.topic_id=cctopics.id";
-		$result = $this->getExportData ( $query, $start, $limit );
-
-		return $result;
-	}
-
-	public function countUserprofile() {
-		$query = "SELECT COUNT(*) FROM #__ccb_users";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	public function &exportUserprofile($start = 0, $limit = 0) {
-		$query = "SELECT
-			user_id AS userid,
-			location,
-			signature,
-			avatar,
-			rank,
-			post_count AS posts,
-			gender,
-			www,icq AS ICQ,
-			aol AS AOL,
-			msn AS MSN,
-			yahoo AS YAHOO,
-			jabber AS GTALK,
-			skype AS SKYPE,
-			showemail AS hideEmail,
-			moderator,
-			karma,
-			karma_time,
-			hits AS uhits
-		FROM #__ccb_users";
-		$result = $this->getExportData ( $query, $start, $limit );
-		foreach ( $result as $key => &$row ) {
-			$row->copypath = JPATH_BASE . '/components/com_ccboard/assets/avatar/'. $row->avatar;
-			$row->signature = $this->prep ( $row->signature );
-			$row->gender = $row->gender == 'Male' ? '1' : '2';
-		}
-		return $result;
-	}
-
-	protected function prep($s) {
-		return $s;
-	}
-
 }
