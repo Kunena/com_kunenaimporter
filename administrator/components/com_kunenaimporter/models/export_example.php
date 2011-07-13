@@ -90,6 +90,19 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 
 	/**
+	 * Get configuration
+	 * 
+	 * You can usually remove this function if you are exporting Joomla component.
+	 * By default this function gets configuration from component parameters.
+	 */
+	public function &getConfig() {
+		if (empty($this->config)) {
+			$this->config = parent::getConfig();
+		}
+		return $this->config;
+	}
+
+	/**
 	 * Full detection
 	 * 
 	 * Make sure that everything is OK for full import.
@@ -223,7 +236,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		foreach ( $result as &$row ) {
 			if ($row->avatar) {
 				// Full path to the original file
-				$row->copyfile = JPATH_BASE . "/media/com_example/avatars/{$row->avatar}";
+				$row->copyfile = JPATH_ROOT . "/media/com_example/avatars/{$row->avatar}";
 			}
 			$this->parseBBCode ( $row->signature );
 			$this->parseText ( $row->personalText );
@@ -254,10 +267,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 */
 	public function &exportRanks($start = 0, $limit = 0) {
 		$query = "SELECT
-			NULL AS rank_id
+			NULL AS rank_id,
 			'' AS rank_title,
-			0 rank_min,
-			0 rank_special,
+			0 AS rank_min,
+			0 AS rank_special,
 			'' AS rank_image
 		FROM #__example_ranks
 		ORDER BY rank_id";
@@ -265,7 +278,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		foreach ( $result as $rank ) {
 			$this->parseText ( $row->rank_title );
 			// Full path to the original file
-			$rank->copyfile = JPATH_BASE . "/components/com_example/assets/ranks/{$rank->rank_image}";
+			$rank->copyfile = JPATH_ROOT . "/components/com_example/assets/ranks/{$rank->rank_image}";
 		}
 		return $result;
 	}
@@ -314,6 +327,9 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 * Returns list of category objects containing database fields 
 	 * to #__kunena_categories.
 	 * All categories without parent are sections.
+	 * 
+	 * NOTE: it's very important to keep category IDs (containing topics) the same!
+	 * If there are two tables for sections and categories, change IDs on sections..
 	 * 
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit

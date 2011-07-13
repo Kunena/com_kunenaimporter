@@ -167,7 +167,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$phpEx = substr(strrchr(__FILE__, '.'), 1);
 	}
 	
-	protected function getConfig() {
+	public function &getConfig() {
 		if (empty($this->config)) {
 			// Check if database settings are correct
 			$query = "SELECT config_name, config_value AS value FROM #__config";
