@@ -287,54 +287,32 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__agora_topics";
-		$count = $this->getCount($query);
 		$query="SELECT COUNT(*) FROM #__agora_posts";
-		return $count + $this->getCount ( $query );
+		return $this->getCount ( $query );
 	}
 
 	public function &exportMessages($start = 0, $limit = 0) {
-		$query = "SELECT MAX(id) FROM #__ccb_topics";
-		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
-
-		$query = "(SELECT
-			id AS id,
-			poster AS name,
-			0 AS parent,
-			sticky AS ordering,
-			subject AS subject,
-			num_views AS hits,
-			closed AS locked,
-			forum_id AS catid,
-			posted AS time,
-			NULL AS ip,
-			NULL AS email,
-			NULL AS message,
-			id AS thread,
-			NULL AS modified_time,
-			NULL AS modified_by,
-			0 AS userid
-		FROM #__agora_topics WHERE announcements='0') UNION ALL
-		(SELECT
-			p.id+{$maxboard} AS id,
-			p.poster AS name,
-			topic_id AS parent,
-			0 AS ordering,
-			NULL AS subject,
-			0 AS hits,
-			0 AS locked,
-			0 AS catid,
+		$query = "SELECT
+			p.id AS id,
+			t.poster AS name,
+			IF(t.id,0,p.topic_id) AS parent,
+			t.sticky AS ordering,
+			t.subject AS subject,
+			t.num_views AS hits,
+			t.closed AS locked,
+			t.forum_id AS catid,
 			p.posted AS time,
 			p.poster_ip AS ip,
 			p.poster_email AS email,
 			p.message AS message,
-			p.topic_id AS thread,
+			t.id AS thread,
 			p.edited AS modified_time,
 			p.edited_by AS modified_by,
 			u.jos_id AS userid
-		FROM #__agora_posts AS p LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id)
-		ORDER BY id";
+		FROM `#__agora_topics` AS t
+		LEFT JOIN `#__agora_posts` AS p ON t.id=p.topic_id
+		LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
+		WHERE t.announcements='0'	";;
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
 		foreach ( $result as &$row ) {
