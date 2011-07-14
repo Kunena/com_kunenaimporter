@@ -119,6 +119,13 @@ class KunenaimporterModelExport extends JModel {
 	public function initialize() {
 	}
 
+	public function &getConfig() {
+		if (empty($this->config)) {
+			$this->config = JComponentHelper::getParams( "com_{$this->name}" );
+		}
+		return $this->config;
+	}
+	
 	public function getExportOptions($importer) {
 		$app = JFactory::getApplication ();
 
@@ -263,7 +270,97 @@ class KunenaimporterModelExport extends JModel {
 	 *
 	 * @param string $s String
 	 */
-	protected function parseHTML(&$s) {
+	protected function parseHTML(&$html) {
+		$doc = new DOMDocument();
+		libxml_use_internal_errors(true);
+		$doc->preserveWhiteSpace = false;
+		$doc->loadHTML('<?xml encoding="UTF-8"><html><body><div>' . preg_replace('|[\r\n]|', ' ', $html) . '</div></body></html>');
+		$nodes = $doc->getElementsByTagName('p');
+		foreach ($nodes as $node) {
+			$node->insertBefore(new DOMText("\n"));
+		}
+		$nodes = $doc->getElementsByTagName('div');
+		foreach ($nodes as $node) {
+			$node->insertBefore(new DOMText("\n"));
+		}
+		$node = $doc->getElementsByTagName('div')->item(0);
+		$html = trim($this->parseHtmlChildren($node));
+		libxml_clear_errors();
+	}
+	
+	protected function parseHtmlChildren(DomNode $node) {
+		$output = '';
+		if ($node->hasChildNodes ()) {
+			$children = $node->childNodes;
+			foreach ( $children as $child ) {
+				switch ($child->nodeType) {
+					CASE XML_ELEMENT_NODE:
+						$output .= $this->parseHtmlChildren ( $child );
+						break;
+					case XML_TEXT_NODE:
+						$output .= preg_replace('/[\r\n ]+/', ' ', $child->data);
+						break;
+					case XML_CDATA_SECTION_NODE:
+						$output .= $child->data;
+						break;
+				}
+			}
+		}
+		return $this->parseHtmlNode ( $node, $output );
+	}
+	
+	protected function parseHtmlNode(DomNode $node, $output) {
+		$tag = $node->tagName;
+		switch ($tag) {
+			case 'b':
+			case 'strong':
+				return "[b]{$output}[/b]";
+			case 'i':
+			case 'em':
+				return "[i]{$output}[/i]";
+			case 'span':
+				$style = $node->getAttribute('style');	
+				if ($style == 'text-decoration: underline;') $output = "[u]{$output}[/u]";
+				return $output;
+			case 'a':
+				return "[url={$node->getAttribute('href')}]{$output}[/url]";
+			case 'img':
+				return "[img]{$node->getAttribute('src')}[/img]";
+			case 'address':
+				return "{$output}";
+			case 'h1':
+				return "\n[size=6]{$output}[/size]";
+			case 'h2':
+				return "\n[size=5]{$output}[/size]";
+			case 'h3':
+				return "\n[size=4]{$output}[/size]";
+			case 'h4':
+				return "\n[size=3]{$output}[/size]";
+			case 'h5':
+				return "\n[size=2]{$output}[/size]";
+			case 'h6':
+				return "\n[size=1]{$output}[/size]";
+			case 'pre':
+			case 'li':
+			case 'ul':
+			case 'ol':
+				return "\n[{$tag}]{$output}[/{$tag}]";
+			case 'hr':
+				return "\n[hr]";
+			case 'p':
+				$output = trim($output);
+				if (!$output) return;
+				$style = $node->getAttribute('style');	
+				if ($node->getAttribute('class' == 'caption')) $output = "[center]{$output}[/center]";
+				elseif ($style == 'text-align: left;') $output = "[left]{$output}[/left]";
+				elseif ($style == 'text-align: center;') $output = "[center]{$output}[/center]";
+				elseif ($style == 'text-align: right;') $output = "[right]{$output}[/right]";
+				return "\n{$output}";
+			case 'div':
+			default:
+				return "{$output}";
+				
+		}		
 	}
 	
 	/**
@@ -291,7 +388,7 @@ class KunenaimporterModelExport extends JModel {
 		$result = $this->ext_database->loadObjectList ( $key );
 		if ($this->ext_database->getErrorNum ()) {
 			$this->error = $this->ext_database->getErrorMsg ();
-			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
+			JFactory::getApplication()->enqueueMessage( '<b>Error:</b> ' . $this->error, 'error' );
 		}
 		return $result;
 	}
@@ -341,6 +438,7 @@ class KunenaimporterModelExport extends JModel {
 	}
 
 	public function countMapUsers() {
+		if (!$this->external) return false;
 		$db = JFactory::getDBO();
 		$query = "SELECT COUNT(*) FROM #__users";
 		$db->setQuery ($query);

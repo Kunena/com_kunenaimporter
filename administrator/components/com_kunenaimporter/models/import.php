@@ -22,6 +22,22 @@ jimport ( 'joomla.application.component.model' );
 require_once (JPATH_COMPONENT . '/models/kunena.php');
 
 class KunenaimporterModelImport extends JModel {
+	protected $userfields = array(
+		'messages'=>array('userid', 'modified_by'),
+		'attachments'=>array('userid'),
+		'subscriptions_categories'=>array('userid'),
+		'subscriptions'=>array('userid'),
+		'favorites'=>array('userid'),
+		'userprofile'=>array('userid'),
+		'sessions'=>array('userid'),
+		//'categories'=>array('checked_out'),
+		'moderation'=>array('userid'),
+		'polls_users'=>array('userid'),
+		'thankyou'=>array('userid', 'target_userid'),
+		'users_banned'=>array('userid', 'created_by', 'modified_by'),
+		'whoisonline'=>array('userid'),
+	);
+
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
@@ -217,27 +233,28 @@ class KunenaimporterModelImport extends JModel {
 	*/
 
 	public function importData($option, &$data) {
+		if (empty($data)) return;
+
+		// TODO: move timedelta out of session:
+		$this->timedelta = intval(JFactory::getApplication ()->getUserState ( 'com_kunenaimporter.timedelta' ));
 		switch ($option) {
 			case 'config' :
 				$newConfig = end ( $data );
 				if (is_object ( $newConfig ))
 					$newConfig = $newConfig->GetClassVars ();
 				$newConfig['id'] = 1;
+				$this->timedelta = intval(isset($newConfig['timedelta']) ? $newConfig['timedelta'] : 0);
+				// TODO: move timedelta out of session:
+				JFactory::getApplication ()->setUserState ( 'com_kunenaimporter.timedelta', $this->timedelta );
 				$kunenaConfig = new KunenaImporterTableConfig ();
 				$kunenaConfig->save ( $newConfig );
 				break;
 			case 'messages' :
+				// time, modified_time
 				$this->importMessages ( $data );
 				break;
 			case 'attachments':
 				$this->importAttachments ( $data );
-				break;
-			case 'subscriptions' :
-			case 'favorites' :
-				$this->importUnique ( $option, $data );
-				break;
-			case 'userprofile':
-				$this->importUserProfile ( $data );
 				break;
 			case 'avatargalleries':
 				$this->importAvatarGalleries ( $data );
@@ -246,51 +263,87 @@ class KunenaimporterModelImport extends JModel {
 				break;
 			case 'users':
 				$option = 'extuser';
-			default :
+			case 'userprofile':
+				// karma_time, banned:datetime
+			case 'ranks':
+			case 'sessions':
+				// lasttime, currvisit
+			case 'whoisonline':
+			case 'categories':
+			case 'moderation':
+			case 'smilies':
+			case 'announcements':
+				// created:datetime
+			case 'subscriptions_categories':
+			case 'subscriptions':
+			case 'favorites':
+			case 'polls':
+			case 'polls_options':
+			case 'polls_users':
+				// lasttime:timestamp
+			case 'thankyou':
+			case 'usersbanned':
+				// expiration:datetime, created_time:datetime, modified_time:datetime
+			case 'whoisonline':
 				$this->importDefault ( $option, $data );
 		}
 	}
 
-	protected function importUnique($option, &$data) {
-		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
-		if (! $table)
-			die ( $option );
-
-		$extids = array();
-		foreach ( $data as $item ) {
-			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
+	protected function importDefault($option, &$data) {
+		// If table has userids in it, we need to convert them to Joomla userids
+		$userids = !empty($this->userfields[$option]);
+		if ($userids) {
+			$extids = array();
+			foreach ( $data as $item ) {
+				foreach ( $this->userfields[$option] as $field) {
+					$extids[$item->$field] = $item->$field;
+				}
+			}
+			$this->loadUsers($extids);
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-		$idmap = $extuser->loadIdMap($extids);
 
 		$this->commitStart ();
 		foreach ( $data as $item ) {
-			if (!empty($item->userid)) {
-				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
+			if ($userids) {
+				// Convert all userids in the table
+				foreach ( $this->userfields[$option] as $field) {
+					$item->userid = $this->getUser($item->userid)->userid;
+				}
 			}
-			if ($table->save ( $item ) === false) {
-				if (! strstr ( $table->getError (), 'Duplicate entry' ))
-					die ( "<br />ERROR: " . $table->getError () );
+			if (!empty($item->copypath) && file_exists($item->copypath)) {
+				// There is attached file to be copied
+				switch ($option) {
+					case 'ranks':
+						$destpath = JPATH_ROOT . "/components/com_kunena/template/default/images/ranks/{$item->rank_image}";
+						break;
+					case 'userprofile':
+						$destpath = JPATH_ROOT . "/media/kunena/avatars/{$item->avatar}";
+						break;
+					default:
+				}
+				if (!empty($destpath)) {
+					JFile::copy($item->copypath, $destpath);
+				}
 			}
+			// Save row into table
+			$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
+			if ($table->save ( $item ) === false)
+				die ( "ERROR: " . $table->getError () );
 		}
 		$this->commitEnd ();
 	}
 
 	protected function importAttachments(&$data) {
-		$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
-
 		$extids = array();
 		foreach ( $data as $item ) {
 			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-		$idmap = $extuser->loadIdMap($extids);
+		$this->loadUsers($extids);
 
 		$this->commitStart ();
 		foreach ( $data as $item ) {
-			if (isset($idmap[$item->userid])) {
-				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
-			}
+			$user = $this->getUser($item->userid);
+			$item->userid = $user->userid;
 			$item->folder = 'media/kunena/attachments/'.$item->folder;
 			if (file_exists($item->copypath)) {
 				$path = JPATH_ROOT."/{$item->folder}";
@@ -302,6 +355,7 @@ class KunenaimporterModelImport extends JModel {
 				$item->hash = md5_file ( $item->copypath );
 				JFile::copy($item->copypath, "{$path}/{$item->filename}");
 			}
+			$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
 		}
@@ -310,69 +364,15 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function importAvatarGalleries(&$data) {
 		foreach ( $data as $item=>$path ) {
-			// Copy gallery
-			JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
-			// Create index.html
-			JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
-		}
-	}
-
-	protected function importUserProfile(&$data) {
-		$table = JTable::getInstance ( 'UserProfile', 'KunenaImporterTable' );
-
-		$extids = array();
-		foreach ( $data as $item ) {
-			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
-		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-		$idmap = $extuser->loadIdMap($extids);
-
-		$this->commitStart ();
-		foreach ( $data as $item ) {
-			if (isset($idmap[$item->userid])) {
-				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
+			if (is_dir($path)) {
+				// Copy gallery
+				JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
+				// Create index.html
+				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
+			} elseif(is_file($path)) {
+				JFile::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
 			}
-			if (!empty($item->copypath) && file_exists($item->copypath)) {
-				JFile::copy($item->copypath, JPATH_ROOT."/media/kunena/avatars/users/{$item->avatar}");
-			}
-			if ($table->save ( $item ) === false)
-				die ( "ERROR: " . $table->getError () );
 		}
-		$this->commitEnd ();
-	}
-
-	protected function importDefault($option, &$data) {
-		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
-		if (! $table)
-			die ( $option );
-
-		$extids = array();
-		foreach ( $data as $item ) {
-			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
-		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-		$idmap = $extuser->loadIdMap($extids);
-
-		$this->commitStart ();
-		foreach ( $data as $item ) {
-			if (isset($idmap[$item->userid])) {
-				$item->userid = $idmap[$item->userid]->id ? $idmap[$item->userid]->id : -$idmap[$item->userid]->extid;
-			}
-			if (!empty($item->copypath) && file_exists($item->copypath)) {
-				switch ($option) {
-					case 'ranks':
-						$destpath = JPATH_ROOT . '/components/com_kunena/template/default/images/ranks';
-						break;
-					default:
-				}
-				if (!empty($destpath)) {
-					JFile::copy($item->copypath, $destpath);
-				}
-			}
-			if ($table->save ( $item ) === false)
-				die ( "ERROR: " . $table->getError () );
-		}
-		$this->commitEnd ();
 	}
 
 	protected function importMessages(&$messages) {
@@ -381,25 +381,28 @@ class KunenaimporterModelImport extends JModel {
 			if (!empty($message->userid)) $extids[$message->userid] = $message->userid;
 			if (!empty($message->modified_by)) $extids[$message->modified_by] = $message->modified_by;
 		}
-		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-		$idmap = $extuser->loadIdMap($extids);
+		$this->loadUsers($extids);
 
 		$this->commitStart ();
 		foreach ( $messages as $message ) {
-			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
-			$txttable = JTable::getInstance ( 'messages_text', 'KunenaImporterTable' );
 			if ($message->userid) {
-				if ($idmap[$message->userid]->extid && $idmap[$message->userid]->lastvisitDate < $message->time - 86400) {
+				$user = $this->getUser($message->userid);
+				if ($user->extid && $user->lastvisitDate < $message->time - 86400) {
 					// user MUST have been in the forum in the past 24 hours, update last visit..
 					$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 					$extuser->load($message->userid);
 					$extuser->lastvisitDate = $idmap[$message->userid]->lastvisitDate =$message->time;
 					$extuser->save();
 				}
-				$message->userid = $idmap[$message->userid]->id ? $idmap[$message->userid]->id : -$idmap[$message->userid]->extid;
+				$message->userid = $user->userid;
+			}
+			$message->time += $this->timedelta;
+			if ($message->modified_time) {
+				$message->modified_time += $this->timedelta;
 			}
 			if ($message->modified_by) {
-				$message->modified_by = $idmap[$message->modified_by]->id ? $idmap[$message->modified_by]->id : -$idmap[$message->modified_by]->extid;
+				$user = $this->getUser($message->modified_by);
+				$message->modified_by = $user->userid;
 			}
 			$message->mesid = $message->id;
 			if ($message->userid > 0 && (empty ( $message->email ) || empty ( $message->name ))) {
@@ -409,15 +412,36 @@ class KunenaimporterModelImport extends JModel {
 				if (empty ( $message->name ))
 					$message->name = $user->username;
 			}
-
+			
+			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
 			if ($msgtable->save ( $message ) === false)
 				die ( "ERROR: " . $msgtable->getError () );
+			$txttable = JTable::getInstance ( 'messages_text', 'KunenaImporterTable' );
 			if ($txttable->save ( $message ) === false)
 				die ( "ERROR: " . $txttable->getError () );
 		}
 		$this->commitEnd ();
 
 		$this->updateCatStats ();
+	}
+
+	protected function loadUsers(&$extids) {
+		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
+		$this->useridmap = $extuser->loadIdMap($extids);
+	}
+
+	protected function getUser($extid) {
+		if (isset($this->useridmap[$extid])) {
+			$user = $this->useridmap[$extid];
+			$user->userid = $user->id ? $user->id : -$userid->extid;
+		} else {
+			$user = new StdClass();
+			$user->id = empty($this->useridmap) ? $extid : 0;
+			$user->userid = empty($this->useridmap) ? $extid : -$extid;
+			$user->extid = empty($this->useridmap) ? 0 : $extid;
+			$user->lastvisitDate = JFactory::getDate()->toUnix();
+		}
+		return $user;
 	}
 
 	public function updateUserData($oldid, $newid, $replace = false) {
