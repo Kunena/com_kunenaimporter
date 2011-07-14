@@ -247,63 +247,96 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function &exportCategories($start=0, $limit=0) {
+	   $query = "SELECT MAX(id) FROM #__ccb_forums";
+		$this->ext_database->setQuery ( $query );
+		$maxboard = $this->ext_database->loadResult ();
 		// Import the categories
 		$query="(SELECT
 			cat_name AS name,
 			disp_position AS ordering,
-			enable AS published
+			enable AS published,
+			NULL AS description,
+			NULL AS headerdesc,
+			0 AS moderators,
+			0 AS numTopics,
+			0 AS numPosts,
+			0 AS id_last_msg,
+			id+{$maxboard} AS id,
+			0 AS parent
 		FROM #__agora_categories) UNION ALL
 		(SELECT
+		  forum_name AS name,
+		  sort_by AS ordering,
 			enable AS published,
-			forum_name AS name,
 			forum_desc AS description,
 			forum_mdesc AS headerdesc,
 			moderators,
 			num_topics AS numTopics,
 			num_posts AS numPosts,
 			last_post_id AS id_last_msg,
-			cat_id AS id,
+			id AS id,
 			parent_forum_id AS parent
 		FROM #__agora_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {
-			$row->name = prep($row->name);
-			$row->description = prep($row->description);
+			$row->name = $this->prep($row->name);
+			$row->description = $this->prep($row->description);
 		}
 		return $result;
 	}
 
 	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__agora_messages";
-		return $this->getCount ( $query );
+		$query = "SELECT COUNT(*) FROM #__agora_topics";
+		$count = $this->getCount($query);
+		$query="SELECT COUNT(*) FROM #__agora_posts";
+		return $count + $this->getCount ( $query );
 	}
 
 	public function &exportMessages($start = 0, $limit = 0) {
-		$query = "SELECT
-			t.id AS id,
-			t.poster AS name,
-			IF(p.topic_id=t.id,0,p.topic_id) AS parent,
-			t.sticky AS ordering,
-			t.subject AS subject,
-			t.num_views AS hits,
-			t.closed AS locked,
-			t.forum_id AS catid,
-			u.jos_id AS userid,
+		$query = "SELECT MAX(id) FROM #__ccb_topics";
+		$this->ext_database->setQuery ( $query );
+		$maxboard = $this->ext_database->loadResult ();
+
+		$query = "(SELECT
+			id AS id,
+			poster AS name,
+			0 AS parent,
+			sticky AS ordering,
+			subject AS subject,
+			num_views AS hits,
+			closed AS locked,
+			forum_id AS catid,
+			posted AS time,
+			NULL AS ip,
+			NULL AS email,
+			NULL AS message,
+			id AS thread,
+			NULL AS modified_time,
+			NULL AS modified_by,
+			0 AS userid
+		FROM #__agora_topics WHERE announcements='0') UNION ALL
+		(SELECT
+			p.id+{$maxboard} AS id,
+			p.poster AS name,
+			topic_id AS parent,
+			0 AS ordering,
+			NULL AS subject,
+			0 AS hits,
+			0 AS locked,
+			0 AS catid,
+			p.posted AS time,
 			p.poster_ip AS ip,
 			p.poster_email AS email,
 			p.message AS message,
-			p.posted AS time,
-			p.topic_id AS thread
+			p.topic_id AS thread,
 			p.edited AS modified_time,
-			p.edited_by AS modified_by
-
-			FROM `#__agora_topics` AS t
-			LEFT JOIN `#__agora_posts` AS p ON p.topic_id = t.id
-			LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
-			WHERE t.announcements='0'
-			ORDER BY t.id";
+			p.edited_by AS modified_by,
+			u.jos_id AS userid
+		FROM #__agora_posts AS p LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id)
+		ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+
 		foreach ( $result as &$row ) {
 			$row->subject = $this->prep ( $row->subject );
 			$row->message = $this->prep ( $row->message );
@@ -351,6 +384,8 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 
 	public function &exportUserprofile($start=0, $limit=0) {
 		$query="SELECT
+			jos_id AS userid,
+			group_id,
 			url AS websiteurl,
 			icq AS ICQ,
 			msn AS MSN,
@@ -368,6 +403,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		foreach ( $result as $key => &$row ) {
 			//$row->copypath = JPATH_BASE . '/components/com_agora/img/pre_avatars/'. $row->id;
 		}
+		return $result;
 	}
 
 	public function countPolls() {
@@ -380,7 +416,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			p.pollid AS id,
 			p.options,
 			p.voters,
-			p.votes, 
+			p.votes,
 			t.question AS title
 		FROM #__agora_polls AS p
 		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
@@ -395,8 +431,9 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
 			w.topic_id AS thread,
-			w.user_id AS userid
-		FROM `#__agora_subscriptions` AS w";
+			u.jos_id AS userid
+		FROM `#__agora_subscriptions` AS w
+    LEFT JOIN `#__agora_users` AS u ON w.user_id=u.id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}

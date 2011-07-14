@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+14-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (improvements on agora categories import, messages import)
+
 13-July-2011 Matias
 + [#27] Full support for ccBoard 1.2-RC
 + [#27] ccBoard: Convert all code to use example exporter as a base
