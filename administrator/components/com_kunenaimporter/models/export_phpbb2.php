@@ -99,6 +99,21 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $this->dbconfig;
 	}
 
+	public function initialize() {
+		global $phpbb_root_path, $phpEx;
+
+		if(!defined('IN_PHPBB')) {
+			define('IN_PHPBB', true);
+		}
+
+		if(!defined('STRIP')) {
+			define('STRIP', (get_magic_quotes_gpc()) ? true : false);
+		}
+
+		$phpbb_root_path = $this->basepath.'/';
+		$phpEx = substr(strrchr(__FILE__, '.'), 1);
+	}
+
 	/**
 	 * Count total number of users to be exported (external applications only)
 	 */
@@ -562,6 +577,15 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		return $result;
 	}
 
+	public function mapJoomlaUser($joomlauser) {
+		$username = $joomlauser->username;
+		$query = "SELECT user_id
+			FROM #__users WHERE username={$this->ext_database->Quote($username)}";
+
+		$this->ext_database->setQuery( $query );
+		$result = intval($this->ext_database->loadResult());
+		return $result;
+	}
 }
 
 //--- Function to prepare strings for MySQL storage ---/
