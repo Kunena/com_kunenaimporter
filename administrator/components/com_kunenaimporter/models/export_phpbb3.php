@@ -109,11 +109,14 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$this->ext_database->setQuery ( $query );
 		$version = $this->ext_database->loadResult ();
 		// phpBB2 version
-		if ($this->version [0] == '.')
-			$this->version = '2' . $this->version;
+		if ($version [0] == '.')
+			$version = '2' . $version;
 		return $version;
 	}
 
+	/**
+	 * Get database settings
+	 */
 	protected function &getDBConfig() {
 		if (!$this->dbconfig) {
 			require "{$this->basepath}/config.php";
