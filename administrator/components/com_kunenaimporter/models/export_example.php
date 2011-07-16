@@ -171,6 +171,49 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 
 	/**
+	 * Count total number of users to be exported (external applications only)
+	 */
+	public function countUsers() {
+		return false;
+	}
+
+	/**
+	 * Export users (external applications only)
+	 * 
+	 * Returns list of user extuser objects containing database fields 
+	 * to #__kunenaimporter_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUsers($start = 0, $limit = 0) {
+		$result = array();
+		return $result;	
+		
+		$query = "SELECT
+			NULL AS extid,
+			'' AS extusername,
+			'' AS name,
+			'' AS username,
+			'' AS email,
+			'' AS password,
+			'Registered' AS usertype,
+			0 AS block,
+			'0000-00-00 00:00:00' AS registerDate,
+			'0000-00-00 00:00:00' AS lastvisitDate,
+			NULL AS params,
+		FROM #__users
+		ORDER BY user_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
+		foreach ( $result as &$row ) {
+			// Add prefix to password (for authentication plugin)
+			$row->password = 'example::'.$row->password;
+		}
+		return $result;
+	}
+
+	/**
 	 * Count total number of user profiles to be exported
 	 */
 	public function countUserProfile() {

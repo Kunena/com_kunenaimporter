@@ -39,6 +39,7 @@ KunenaImporter 1.6.5-DEV
 ^ [#35] Improve usability: Unselect already imported tasks
 ^ [#35] Improve usability: Changing configuration options should have effect when clicking "Import" or "Truncate"
 # [#5] phpBB3 support: Fix various issues with user import
++ [#30] Example exporter: Add missing functions countUsers() and exportUsers()
 
 15-July-2011 Matias
 + [#5] phpBB3 and SMF2 support: allow user to create new Joomla users, either manually or automatically
