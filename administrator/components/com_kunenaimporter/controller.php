@@ -39,6 +39,7 @@ class KunenaImporterController extends JController {
 			$this->redirectBack();
 		}
 		$params = getKunenaImporterParams();
+		$params->set('path', '');
 		$forum = JRequest::getString ( 'select', '' );
 		$success = false;
 		if ($forum) {
