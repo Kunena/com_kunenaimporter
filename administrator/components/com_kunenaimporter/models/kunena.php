@@ -64,6 +64,11 @@ class KunenaImporterTableExtUser extends KunenaImporterTable {
 		parent::__construct ( '#__kunenaimporter_users', 'extid', $database );
 	}
 
+	public function check() {
+		if (empty($this->gid)) $this->gid = 18;
+		return true;
+	}
+	
 	public function loadIdMap($list) {
 		if (empty($list)) return array();
 		$list = implode(',', $list);

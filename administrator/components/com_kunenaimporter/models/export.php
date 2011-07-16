@@ -91,17 +91,34 @@ class KunenaimporterModelExport extends JModel {
 		if (!$this->external) return;
 		// No path set, try auto detecting forum
 		if (!$this->params->get('path')) {
-			$folders = JFolder::folders(JPATH_ROOT);
-			foreach ($folders as $folder) {
-				if ($this->detectComponent(JPATH_ROOT."/{$folder}")) {
-					$path = $folder;
-					break;
+			// Find forum from Joomla root
+			if ($this->detectComponent(JPATH_ROOT)) {
+				$path = '.';
+				break;
+			}
+			// Count parent directories to www root
+			$parents = trim(JURI::root(true), '/');
+			$parents = $parents ? count(explode('/', $parents)) : 0;
+			// Create subdirectory lists
+			while ($parents >= 0) {
+				$ppath = trim(str_repeat('/..', $parents), '/');
+				$folders[$ppath] = JFolder::folders(JPATH_ROOT."/{$ppath}");
+				$parents--;
+			}
+			// Find forum from all subdirectories
+			foreach ($folders as $ppath=>$parent) {
+				foreach ($parent as $folder) {
+					if ($this->detectComponent(JPATH_ROOT."/{$ppath}/{$folder}")) {
+						$path = trim("{$ppath}/{$folder}", '/');;
+						break;
+					}
 				}
 			}
 		}
 
 		$this->relpath = isset($path) ? $path : $this->params->get('path');
 		$this->basepath = JPATH_ROOT."/{$this->relpath}";
+		$this->params->set('path', $this->relpath);
 		return $absolute ? $this->basepath : $this->relpath;
 	}
 	
@@ -157,8 +174,6 @@ class KunenaimporterModelExport extends JModel {
 	}
 
 	public function detect() {
-		$this->addMessage ( '<h2>Importer Status</h2>' );
-
 		// Kunena detection and version check
 		$minKunenaVersion = '1.6.4';
 		if (! class_exists ( 'Kunena' ) || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
@@ -177,10 +192,11 @@ class KunenaimporterModelExport extends JModel {
 		
 		if ($this->external) {
 			if (is_dir($this->basepath)) {
-				$this->addMessage ( '<div>Using relative path: <b style="color:green">./' . $this->relpath . '</b></div>' );
+				$this->relpath = JPath::clean($this->relpath);
+				$this->addMessage ( '<div>Using relative path: <b style="color:green">' . $this->relpath . '</b></div>' );
 			} else {
 				$this->error = $this->title." not found from {$this->basepath}";
-				$this->addMessage ( '<div>Using relative path: <b style="color:red">./' . $this->relpath . '</b></div>' );
+				$this->addMessage ( '<div>Using relative path: <b style="color:red">' . $this->relpath . '</b></div>' );
 				$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
 				return false;
 			}
@@ -464,6 +480,28 @@ class KunenaimporterModelExport extends JModel {
 					}
 				}
 			}
+		}
+		return $users;
+	}
+
+	public function countCreateUsers() {
+		if (!$this->external || $this->params->get('useradd') != 'yes') return false;
+		$db = JFactory::getDBO();
+		$query = "SELECT COUNT(*) FROM #__kunenaimporter_users";
+		$db->setQuery ( $query );
+		return $db->loadResult();
+	}
+
+	public function &exportCreateUsers($start = 0, $limit = 0) {
+		$db = JFactory::getDBO();
+		$query = "SELECT * FROM #__kunenaimporter_users ORDER BY extid";
+		$db->setQuery ( $query, $start, $limit );
+		$extusers = $db->loadObjectList ( 'id' );
+		$users = array();
+		foreach ($extusers as $user) {
+			$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
+			$extuser->load ( $user->extid );
+			$users[] = $extuser;
 		}
 		return $users;
 	}

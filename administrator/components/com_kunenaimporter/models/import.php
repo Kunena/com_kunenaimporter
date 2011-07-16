@@ -46,7 +46,7 @@ class KunenaimporterModelImport extends JModel {
 
 	public function getImportOptions() {
 		// version
-		$options = array ('config', 'users', 'mapusers','userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
+		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
 		return $options;
 	}
 
@@ -132,12 +132,6 @@ class KunenaimporterModelImport extends JModel {
 		return $best->id;
 	}
 
-	public function truncateUsersMap() {
-		$query = "TRUNCATE TABLE `#__kunenaimporter_users`";
-		$this->db->setQuery ( $query );
-		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
-	}
-
 	public function mapUsers($result, $limit) {
 		if (!$result['total']) {
 			$query = "SELECT COUNT(*) FROM `#__kunenaimporter_users` WHERE id IS NULL";
@@ -180,11 +174,6 @@ class KunenaimporterModelImport extends JModel {
 		return $result;
 	}
 
-	public function createUsers(&$users) {
-		foreach ( $users as $userdata ) {
-		}
-	}
-
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
 		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
@@ -193,13 +182,15 @@ class KunenaimporterModelImport extends JModel {
 		unset ( $query );
 	}
 
-	public function truncateData($option) {
+	public function truncateData($option, $truncateusers=false) {
 		if ($option == 'config' || $option == 'avatargalleries')
 			return;
-		if ($option == 'mapusers')
+		if ($option == 'mapusers' || $option == 'createusers')
 			return;
-		if ($option == 'users')
+		if ($option == 'users') {
+			if ($truncateusers) $this->truncateJoomlaUsers();
 			$option = 'extuser';
+		}
 		if ($option == 'messages')
 			$this->truncateData ( $option . '_text' );
 		$this->db = JFactory::getDBO ();
@@ -210,7 +201,12 @@ class KunenaimporterModelImport extends JModel {
 		$result = $this->db->query () or die ( "<br />{$option}: Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	/*
+	public function truncateUsersMap() {
+		$query = "TRUNCATE TABLE `#__kunenaimporter_users`";
+		$this->db->setQuery ( $query );
+		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
+	}
+
 	public function truncateJoomlaUsers() {
 		// Leave only Super Administrators
 		$this->db = JFactory::getDBO();
@@ -230,11 +226,11 @@ class KunenaimporterModelImport extends JModel {
 		$this->db->setQuery($query);
 		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
 	}
-	*/
 
 	public function importData($option, &$data) {
-		if (empty($data)) return;
+		if (empty($data)) return 0;
 
+		$count = 0;
 		// TODO: move timedelta out of session:
 		$this->timedelta = intval(JFactory::getApplication ()->getUserState ( 'com_kunenaimporter.timedelta' ));
 		switch ($option) {
@@ -247,19 +243,22 @@ class KunenaimporterModelImport extends JModel {
 				// TODO: move timedelta out of session:
 				JFactory::getApplication ()->setUserState ( 'com_kunenaimporter.timedelta', $this->timedelta );
 				$kunenaConfig = new KunenaImporterTableConfig ();
-				$kunenaConfig->save ( $newConfig );
+				if ($kunenaConfig->save ( $newConfig )) $count++;
 				break;
 			case 'messages' :
 				// time, modified_time
-				$this->importMessages ( $data );
+				$count = $this->importMessages ( $data );
 				break;
 			case 'attachments':
-				$this->importAttachments ( $data );
+				$count = $this->importAttachments ( $data );
 				break;
 			case 'avatargalleries':
-				$this->importAvatarGalleries ( $data );
+				$count = $this->importAvatarGalleries ( $data );
 				break;
 			case 'mapusers':
+				break;
+			case 'createusers':
+				$count = $this->createUsers( $data );
 				break;
 			case 'users':
 				$option = 'extuser';
@@ -285,8 +284,17 @@ class KunenaimporterModelImport extends JModel {
 			case 'usersbanned':
 				// expiration:datetime, created_time:datetime, modified_time:datetime
 			case 'whoisonline':
-				$this->importDefault ( $option, $data );
+				$count = $this->importDefault ( $option, $data );
 		}
+		return $count;
+	}
+
+	public function createUsers(&$data) {
+		$count = 0;
+		foreach ( $data as $extuser ) {
+			if ($this->createUser($extuser) > 0) $count++;
+		}
+		return $count;
 	}
 
 	protected function importDefault($option, &$data) {
@@ -303,6 +311,7 @@ class KunenaimporterModelImport extends JModel {
 		}
 
 		$this->commitStart ();
+		$count = 0;
 		foreach ( $data as $item ) {
 			if ($userids) {
 				// Convert all userids in the table
@@ -329,8 +338,10 @@ class KunenaimporterModelImport extends JModel {
 			$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
+			$count++;
 		}
 		$this->commitEnd ();
+		return $count;
 	}
 
 	protected function importAttachments(&$data) {
@@ -341,6 +352,7 @@ class KunenaimporterModelImport extends JModel {
 		$this->loadUsers($extids);
 
 		$this->commitStart ();
+		$count = 0;
 		foreach ( $data as $item ) {
 			$user = $this->getUser($item->userid);
 			$item->userid = $user->userid;
@@ -354,25 +366,29 @@ class KunenaimporterModelImport extends JModel {
 				}
 				$item->hash = md5_file ( $item->copypath );
 				JFile::copy($item->copypath, "{$path}/{$item->filename}");
+				$count++;
 			}
 			$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
 			if ($table->save ( $item ) === false)
 				die ( "ERROR: " . $table->getError () );
 		}
 		$this->commitEnd ();
+		return $count;
 	}
 
 	protected function importAvatarGalleries(&$data) {
+		$count = 0;
 		foreach ( $data as $item=>$path ) {
 			if (is_dir($path)) {
 				// Copy gallery
-				JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
+				if (JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++ ;
 				// Create index.html
 				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
 			} elseif(is_file($path)) {
-				JFile::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true);
+				if (JFile::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++;
 			}
 		}
+		return $count;
 	}
 
 	protected function importMessages(&$messages) {
@@ -384,6 +400,7 @@ class KunenaimporterModelImport extends JModel {
 		$this->loadUsers($extids);
 
 		$this->commitStart ();
+		$count = 0;
 		foreach ( $messages as $message ) {
 			if ($message->userid) {
 				$user = $this->getUser($message->userid);
@@ -419,10 +436,12 @@ class KunenaimporterModelImport extends JModel {
 			$txttable = JTable::getInstance ( 'messages_text', 'KunenaImporterTable' );
 			if ($txttable->save ( $message ) === false)
 				die ( "ERROR: " . $txttable->getError () );
+			$count++;
 		}
 		$this->commitEnd ();
 
 		$this->updateCatStats ();
+		return $count;
 	}
 
 	protected function loadUsers(&$extids) {
@@ -433,7 +452,7 @@ class KunenaimporterModelImport extends JModel {
 	protected function getUser($extid) {
 		if (isset($this->useridmap[$extid])) {
 			$user = $this->useridmap[$extid];
-			$user->userid = $user->id ? $user->id : -$userid->extid;
+			$user->userid = $user->id ? $user->id : -$extid;
 		} else {
 			$user = new StdClass();
 			$user->id = empty($this->useridmap) ? $extid : 0;
@@ -443,9 +462,21 @@ class KunenaimporterModelImport extends JModel {
 		}
 		return $user;
 	}
+	
+	public function createUser($extuser) {
+		if ($extuser->id) return 0;
+		$data = get_object_vars($extuser);
+		if (empty($data['password2'])) unset($data['password']);
+		$user = new JUser();
+		if (!$user->bind($data)) die('Error binding user');
+		if (!$user->save()) return $user->getError();
+		$data['id'] = $user->id;
+		if (!$extuser->save($data)) die('Error saving extuser');
+		return $user->id;
+	}
 
 	public function updateUserData($oldid, $newid, $replace = false) {
-		if ($replace) {
+		if ($replace && $oldid) {
 			$this->db->setQuery ( "DELETE FROM `#__kunena_users` WHERE `userid` = {$this->db->quote($oldid)}" );
 			$this->db->query ();
 		}
@@ -471,7 +502,7 @@ class KunenaimporterModelImport extends JModel {
 			$this->db->query ();
 			if ($this->db->getErrorNum()) {
 				$app = JFactory::getApplication ();
-				$app->enqueueMessage ( "WARNING: Userid {$newid} is already in use! Cannot map user to it." );
+				$app->enqueueMessage ( "WARNING: Userid {$newid} is already in use! Cannot map user to it.", 'notice' );
 				return false;
 			}
 		}
