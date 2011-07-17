@@ -33,6 +33,7 @@ KunenaImporter 1.6.5-DEV
 
 17-July-2011 Matias
 # [#30] Example exporter: Fix topic subscriptions import 
+# [#5] phpBB3 support: Fix dates in session import
 
 16-July-2011 Matias
 ^ [#35] Improve usability: Cleaner look

@@ -508,11 +508,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		FROM #__users
 		WHERE user_lastvisit>0";
 		$result = $this->getExportData ( $query, $start, $limit );
-
-		foreach ( $result as $key => &$row ) {
-			$row->lasttime = date ( "Y-m-d H:i:s", $row->lasttime );
-			$row->currvisit = date ( "Y-m-d H:i:s", $row->currvisit );
-		}
 		return $result;
 	}
 
