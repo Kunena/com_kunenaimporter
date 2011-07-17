@@ -154,6 +154,20 @@ JHTML::_('behavior.tooltip');
 				$i++;
 				}
 			?>
+			<?php if (!$i) : ?>
+			<tr>
+				<td>
+					<?php echo $i+1;?>
+				</td>
+				<td>
+					<?php echo JHTML::_('grid.id', $i, 'NEW' ); ?>
+				</td>
+				<td></td>
+				<td>NEW</td>
+				<td>Create new user</td>
+				<td colspan="5">&nbsp;</td>
+			</tr>
+			<?php $i++; endif ?>
 			<tr>
 				<td>
 					<?php echo $i+1;?>

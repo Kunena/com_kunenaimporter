@@ -8,6 +8,9 @@
 *
 **/
 
+table#kunenaimporter {
+	background-color: inherit;
+}
 table.kunenaimporter {
 }
 div.header {
@@ -16,10 +19,10 @@ div.header {
 div.icon-48-kunenaimporter {
 	background-image:url(kunena-48.png);
 }
-td.config {
-	width: 50%;
+td.kleft {
+	padding-right: 10px;
 }
-td.info {
+td.config {
 	width: 50%;
 }
 td.title {
@@ -38,12 +41,7 @@ td.notes {
 .success {
 	color: green;
 }
-div.info {
+table.adminlist td.info {
 	background:#FFFFDD;
 	color:#333;
-	padding:10px;
-	border: 1px solid #CCCC66;
-}
-div.info h2 {
-	margin-top: 2px;
 }

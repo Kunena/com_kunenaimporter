@@ -3,23 +3,21 @@
 <config>
 	<!-- Joomla 1.5 support -->
 	<params>
-		<param name="extforum" type="list" default="localhost" label="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_LABEL" description="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_DESC" size="30">
-			<option value="">COM_KUNENAIMPORTER_EXTFORUM_OPTION_EMPTY</option>
-			<option value="agora">Agora</option>
-			<option value="ccboard">ccBoard</option>
-			<option value="ninjaboard">NinjaBoard</option>
-			<!-- <option value="kunena">Kunena</option> -->
-			<option value="phpbb3">phpBB3</option>
-			<!-- <option value="phpbb2">phpBB2</option> -->
-			<!-- <option value="pnphpbb2">PNphpBB2</option> -->
-			<option value="smf2">SMF2</option>
-		</param>
+		<param name="extforum" type="hidden" default="localhost" label="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_LABEL" description="COM_KUNENAIMPORTER_CONFIG_EXTFORUM_DESC" size="30" />
 		<param name="path" type="text" default="" label="COM_KUNENAIMPORTER_CONFIG_PATH_LABEL" description="COM_KUNENAIMPORTER_CONFIG_PATH_DESC" size="30" />
-		<!-- <param name="db_host" type="text" default="localhost" label="Database Host" description="" size="30" />
-		<param name="db_user" type="text" default="" label="Database User" description="" size="30" />
-		<param name="db_passwd" type="password" default="" label="Database Password" description="" size="30" />
-		<param name="db_name" type="text" default="" label="Forum Database Name" description="" size="30" />
-		<param name="db_prefix" type="text" default="phpbb_" label="Forum Table Prefix" description="Please enter the table prefix used for the forum you want to import from." size="30" /> -->
+		<param name="usermode" type="list" default="yes" label="User Import Mode" description="COM_KUNENAIMPORTER_CONFIG_PATH_DESC" size="30">
+			<option value="joomla">Use existing Joomla users</option>
+			<option value="external">Delete existing Joomla users</option>
+		</param>
+		<!-- <param name="userconflicts" type="list" default="0" label="Resolve User Conflicts" description="COM_KUNENAIMPORTER_CONFIG_PATH_DESC" size="30">
+			<option value="no">No, let me do it</option>
+			<option value="joomla">Yes, favor Joomla users</option>
+			<option value="external">Yes, favor external users</option>
+		</param> -->
+		<param name="useradd" type="list" default="0" label="Create Missing Users" description="COM_KUNENAIMPORTER_CONFIG_PATH_DESC" size="30">
+			<option value="no">No, let me do it</option>
+			<option value="yes">Yes, create automatically</option>
+		</param>
 	</params>
 
 	<!-- Joomla 1.6 Support -->

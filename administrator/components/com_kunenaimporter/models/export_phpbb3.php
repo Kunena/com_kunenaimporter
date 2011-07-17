@@ -109,11 +109,14 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$this->ext_database->setQuery ( $query );
 		$version = $this->ext_database->loadResult ();
 		// phpBB2 version
-		if ($this->version [0] == '.')
-			$this->version = '2' . $this->version;
+		if ($version [0] == '.')
+			$version = '2' . $version;
 		return $version;
 	}
 
+	/**
+	 * Get database settings
+	 */
 	protected function &getDBConfig() {
 		if (!$this->dbconfig) {
 			require "{$this->basepath}/config.php";
@@ -534,6 +537,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	public function &exportUserProfile($start = 0, $limit = 0) {
+		$config = $this->getConfig();
 		$query = "SELECT
 			u.user_id AS userid,
 			'flat' AS view,
@@ -578,8 +582,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 
-		$path = $this->config['avatar_path']->value;
-		$salt = $this->config['avatar_salt']->value;
+		$path = $config['avatar_path']->value;
+		$salt = $config['avatar_salt']->value;
 		foreach ( $result as &$row ) {
 			// Convert bbcode in signature
 			if ($row->avatar) {
@@ -654,11 +658,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	protected function &getAvatarGalleries() {
+		$config = $this->getConfig();
 		static $galleries = false;
 		if ($galleries === false) {
 			$galleries = array();
-			if (isset($this->config['avatar_gallery_path'])) {
-				$path = "{$this->basepath}/{$this->config['avatar_gallery_path']->value}";
+			if (isset($config['avatar_gallery_path'])) {
+				$path = "{$this->basepath}/{$config['avatar_gallery_path']->value}";
 				$folders = JFolder::folders($path);
 				foreach ($folders as $folder) {
 					$galleries[$folder] = "{$path}/{$folder}";

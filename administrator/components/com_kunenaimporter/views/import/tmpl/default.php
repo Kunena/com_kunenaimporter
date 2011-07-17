@@ -41,10 +41,9 @@ $disabled = '';
 if (!empty($this->errormsg)) $disabled = ' disabled="disabled"';
 foreach($this->options as $option):
 
-	if (JRequest::getBool($option['name'], 0)) $checked = ' checked="checked"';
-	else $checked = '';
+	$checked = ($option['status'] < $option['total']) ? 'checked="checked"' : '';
 
-	if (!$option['status'] && $option['total']) $statusmsg = '<font color="red">0 %</font>';
+	if ($option['status'] < 0) $statusmsg = '<font color="red">0 %</font>';
 	else if ($option['status'] < $option['total']) $statusmsg = '<font color="#b0b000">'.(int)(100*$option['status']/$option['total']).' %</font>';
 	else $statusmsg = '<font color="green">100 %</font>';
 ?>
