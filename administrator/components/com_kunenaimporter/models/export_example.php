@@ -537,6 +537,96 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 
 	/**
+	 * Count total polls to be exported
+	 */
+	public function countPolls() {
+		$query="SELECT COUNT(*) FROM #__example_polls";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export polls
+	 * 
+	 * Returns list of poll objects containing database fields 
+	 * to #__kunena_polls.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPolls($start=0, $limit=0) {
+		$query="SELECT
+			0 AS id,
+			'' AS title,
+			0 AS threadid,
+			'0000-00-00 00:00:00' AS polltimetolive
+		FROM #__example_polls";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll options to be exported
+	 */
+	public function countPollsOptions() {
+		$query="SELECT COUNT(*) FROM #__example_polls_options";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll options
+	 * 
+	 * Returns list of poll options objects containing database fields 
+	 * to #__kunena_polls_options.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsOptions($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS id,
+			0 AS pollid,
+			'' AS text,
+			0 AS votes
+		FROM #__example_polls_options";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll users to be exported
+	 */
+	public function countPollsUsers() {
+		$query="SELECT COUNT(*) FROM #__example_polls_users";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll users
+	 * 
+	 * Returns list of poll users objects containing database fields 
+	 * to #__kunena_polls_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsUsers($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS pollid,
+			0 AS userid,
+			0 AS votes,
+			'0000-00-00 00:00:00' AS lasttime,
+			0 AS lastvote
+		FROM #__example_polls_users";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
 	 * Count total number of subscription items to be exported
 	 */
 	public function countSubscriptions() {

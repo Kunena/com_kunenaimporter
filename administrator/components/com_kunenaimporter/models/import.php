@@ -32,9 +32,9 @@ class KunenaimporterModelImport extends JModel {
 		'sessions'=>array('userid'),
 		//'categories'=>array('checked_out'),
 		'moderation'=>array('userid'),
-		'polls_users'=>array('userid'),
+		'pollsusers'=>array('userid'),
 		'thankyou'=>array('userid', 'target_userid'),
-		'users_banned'=>array('userid', 'created_by', 'modified_by'),
+		'usersbanned'=>array('userid', 'created_by', 'modified_by'),
 		'whoisonline'=>array('userid'),
 	);
 
@@ -46,7 +46,7 @@ class KunenaimporterModelImport extends JModel {
 
 	public function getImportOptions() {
 		// version
-		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
+		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'polls', 'pollsoptions', 'pollsusers', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
 		return $options;
 	}
 
@@ -277,8 +277,8 @@ class KunenaimporterModelImport extends JModel {
 			case 'subscriptions':
 			case 'favorites':
 			case 'polls':
-			case 'polls_options':
-			case 'polls_users':
+			case 'pollsoptions':
+			case 'pollsusers':
 				// lasttime:timestamp
 			case 'thankyou':
 			case 'usersbanned':

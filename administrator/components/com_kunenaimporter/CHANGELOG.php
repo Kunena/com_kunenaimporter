@@ -35,6 +35,7 @@ KunenaImporter 1.6.5-DEV
 # [#30] Example exporter: Fix topic subscriptions import 
 # [#5] phpBB3 support: Fix dates in session import
 + [#37] Add nearly complete support for deprecated phpBB2 (polls missing)
++ [#30] Example exporter: Add polls support
 
 16-July-2011 Matias
 ^ [#35] Improve usability: Cleaner look

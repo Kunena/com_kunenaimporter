@@ -243,7 +243,7 @@ class KunenaImporterTablePolls extends KunenaImporterTable {
 	}
 }
 
-class KunenaImporterTablePolls_Options extends KunenaImporterTable {
+class KunenaImporterTablePollsOptions extends KunenaImporterTable {
 	var $id = null;
 	var $pollid = null;
 	var $text = null;
@@ -254,7 +254,7 @@ class KunenaImporterTablePolls_Options extends KunenaImporterTable {
 	}
 }
 
-class KunenaImporterTablePolls_Users extends KunenaImporterTable {
+class KunenaImporterTablePollsUsers extends KunenaImporterTable {
 	var $pollid = null;
 	var $userid = null;
 	var $votes = null;
