@@ -625,6 +625,9 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		if ($start)
 			return $config;
 
+		// Time delta in seconds from UTC (=JFactory::getDate()->toUnix())
+		// $config['timedelta'] = JFactory::getDate()->toUnix() - time() - $offsetinseconds;
+		
 		// Get configuration and fill any values from below:
 
 		// $config['board_title'] = null;

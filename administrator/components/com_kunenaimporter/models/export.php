@@ -328,12 +328,16 @@ class KunenaimporterModelExport extends JModel {
 	protected function parseHtmlNode(DomNode $node, $output) {
 		$tag = $node->tagName;
 		switch ($tag) {
+			case 'br':
+				return "\n";
 			case 'b':
 			case 'strong':
 				return "[b]{$output}[/b]";
 			case 'i':
 			case 'em':
 				return "[i]{$output}[/i]";
+			case 'u':
+				return "[u]{$output}[/u]";
 			case 'span':
 				$style = $node->getAttribute('style');	
 				if ($style == 'text-decoration: underline;') $output = "[u]{$output}[/u]";
