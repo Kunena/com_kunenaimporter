@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+17-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (avatar galleries import for agora)
+
 14-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (improvements on agora categories import, messages import)
 # [#21] Improve ccboard and agora support (improvements on messages import)

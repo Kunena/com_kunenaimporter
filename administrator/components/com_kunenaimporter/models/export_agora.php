@@ -437,4 +437,44 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	protected function prep($s) {
 		return $s;
 	}
+
+	/**
+	 * Count total number of avatar galleries to be exported
+	 */
+	public function countAvatarGalleries() {
+		return count($this->getAvatarGalleries());
+	}
+
+	/**
+	 * Export avatar galleries
+	 *
+	 * Returns list of folder=>fullpath to be copied, where fullpath points
+	 * to the directory in the filesystem.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAvatarGalleries($start = 0, $limit = 0) {
+		$galleries = $this->getAvatarGalleries();
+		return array_slice($galleries, $start, $limit);
+	}
+
+	/**
+	 * Internal function to fetch all avatar galleries
+	 *
+	 * @return array (folder=>full path, ...)
+	 */
+	protected function &getAvatarGalleries() {
+		static $galleries = false;
+		if ($galleries === false) {
+			$copypath = JPATH_ROOT.'/components/com_agora/img/pre_avatars';
+			$galleries = array();
+			$files = JFolder::files($copypath, '\.(?i)(gif|jpg|jpeg|png)$', true);
+			foreach ($files as $file) {
+				$galleries[$file] = "{$copypath}/{$file}";
+			}
+		}
+		return $galleries;
+	}
 }
