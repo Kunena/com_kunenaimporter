@@ -75,7 +75,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon-container">
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=phpbb3&amp;<?php echo JUtility::getToken() ?>=1">
-									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/phpbb3.png', 'phpBB3' ) ?>
+									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/phpbb3-gray.png', 'phpBB3' ) ?>
 									<span>phpBB3</span>
 								</a>
 							</div>
@@ -83,7 +83,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon-container">
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=pnphpbb2&amp;<?php echo JUtility::getToken() ?>=1">
-									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/pnphpbb2.png', 'PNphpBB2' ) ?>
+									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/pnphpbb2-gray.png', 'PNphpBB2' ) ?>
 									<span>PNphpBB2</span>
 								</a>
 							</div>
@@ -91,7 +91,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon-container">
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=smf2&amp;<?php echo JUtility::getToken() ?>=1">
-									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/smf2.png', 'SMF2' ) ?>
+									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/smf2-gray.png', 'SMF2' ) ?>
 									<span>SMF2</span>
 								</a>
 							</div>
