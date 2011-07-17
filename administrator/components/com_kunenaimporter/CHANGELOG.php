@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+17-July-2011 Matias
+# [#30] Example exporter: Fix topic subscriptions import 
+
 16-July-2011 Matias
 ^ [#35] Improve usability: Cleaner look
 ^ [#35] Improve usability: Don't show unused configuration parameters

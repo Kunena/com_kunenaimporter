@@ -245,7 +245,6 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			'' AS avatar,
 			0 AS karma,
 			0 AS karma_time,
-			1 AS group_id,
 			0 AS uhits,
 			'' AS personalText,
 			0 AS gender,
@@ -556,9 +555,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportSubscriptions($start = 0, $limit = 0) {
+		// future1 = notify status (1=message sent)
 		$query = "SELECT
 			0 AS thread,
-			0 AS userid
+			0 AS userid,
+			0 AS future1
 		FROM #__example_subscriptions";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
