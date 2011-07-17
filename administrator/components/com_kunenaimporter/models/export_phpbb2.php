@@ -21,7 +21,6 @@ require_once (JPATH_COMPONENT . '/models/export.php');
  * @todo Forum ACL not exported (except for moderators)
  * @todo URL avatars not exported
  * @todo Ranks not exported
- * @todo Polls and voting not exported
  * @todo Private messages not exported
  * @todo Some emoticons may be missing (images/db are not exported)
  * @todo Password hashs should work in Joomla
@@ -463,10 +462,13 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 			0 AS checked_out,
 			0 AS checked_out_time,
 			0 AS review,
+			0 AS allow_anonymous,
+			0 AS post_anonymous,
 			0 AS hits,
 			'' AS description,
 			'' AS headerdesc,
 			'' AS class_sfx,
+			0 AS allow_polls,
 			0 AS id_last_msg,
 			0 AS numPosts,
 			0 AS numTopics,
@@ -491,10 +493,13 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 			0 AS checked_out,
 			0 AS checked_out_time,
 			0 AS review,
+			0 AS allow_anonymous,
+			0 AS post_anonymous,
 			0 AS hits,
 			forum_desc AS description,
 			'' AS headerdesc,
 			'' AS class_sfx,
+			1 AS allow_polls,
 			forum_last_post_id AS id_last_msg,
 			forum_posts AS numPosts,
 			forum_topics AS numTopics,
@@ -606,6 +611,103 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 				else $this->parseText ( $row->message );
 			}
 		}
+		return $result;
+	}
+
+	/**
+	 * Count total polls to be exported
+	 */
+	public function countPolls() {
+		$query="SELECT COUNT(*) FROM #__vote_desc";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export polls
+	 * 
+	 * Returns list of poll objects containing database fields 
+	 * to #__kunena_polls.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPolls($start=0, $limit=0) {
+		$query="SELECT
+			v.vote_id AS id,
+			v.vote_text AS title,
+			t.topic_first_post_id AS threadid,
+			IF(v.vote_length>0,FROM_UNIXTIME(v.vote_start+v.vote_length),'0000-00-00 00:00:00') AS polltimetolive
+		FROM #__vote_desc AS v
+		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id
+		ORDER BY id";
+		$result = $this->getExportData($query, $start, $limit, 'id');
+		return $result;
+	}
+
+	/**
+	 * Count total poll options to be exported
+	 */
+	public function countPollsOptions() {
+		$query="SELECT COUNT(*) FROM #__vote_results";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll options
+	 * 
+	 * Returns list of poll options objects containing database fields 
+	 * to #__kunena_polls_options.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsOptions($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS id,
+			t.topic_first_post_id AS pollid,
+			r.vote_option_text AS text,
+			r.vote_result AS votes
+		FROM #__vote_results AS r
+		INNER JOIN #__vote_desc AS v ON v.vote_id=r.vote_id
+		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id
+		ORDER BY pollid, vote_option_id";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll users to be exported
+	 */
+	public function countPollsUsers() {
+		$query="SELECT COUNT(*) FROM #__vote_voters";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll users
+	 * 
+	 * Returns list of poll users objects containing database fields 
+	 * to #__kunena_polls_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsUsers($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			t.topic_first_post_id AS pollid,
+			u.vote_user_id AS userid,
+			1 AS votes,
+			'0000-00-00 00:00:00' AS lasttime,
+			0 AS lastvote
+		FROM #__vote_voters AS u
+		INNER JOIN #__vote_desc AS v ON v.vote_id=u.vote_id
+		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id";
+		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
 
@@ -857,7 +959,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		// $config['showfileforguest'] = null;
 		// $config['pollnboptions'] = null;
 		// $config['pollallowvoteone'] = null;
-		// $config['pollenabled'] = null;
+		$config['pollenabled'] = 1;
 		// $config['poppollscount'] = null;
 		// $config['showpoppollstats'] = null;
 		// $config['polltimebtvotes'] = null;
