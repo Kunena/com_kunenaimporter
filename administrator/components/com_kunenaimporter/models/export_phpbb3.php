@@ -48,7 +48,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Minimum required version
 	 * @var string or null
 	 */
-	protected $versionmin = '3.0.0';
+	protected $versionmin = '3.0.8';
 	/**
 	 * Maximum accepted version
 	 * @var string or null
@@ -112,19 +112,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	}
 
 	/**
-	 * Get component version
-	 */
-	public function getVersion() {
-		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
-		$this->ext_database->setQuery ( $query );
-		$version = $this->ext_database->loadResult ();
-		// phpBB2 version
-		if ($version [0] == '.')
-			$version = '2' . $version;
-		return $version;
-	}
-
-	/**
 	 * Get database settings
 	 */
 	protected function &getDBConfig() {
@@ -133,36 +120,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$this->dbconfig = get_defined_vars();
 		}
 		return $this->dbconfig;
-	}
-
-	/**
-	 * Full detection and initialization
-	 * 
-	 * Make sure that everything is ready for full import.
-	 * Use $this->addMessage($html) to add status messages.
-	 * If you return false, remember also to fill $this->error
-	 * 
-	 * @return bool
-	 */
-	public function detect() {
-		// Initialize detection (also calls $this->detectComponent())
-		if (!parent::detect()) return false;
-
-		// Check RokBridge
-		if ($this->rokbridge->get('phpbb3_path')) {
-			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
-		}
-
-		// Check authentication method
-		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
-		$this->ext_database->setQuery ( $query );
-		$auth_method = $this->ext_database->loadResult () or die ( "<br />Invalid query:<br />$query<br />" . $this->ext_database->errorMsg () );
-		$this->addMessage ( '<div>phpBB authentication method: <b style="color:green">' . $auth_method . '</b></div>' );
-
-		// Find out which field is used as username
-		$fields = $this->ext_database->getTableFields('#__users');
-		$this->login_field = isset($fields['#__users']['login_name']);
-		return true;
 	}
 
 	public function initialize() {
@@ -190,11 +147,398 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		return $this->config;
 	}
 
+
+	/**
+	 * Full detection
+	 * 
+	 * Make sure that everything is OK for full import.
+	 * Use $this->addMessage($html) to add status messages.
+	 * If you return false, remember also to fill $this->error
+	 * 
+	 * @return bool
+	 */
+	public function detect() {
+		// Initialize detection (also calls $this->detectComponent())
+		if (!parent::detect()) return false;
+
+		// Check RokBridge
+		if ($this->rokbridge->get('phpbb3_path')) {
+			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
+		}
+
+		// Check authentication method
+		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
+		$this->ext_database->setQuery ( $query );
+		$auth_method = $this->ext_database->loadResult () or die ( "<br />Invalid query:<br />$query<br />" . $this->ext_database->errorMsg () );
+		$this->addMessage ( '<div>phpBB authentication method: <b style="color:green">' . $auth_method . '</b></div>' );
+
+		// Find out which field is used as username
+		$fields = $this->ext_database->getTableFields('#__users');
+		$this->login_field = isset($fields['#__users']['login_name']);
+		return true;
+	}
+
+	/**
+	 * Get component version
+	 */
+	public function getVersion() {
+		$query = "SELECT config_value FROM #__config WHERE config_name='version'";
+		$this->ext_database->setQuery ( $query );
+		$version = $this->ext_database->loadResult ();
+		// phpBB2 version
+		if ($version [0] == '.')
+			$version = '2' . $version;
+		return $version;
+	}
+
+	/**
+	 * Remove htmlentities, addslashes etc
+	 * 
+	 * @param string $s String
+	 */
+	protected function parseText(&$s) {
+		$s = html_entity_decode ( $s );
+	}
+
+	/**
+	 * Convert BBCode to Kunena BBCode
+	 *
+	 * @param string $s String
+	 */
+	protected function parseBBCode(&$s) {
+		$s = html_entity_decode ( $s );
+
+		$s = preg_replace ( '/\[b:(.*?)\]/', '[b]', $s );
+		$s = preg_replace ( '/\[\/b:(.*?)\]/', '[/b]', $s );
+
+		$s = preg_replace ( '/\[i:(.*?)\]/', '[i]', $s );
+		$s = preg_replace ( '/\[\/i:(.*?)\]/', '[/i]', $s );
+
+		$s = preg_replace ( '/\[u:(.*?)\]/', '[u]', $s );
+		$s = preg_replace ( '/\[\/u:(.*?)\]/', '[/u]', $s );
+
+		$s = preg_replace ( '/\[quote:(.*?)\]/', '[quote]', $s );
+		$s = preg_replace ( '/\[quote(:(.*?))?="(.*?)"\]/', '[b]\\3[/b]\n[quote]', $s );
+		$s = preg_replace ( '/\[\/quote:(.*?)\]/', '[/quote]', $s );
+
+		$s = preg_replace ( '/\[img:(.*?)\](.*?)\[\/img:(.*?)\]/si', '[img]\\2[/img]', $s );
+
+		$s = preg_replace ( '/\[color=(.*?):(.*?)\]/', '[color=\\1]', $s );
+		$s = preg_replace ( '/\[\/color:(.*?)\]/', '[/color]', $s );
+
+		$s = preg_replace ( '/\[size=[1234][0-9]:(.*?)\]/', '[size=1]', $s );
+		$s = preg_replace ( '/\[size=[567][0-9]:(.*?)\]/', '[size=2]', $s );
+		$s = preg_replace ( '/\[size=(8|9|10|11|12)[0-9]:(.*?)\]/', '[size=3]', $s );
+		$s = preg_replace ( '/\[size=(13|14|15|16|17)[0-9]:(.*?)\]/', '[size=4]', $s );
+		$s = preg_replace ( '/\[size=(18|19|20|21|22)[0-9]:(.*?)\]/', '[size=5]', $s );
+		$s = preg_replace ( '/\[size=(2[3-9])[0-9]:(.*?)\]/', '[size=6]', $s );
+		$s = preg_replace ( '/\[\/size:(.*?)\]/', '[/size]', $s );
+
+		$s = preg_replace ( '/\[code:(.*?)]/', '[code]', $s );
+		$s = preg_replace ( '/\[\/code:(.*?)]/', '[/code]', $s );
+
+		$s = preg_replace ( '/\[list(:(.*?))?\]/', '[ul]', $s );
+		$s = preg_replace ( '/\[list=([a1]):(.*?)\]/', '[ol]', $s );
+		$s = preg_replace ( '/\[\/list:u:(.*?)\]/', '[/ul]', $s );
+		$s = preg_replace ( '/\[\/list:o:(.*?)\]/', '[/ol]', $s );
+
+		$s = preg_replace ( '/\[\*:(.*?)\]/', '[li]', $s );
+		$s = preg_replace ( '/\[\/\*:(.*?)\]/', '[/li]', $s );
+
+		$s = preg_replace ( '/<!-- s(.*?) --><img src=\"{SMILIES_PATH}.*?\/><!-- s.*? -->/', ' \\1 ', $s );
+
+		$s = preg_replace ( '/\<!-- e(.*?) -->/', '', $s );
+		$s = preg_replace ( '/\<!-- w(.*?) -->/', '', $s );
+		$s = preg_replace ( '/\<!-- m(.*?) -->/', '', $s );
+
+		$s = preg_replace ( '/\<a class=\"postlink\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
+		$s = preg_replace ( '/\<a href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
+
+		$s = preg_replace ( '/\<a href=.*?mailto:.*?>/', '', $s );
+
+		$s = preg_replace ( '/\[url:(.*?)]/', '[url]', $s );
+		$s = preg_replace ( '/\[\/url:(.*?)]/', '[/url]', $s );
+
+		$s = preg_replace ( '/\<\/a>/', '', $s );
+	}
+
+	/**
+	 * Map Joomla user to external user
+	 * 
+	 * @param object $joomlauser StdClass(id, username, email)
+	 * @return int External user ID
+	 */
+	public function mapJoomlaUser($joomlauser) {
+		if ($this->login_field) {
+			// Use login_name created by SMF to phpBB3 convertor
+			$field = 'login_name';
+			$username = $joomlauser->username;
+		} else {
+			$field = 'username_clean';
+			$username = utf8_clean_string($joomlauser->username);
+		}
+		$query = "SELECT user_id
+			FROM #__users WHERE {$field}={$this->ext_database->Quote($username)}";
+
+		$this->ext_database->setQuery( $query );
+		$result = intval($this->ext_database->loadResult());
+		return $result;
+	}
+
+	/**
+	 * Count total number of users to be exported
+	 */
+	public function countUsers() {
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export users
+	 * 
+	 * Returns list of user extuser objects containing database fields 
+	 * to #__kunenaimporter_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUsers($start = 0, $limit = 0) {
+		// phpbb3 user_type: 0=normal, 1=inactive, 2=ignore, 3=founder (super admin)
+
+		$username = $this->login_field ? 'login_name' : 'username';
+		$query = "SELECT
+			u.user_id AS extid,
+			u.username_clean AS extusername,
+			u.username AS name,
+			u.{$username} AS username,
+			u.user_email AS email,
+			u.user_password AS password,
+			IF(u.user_type=3, 'Super Administrator', 'Registered') AS usertype,
+			IF(b.ban_userid>0 OR u.user_type=1, 1, 0) AS block,
+			FROM_UNIXTIME(u.user_regdate) AS registerDate,
+			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
+			NULL AS params,
+			u.user_pass_convert AS password_phpbb2
+		FROM #__users AS u
+		LEFT JOIN #__banlist AS b ON u.user_id = b.ban_userid
+		WHERE user_id > 0 AND u.user_type != 2
+		GROUP BY u.user_id
+		ORDER BY u.user_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
+		foreach ( $result as &$row ) {
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->username );
+			$this->parseText ( $row->email );
+
+			// Password hash check is described in phpBB3/includes/functions.php: phpbb_check_hash(),
+			// _hash_crypt_private() and _hash_encode64() if we want to add plugin for phpBB3 authentication.
+			// It works for all phpBB3 passwords, but phpBB2 passwords may need some extra work, which is
+			// described in phpBB3/includes/auth/auth_db.php. Basically phpBB2 passwords are encoded by using
+			// md5(utf8_to_cp1252(addslashes($password))).
+			if ($row->password_phpbb2) {
+				$row->password = 'phpbb2::'.$row->password;
+			} else {
+				$row->password = 'phpbb3::'.$row->password;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of user profiles to be exported
+	 */
+	public function countUserProfile() {
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Helper function to get list of all moderators
+	 */
+	protected function getModerators() {
+		static $mods = null;
+		if ($mods === null) {
+			// Get users in moderator groups
+			$query = "SELECT
+				u.user_id AS userid, 
+				ag.forum_id AS catid
+			FROM phpbb_acl_roles AS ar 
+			INNER JOIN phpbb_acl_groups AS ag ON ar.role_id=ag.auth_role_id
+			INNER JOIN phpbb_user_group AS ug ON ug.group_id=ag.group_id
+			INNER JOIN phpbb_users AS u ON u.user_id=ug.user_id AND u.user_id > 0 AND u.user_type != 2
+			WHERE role_type='m_'";
+			$result = $this->getExportData ( $query, 0, 10000 );
+			$mods = array();
+			foreach ($result as $item) {
+				$mods[$item->userid][$item->catid] = 1;
+			}
+
+			// Get individual moderator rights
+			$query = "SELECT
+				u.user_id AS userid,
+				au.forum_id AS catid
+			FROM #__acl_roles AS ar 
+			INNER JOIN #__acl_users AS au ON ar.role_id=au.auth_role_id
+			INNER JOIN #__users AS u ON u.user_id=au.user_id AND u.user_id > 0 AND u.user_type != 2
+			WHERE role_type='m_'";
+			$result = $this->getExportData ( $query, 0, 10000 );
+			foreach ($result as $item) {
+				$mods[$item->userid][$item->catid] = 1;
+			}
+		}
+		return $mods;
+	}
+	
+	/**
+	 * Export user profiles
+	 * 
+	 * Returns list of user profile objects containing database fields 
+	 * to #__kunena_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserProfile($start = 0, $limit = 0) {
+		$query = "SELECT
+			u.user_id AS userid,
+			'flat' AS view,
+			u.user_sig AS signature,
+			0 AS moderator,
+			NULL AS banned,
+			0 AS ordering,
+			u.user_posts AS posts,
+			u.user_avatar AS avatar,
+			0 AS karma,
+			0 AS karma_time,
+			0 AS uhits,
+			NULL AS personalText,
+			0 AS gender,
+			u.user_birthday AS birthdate,
+			u.user_from AS location,
+			u.user_icq AS ICQ,
+			u.user_aim AS AIM,
+			u.user_yim AS YIM,
+			u.user_msnm AS MSN,
+			NULL AS SKYPE,
+			NULL AS TWITTER,
+			NULL AS FACEBOOK,
+			u.user_jabber AS GTALK,
+			NULL AS MYSPACE,
+			NULL AS LINKEDIN,
+			NULL AS DELICIOUS,
+			NULL AS FRIENDFEED,
+			NULL AS DIGG,
+			NULL AS BLOGSPOT,
+			NULL AS FLICKR,
+			NULL AS BEBO,
+			u.user_website AS websitename,
+			u.user_website AS websiteurl,
+			0 AS rank,
+			(u.user_allow_viewemail=0) AS hideEmail,
+			u.user_allow_viewonline AS showOnline,
+			u.user_avatar_type AS avatartype
+		FROM #__users AS u
+		WHERE u.user_id > 0 AND u.user_type != 2
+		ORDER BY u.user_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
+		$moderators = $this->getModerators();
+		
+		$config = $this->getConfig();
+		$path = $config['avatar_path']->value;
+		$salt = $config['avatar_salt']->value;
+		foreach ( $result as &$row ) {
+			// Assign global moderator status
+			if (!empty($moderators[$row->userid])) $row->moderator = 1;
+			// Convert bbcode in signature
+			if ($row->avatar) {
+				switch ($row->avatartype) {
+					case 1:
+						// Uploaded
+						$filename = (int) $row->avatar;
+						$ext = substr(strrchr($row->avatar, '.'), 1);
+						$row->avatar = "users/{$row->avatar}";
+						$row->copypath = "{$this->basepath}/{$path}/{$salt}_{$filename}.{$ext}";
+						break;
+					case 2:
+						// URL not supported
+						$row->avatar = '';
+						break;
+					case 3:
+						// Gallery
+						$row->avatar = "gallery/{$row->avatar}";
+						break;
+					default:
+						$row->avatar = '';
+				}
+			}
+			
+			$this->parseBBCode ( $row->signature );
+			$this->parseText ( $row->location );
+			$this->parseText ( $row->AIM );
+			$this->parseText ( $row->YIM );
+			$this->parseText ( $row->MSN );
+			$this->parseText ( $row->GTALK );
+			$this->parseText ( $row->websitename );
+			$this->parseText ( $row->websiteurl );
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of sessions to be exported
+	 */
+	public function countSessions() {
+		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_lastvisit>0";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export user session information
+	 * 
+	 * Returns list of attachment objects containing database fields 
+	 * to #__kunena_sessions.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportSessions($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS userid,
+			NULL AS allowed,
+			user_lastmark AS lasttime,
+			'na' AS readtopics,
+			user_lastvisit AS currvisit
+		FROM #__users
+		WHERE user_lastvisit>0";
+		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+
+	/**
+	 * Count total number of categories to be exported
+	 */
 	public function countCategories() {
 		$query = "SELECT COUNT(*) FROM #__forums";
 		return $this->getCount ( $query );
 	}
 
+	/**
+	 * Export sections and categories
+	 * 
+	 * Returns list of category objects containing database fields 
+	 * to #__kunena_categories.
+	 * All categories without parent are sections.
+	 * 
+	 * NOTE: it's very important to keep category IDs (containing topics) the same!
+	 * If there are two tables for sections and categories, change IDs on sections..
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT
 			forum_id AS id,
@@ -210,51 +554,382 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			0 AS admin_access,
 			1 AS admin_recurse,
 			left_id AS ordering,
-			0 AS future2,
 			1 AS published,
 			0 AS checked_out,
 			'0000-00-00 00:00:00' AS checked_out_time,
 			0 AS review,
 			0 AS allow_anonymous,
-			0 as post_anonymous,
+			0 AS post_anonymous,
 			0 AS hits,
 			forum_desc AS description,
-			'' AS headerdesc,
+			forum_rules AS headerdesc,
 			'' AS class_sfx,
-			0 AS allow_polls,
+			1 AS allow_polls,
 			forum_last_post_id AS id_last_msg,
 			forum_posts AS numPosts,
-			forum_topics AS numTopics,
-			forum_last_post_time AS time_last_msg
+			forum_topics_real AS numTopics,
+			forum_last_post_time AS time_last_msg,
+			(LENGTH(forum_desc_bitfield)>0) AS bbcode_desc,
+			(LENGTH(forum_rules_bitfield)>0) AS bbcode_header
 		FROM #__forums ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
-			$row->name = $this->prep ( $row->name );
-			$row->description = $this->prep ( $row->description );
+			$this->parseText ( $row->name );
+			if ($row->bbcode_desc) $this->parseBBCode ( $row->description );
+			else $this->parseText ( $row->description );
+			if ($row->bbcode_header) $this->parseBBCode ( $row->headerdesc );
+			else $this->parseText ( $row->headerdesc );
 		}
 		return $result;
 	}
 
+	/**
+	 * Count total number of moderator columns to be exported
+	 */
+	public function countModeration() {
+		$mods = $this->getModerators();
+		$result = array();
+		foreach ($mods as $userid=>$item) {
+			if (isset($item[0])) continue;
+			foreach ($item as $catid=>$value) {
+				$mod = new StdClass();
+				$mod->userid = $userid;
+				$mod->catid = $catid;
+				$result[] = $mod;
+			}
+		}
+		return count($result);
+	}
+
+	/**
+	 * Export moderator columns
+	 * 
+	 * Returns list of moderator objects containing database fields 
+	 * to #__kunena_moderation.
+	 * NOTE: Global moderator doesn't have columns in this table!
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportModeration($start = 0, $limit = 0) {
+		$mods = $this->getModerators();
+		$result = array();
+		foreach ($mods as $userid=>$item) {
+			if (isset($item[0])) continue;
+			foreach ($item as $catid=>$value) {
+				$mod = new StdClass();
+				$mod->userid = $userid;
+				$mod->catid = $catid;
+				$result[] = $mod;
+			}
+		}
+		$result = array_slice($result, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total number of messages to be exported
+	 */
+	public function countMessages() {
+		$query = "SELECT COUNT(*) FROM #__posts";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export messages
+	 * 
+	 * Returns list of message objects containing database fields 
+	 * to #__kunena_messages (and #__kunena_messages_text.message).
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportMessages($start = 0, $limit = 0) {
+		$query = "SELECT
+			p.post_id AS id,
+			IF(p.post_id=t.topic_first_post_id,0,t.topic_first_post_id) AS parent,
+			t.topic_first_post_id AS thread,
+			t.forum_id AS catid,
+			IF(p.post_username, p.post_username, u.username) AS name,
+			p.poster_id AS userid,
+			u.user_email AS email,
+			IF(p.post_subject, p.post_subject, t.topic_title) AS subject,
+			p.post_time AS time,
+			p.poster_ip AS ip,
+			0 AS topic_emoticon,
+			(t.topic_status=1 AND p.post_id=t.topic_first_post_id) AS locked,
+			(p.post_approved=0) AS hold,
+			(t.topic_type>0 AND p.post_id=t.topic_first_post_id) AS ordering,
+			IF(p.post_id=t.topic_first_post_id,0,t.topic_views) AS hits,
+			t.topic_moved_id AS moved,
+			p.post_edit_user AS modified_by,
+			p.post_edit_time AS modified_time,
+			p.post_edit_reason AS modified_reason,
+			p.post_text AS message,
+			enable_bbcode
+		FROM #__posts AS p
+		LEFT JOIN #__topics AS t ON p.topic_id = t.topic_id
+		LEFT JOIN #__users AS u ON p.poster_id = u.user_id
+		ORDER BY p.post_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+
+		foreach ( $result as &$row ) {
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->email );
+			$this->parseText ( $row->subject );
+			if (! $row->modified_time)
+				$row->modified_by = 0;
+			$this->parseText ( $row->modified_reason );
+			if ($row->moved) {
+				// TODO: support moved messages (no txt)
+				$row->message = "id={$row->moved}";
+				$row->moved = 1;
+			} else {
+				if ($row->enable_bbcode) $this->parseBBcode ( $row->message );
+				else $this->parseText ( $row->message );
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total polls to be exported
+	 */
+	public function countPolls() {
+		$query="SELECT COUNT(*) FROM #__topics WHERE poll_title!=''";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export polls
+	 * 
+	 * Returns list of poll objects containing database fields 
+	 * to #__kunena_polls.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPolls($start=0, $limit=0) {
+		$query="SELECT
+			topic_first_post_id AS id,
+			poll_title AS title,
+			topic_first_post_id AS threadid,
+			IF(poll_length>0,FROM_UNIXTIME(poll_start+poll_length),'0000-00-00 00:00:00') AS polltimetolive
+		FROM #__topics
+		ORDER BY threadid";
+		$result = $this->getExportData($query, $start, $limit, 'id');
+		return $result;
+	}
+
+	/**
+	 * Count total poll options to be exported
+	 */
+	public function countPollsOptions() {
+		$query="SELECT COUNT(*) FROM #__poll_options";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll options
+	 * 
+	 * Returns list of poll options objects containing database fields 
+	 * to #__kunena_polls_options.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsOptions($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS id,
+			t.topic_first_post_id AS pollid,
+			o.poll_option_text AS text,
+			o.poll_option_total AS votes
+		FROM #__poll_options AS o
+		INNER JOIN #__topics AS t ON o.topic_id=t.topic_id
+		ORDER BY pollid, o.poll_option_id";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll users to be exported
+	 */
+	public function countPollsUsers() {
+		$query="SELECT COUNT(DISTINCT vote_user_id) FROM #__poll_votes";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll users
+	 * 
+	 * Returns list of poll users objects containing database fields 
+	 * to #__kunena_polls_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsUsers($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			t.topic_first_post_id AS pollid,
+			v.vote_user_id AS userid,
+			COUNT(*) AS votes,
+			'0000-00-00 00:00:00' AS lasttime,
+			0 AS lastvote
+		FROM #__poll_votes AS v
+		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id
+		GROUP BY v.vote_user_id";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total number of attachments to be exported
+	 */
+	public function countAttachments() {
+		$query = "SELECT COUNT(*) FROM #__attachments";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export attachments in messages
+	 * 
+	 * Returns list of attachment objects containing database fields 
+	 * to #__kunena_attachments.
+	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAttachments($start = 0, $limit = 0) {
+		$query = "SELECT
+			attach_id AS id,
+			post_msg_id AS mesid,
+			poster_id AS userid,
+			NULL AS hash,
+			filesize AS size,
+			'phpbb3' AS folder,
+			IF(LENGTH(mimetype)>0,mimetype,extension) AS filetype,
+			real_filename AS filename,
+			physical_filename AS realfile
+		FROM `#__attachments`
+		ORDER BY attach_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		foreach ( $result as &$row ) {
+			$row->copypath = "{$this->basepath}/files/{$row->realfile}";
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of subscription items to be exported
+	 */
+	public function countSubscriptions() {
+		$query = "SELECT COUNT(*) FROM #__topics_watch INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export topic subscriptions
+	 * 
+	 * Returns list of subscription objects containing database fields 
+	 * to #__kunena_subscriptions.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportSubscriptions($start = 0, $limit = 0) {
+		$query = "SELECT
+			t.topic_first_post_id AS thread, 
+			w.user_id AS userid,
+			w.notify_status AS future1
+		FROM #__topics_watch AS w 
+		INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+
+	/**
+	 * Count total number of avatar galleries to be exported
+	 */
+	public function countAvatarGalleries() {
+		return count($this->getAvatarGalleries());
+	}
+
+	/**
+	 * Export avatar galleries
+	 * 
+	 * Returns list of folder=>fullpath to be copied, where fullpath points
+	 * to the directory in the filesystem.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAvatarGalleries($start = 0, $limit = 0) {
+		$galleries = $this->getAvatarGalleries();
+		return array_slice($galleries, $start, $limit);
+	}
+
+	/**
+	 * Internal function to fetch all avatar galleries
+	 * 
+	 * @return array (folder=>full path, ...)
+	 */
+	protected function &getAvatarGalleries() {
+		$config = $this->getConfig();
+		static $galleries = false;
+		if ($galleries === false) {
+			$galleries = array();
+			if (isset($config['avatar_gallery_path'])) {
+				$path = "{$this->basepath}/{$config['avatar_gallery_path']->value}";
+				$folders = JFolder::folders($path);
+				foreach ($folders as $folder) {
+					$galleries[$folder] = "{$path}/{$folder}";
+				}
+			}
+		}
+		return $galleries;
+	}
+
+	/**
+	 * Count global configurations to be exported
+	 * @return 1
+	 */
 	public function countConfig() {
 		return 1;
 	}
 
+	/**
+	 * Export global configuration
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array (1=>(array(option=>value, ...)))
+	 */
 	public function &exportConfig($start = 0, $limit = 0) {
 		$config = array ();
 		if ($start)
 			return $config;
 
-		$query = "SELECT config_name, config_value AS value FROM #__config";
-		$result = $this->getExportData ( $query, 0, 1000, 'config_name' );
-
-		if (! $result)
-			return $config;
+		$result = $this->getConfig();
+			
+		// Time delta in seconds from UTC (=JFactory::getDate()->toUnix())
+		$config['timedelta'] = JFactory::getDate()->toUnix() - time();
 
 		$config ['id'] = 1; // $result['config_id']->value;
 		$config ['board_title'] = $result ['sitename']->value;
 		$config ['email'] = $result ['board_email']->value;
 		$config ['board_offline'] = $result ['board_disable']->value;
-		$config ['board_ofset'] = $result ['board_timezone']->value;
+		// $config ['board_ofset'] = $result ['board_timezone']->value;
 		// $config['offline_message'] = null;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
@@ -430,368 +1105,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$result = array ('1' => $config );
 		return $result;
 	}
-
-	public function countMessages() {
-		$query = "SELECT COUNT(*) FROM #__posts";
-		return $this->getCount ( $query );
-	}
-
-	public function &exportMessages($start = 0, $limit = 0) {
-		$query = "SELECT
-			p.post_id AS id,
-			IF(p.post_id=t.topic_first_post_id,0,t.topic_first_post_id) AS parent,
-			t.topic_first_post_id AS thread,
-			t.forum_id AS catid,
-			IF(p.post_username, p.post_username, u.username) AS name,
-			p.poster_id AS userid,
-			u.user_email AS email,
-			IF(p.post_subject, p.post_subject, t.topic_title) AS subject,
-			p.post_time AS time,
-			p.poster_ip AS ip,
-			0 AS topic_emoticon,
-			(t.topic_status=1 AND p.post_id=t.topic_first_post_id) AS locked,
-			((p.post_approved+1)%2) AS hold,
-			(t.topic_type>0 AND p.post_id=t.topic_first_post_id) AS ordering,
-			t.topic_views AS hits,
-			(t.topic_moved_id>0) AS moved,
-			p.post_edit_user AS modified_by,
-			p.post_edit_time AS modified_time,
-			p.post_edit_reason AS modified_reason,
-			p.post_text AS message
-		FROM #__posts AS p
-		LEFT JOIN #__topics AS t ON p.topic_id = t.topic_id
-		LEFT JOIN #__users AS u ON p.poster_id = u.user_id
-		ORDER BY p.post_id";
-		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-
-		foreach ( $result as &$row ) {
-			$row->name = $this->prep ( $row->name );
-			$row->email = $this->prep ( $row->email );
-			$row->subject = $this->prep ( $row->subject );
-			if (! $row->modified_time)
-				$row->modified_by = 0;
-			$row->modified_reason = $this->prep ( $row->modified_reason );
-			$row->message = $this->prep ( $row->message );
-		}
-		return $result;
-	}
-
-	public function countAttachments() {
-		$query = "SELECT COUNT(*) FROM #__attachments";
-		return $this->getCount ( $query );
-	}
-	public function &exportAttachments($start = 0, $limit = 0) {
-		$query = "SELECT
-			attach_id AS id,
-			post_msg_id AS mesid,
-			poster_id AS userid,
-			NULL AS hash,
-			filesize AS size,
-			'phpbb3' AS folder,
-			IF(LENGTH(mimetype)>0,mimetype,extension) AS filetype,
-			real_filename AS filename,
-			physical_filename AS realfile
-		FROM `#__attachments`
-		ORDER BY attach_id";
-		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		foreach ( $result as &$row ) {
-			$row->copypath = "{$this->basepath}/files/{$row->realfile}";
-		}
-		return $result;
-	}
-
-	public function countSessions() {
-		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_lastvisit>0";
-		return $this->getCount ( $query );
-	}
-	public function &exportSessions($start = 0, $limit = 0) {
-		$query = "SELECT
-			user_id AS userid,
-			NULL AS allowed,
-			user_lastmark AS lasttime,
-			'' AS readtopics,
-			user_lastvisit AS currvisit
-		FROM #__users
-		WHERE user_lastvisit>0";
-		$result = $this->getExportData ( $query, $start, $limit );
-		return $result;
-	}
-
-	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM #__topics_watch";
-		return $this->getCount ( $query );
-	}
-	public function &exportSubscriptions($start = 0, $limit = 0) {
-		$query = "SELECT
-			t.topic_first_post_id AS thread,
-			w.user_id AS userid,
-			0 AS future1
-		FROM #__topics_watch AS w
-		LEFT JOIN #__topics AS t ON w.topic_id=t.topic_id";
-		$result = $this->getExportData ( $query, $start, $limit );
-		return $result;
-	}
-
-	public function countUserProfile() {
-		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
-		return $this->getCount ( $query );
-	}
-
-	public function &exportUserProfile($start = 0, $limit = 0) {
-		$config = $this->getConfig();
-		$query = "SELECT
-			u.user_id AS userid,
-			'flat' AS view,
-			u.user_sig AS signature,
-			0 AS moderator,
-			NULL AS banned,
-			0 AS ordering,
-			u.user_posts AS posts,
-			user_avatar AS avatar,
-			0 AS karma,
-			0 AS karma_time,
-			1 AS group_id,
-			0 AS uhits,
-			NULL AS personalText,
-			0 AS gender,
-			u.user_birthday AS birthdate,
-			u.user_from AS location,
-			u.user_icq AS ICQ,
-			u.user_aim AS AIM,
-			u.user_yim AS YIM,
-			u.user_msnm AS MSN,
-			NULL AS SKYPE,
-			NULL AS TWITTER,
-			NULL AS FACEBOOK,
-			NULL AS GTALK,
-			NULL AS MYSPACE,
-			NULL AS LINKEDIN,
-			NULL AS DELICIOUS,
-			NULL AS FRIENDFEED,
-			NULL AS DIGG,
-			NULL AS BLOGSPOT,
-			NULL AS FLICKR,
-			NULL AS BEBO,
-			NULL AS websitename,
-			u.user_website AS websiteurl,
-			0 AS rank,
-			1 AS hideEmail,
-			1 AS showOnline,
-			user_avatar_type AS avatartype
-		FROM #__users AS u
-		WHERE u.user_id > 0 AND u.user_type != 2
-		ORDER BY u.user_id";
-		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
-
-		$path = $config['avatar_path']->value;
-		$salt = $config['avatar_salt']->value;
-		foreach ( $result as &$row ) {
-			// Convert bbcode in signature
-			if ($row->avatar) {
-				switch ($row->avatartype) {
-					case 1:
-						// Uploaded
-						$filename = (int) $row->avatar;
-						$ext = substr(strrchr($row->avatar, '.'), 1);
-						$row->avatar = "users/{$row->avatar}";
-						$row->copypath = "{$this->basepath}/{$path}/{$salt}_{$filename}.{$ext}";
-						break;
-					case 2:
-						// URL not supported
-						$row->avatar = '';
-						break;
-					case 3:
-						// Gallery
-						$row->avatar = "gallery/{$row->avatar}";
-						break;
-					default:
-						$row->avatar = '';
-				}
-			}
-			$row->signature = $this->prep ( $row->signature );
-			$row->location = $this->prep ( $row->location );
-		}
-		return $result;
-	}
-
-	public function countUsers() {
-		$query = "SELECT COUNT(*) FROM #__users AS u WHERE user_id > 0 AND u.user_type != 2";
-		return $this->getCount ( $query );
-	}
-
-	public function &exportUsers($start = 0, $limit = 0) {
-		$username = $this->login_field ? 'login_name' : 'username';
-		$query = "SELECT
-			u.user_id AS extid,
-			u.{$username} AS extusername,
-			u.username AS name,
-			u.{$username} AS username,
-			u.user_email AS email,
-			u.user_password AS password,
-			IF(u.user_type=3, 'Administrator', 'Registered') AS usertype,
-			IF(b.ban_userid, 1, 0) AS block,
-			0 AS gid,
-			FROM_UNIXTIME(u.user_regdate) AS registerDate,
-			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
-			NULL AS params,
-			u.user_pass_convert AS password_phpbb2
-		FROM #__users AS u
-		LEFT JOIN #__banlist AS b ON u.user_id = b.ban_userid
-		WHERE user_id > 0 AND u.user_type != 2
-		GROUP BY u.user_id
-		ORDER BY u.user_id";
-		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
-		foreach ( $result as &$row ) {
-			$row->name = html_entity_decode ( $row->name );
-			$row->username = html_entity_decode ( $row->username );
-			// Password hash check is described in phpBB3/includes/functions.php: phpbb_check_hash(),
-			// _hash_crypt_private() and _hash_encode64() if we want to add plugin for phpBB3 authentication.
-			// It works for all phpBB3 passwords, but phpBB2 passwords may need some extra work, which is
-			// described in phpBB3/includes/auth/auth_db.php. Basically phpBB2 passwords are encoded by using
-			// md5(utf8_to_cp1252(addslashes($password))).
-			if ($row->password_phpbb2) {
-				$row->password = 'phpbb2::'.$row->password;
-			} else {
-				$row->password = 'phpbb3::'.$row->password;
-			}
-		}
-		return $result;
-	}
-
-	protected function &getAvatarGalleries() {
-		$config = $this->getConfig();
-		static $galleries = false;
-		if ($galleries === false) {
-			$galleries = array();
-			if (isset($config['avatar_gallery_path'])) {
-				$path = "{$this->basepath}/{$config['avatar_gallery_path']->value}";
-				$folders = JFolder::folders($path);
-				foreach ($folders as $folder) {
-					$galleries[$folder] = "{$path}/{$folder}";
-				}
-			}
-		}
-		return $galleries;
-	}
-	public function countAvatarGalleries() {
-		return count($this->getAvatarGalleries());
-	}
-	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
-	}
-
-	public function mapJoomlaUser($joomlauser) {
-		if ($this->login_field) {
-			// Use login_name created by SMF to phpBB3 convertor
-			$field = 'login_name';
-			$username = $joomlauser->username;
-		} else {
-			$field = 'username_clean';
-			$username = utf8_clean_string($joomlauser->username);
-		}
-		$query = "SELECT user_id
-			FROM #__users WHERE {$field}={$this->ext_database->Quote($username)}";
-
-		$this->ext_database->setQuery( $query );
-		$result = intval($this->ext_database->loadResult());
-		return $result;
-	}
-
-	//--- Function to prepare strings for MySQL storage ---/
-	protected function prep($s) {
-		// Parse out the $uid things that fuck up bbcode
-
-		$s = preg_replace ( '/\&lt;/', '<', $s );
-		$s = preg_replace ( '/\&gt;/', '>', $s );
-		$s = preg_replace ( '/\&quot;/', '"', $s );
-		$s = preg_replace ( '/\&amp;/', '&', $s );
-		$s = preg_replace ( '/\&nbsp;/', ' ', $s );
-
-		$s = preg_replace ( '/\&#39;/', "'", $s );
-		$s = preg_replace ( '/\&#40;/', '(', $s );
-		$s = preg_replace ( '/\&#41;/', ')', $s );
-		$s = preg_replace ( '/\&#46;/', '.', $s );
-		$s = preg_replace ( '/\&#58;/', ':', $s );
-		$s = preg_replace ( '/\&#123;/', '{', $s );
-		$s = preg_replace ( '/\&#125;/', '}', $s );
-
-		// <strong> </strong>
-		$s = preg_replace ( '/\[b:(.*?)\]/', '[b]', $s );
-		$s = preg_replace ( '/\[\/b:(.*?)\]/', '[/b]', $s );
-
-		// <em> </em>
-		$s = preg_replace ( '/\[i:(.*?)\]/', '[i]', $s );
-		$s = preg_replace ( '/\[\/i:(.*?)\]/', '[/i]', $s );
-
-		// <u> </u>
-		$s = preg_replace ( '/\[u:(.*?)\]/', '[u]', $s );
-		$s = preg_replace ( '/\[\/u:(.*?)\]/', '[/u]', $s );
-
-		// quote
-		$s = preg_replace ( '/\[quote:(.*?)\]/', '[quote]', $s );
-		$s = preg_replace ( '/\[quote(:(.*?))?="(.*?)"\]/', '[b]\\3[/b]\n[quote]', $s );
-		$s = preg_replace ( '/\[\/quote:(.*?)\]/', '[/quote]', $s );
-
-		// image
-		#$s = preg_replace('/\[img:(.*?)="(.*?)"\]/', '[img="\\2"]', $s);
-		$s = preg_replace ( '/\[img:(.*?)\](.*?)\[\/img:(.*?)\]/si', '[img]\\2[/img]', $s );
-
-		// color
-		$s = preg_replace ( '/\[color=(.*?):(.*?)\]/', '[color=\\1]', $s );
-		$s = preg_replace ( '/\[\/color:(.*?)\]/', '[/color]', $s );
-
-		// size
-		$s = preg_replace ( '/\[size=\d:(.*?)\]/', '[size=1]', $s );
-		$s = preg_replace ( '/\[size=1[0123]:(.*?)\]/', '[size=2]', $s );
-		$s = preg_replace ( '/\[size=1[4567]:(.*?)\]/', '[size=3]', $s );
-		$s = preg_replace ( '/\[size=((1[89])|(2[01])):(.*?)\]/', '[size=4]', $s );
-		$s = preg_replace ( '/\[size=2[234567]:(.*?)\]/', '[size=5]', $s );
-		$s = preg_replace ( '/\[size=((2[89])|(3[01])):(.*?)\]/', '[size=6]', $s );
-		$s = preg_replace ( '/\[size=3[2-9]:(.*?)\]/', '[size=7]', $s );
-		$s = preg_replace ( '/\[\/size:(.*?)\]/', '[/size]', $s );
-
-		// code
-		// $s = preg_replace('/\[code:(.*?):(.*?)\]/',    '[code:\\1]', $s);
-		// $s = preg_replace('/\[\/code:(.*?):(.*?)\]/', '[/code:\\1]', $s);
-
-
-		// $s = preg_replace('/\[code:(.*?):(.*?)\]/',    '[code]', $s);
-		// $s = preg_replace('/\[\/code:(.*?):(.*?)\]/', '[/code]', $s);
-
-
-		$s = preg_replace ( '/\[code:(.*?)]/', '[code]', $s );
-		$s = preg_replace ( '/\[\/code:(.*?)]/', '[/code]', $s );
-
-		// lists
-		$s = preg_replace ( '/\[list(:(.*?))?\]/', '[ul]', $s );
-		$s = preg_replace ( '/\[list=([a1]):(.*?)\]/', '[ol]', $s );
-		$s = preg_replace ( '/\[\/list:u:(.*?)\]/', '[/ul]', $s );
-		$s = preg_replace ( '/\[\/list:o:(.*?)\]/', '[/ol]', $s );
-
-		$s = preg_replace ( '/\[\*:(.*?)\]/', '[li]', $s );
-		$s = preg_replace ( '/\[\/\*:(.*?)\]/', '[/li]', $s );
-
-		$s = preg_replace ( '/<!-- s(.*?) --><img src=\"{SMILIES_PATH}.*?\/><!-- s.*? -->/', ' \\1 ', $s );
-
-		$s = preg_replace ( '/\<!-- e(.*?) -->/', '', $s );
-		$s = preg_replace ( '/\<!-- w(.*?) -->/', '', $s );
-		$s = preg_replace ( '/\<!-- m(.*?) -->/', '', $s );
-
-		$s = preg_replace ( '/\<a class=\"postlink\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
-		$s = preg_replace ( '/\<a href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
-
-		$s = preg_replace ( '/\<a href=.*?mailto:.*?>/', '', $s );
-
-		$s = preg_replace ( '/\[url:(.*?)]/', '[url]', $s );
-		$s = preg_replace ( '/\[\/url:(.*?)]/', '[/url]', $s );
-
-		$s = preg_replace ( '/\<\/a>/', '', $s );
-
-		// $s = preg_replace('/\\\\/', '', $s);
-
-		return $s;
-	}
 }
 
 if (!function_exists('utf8_clean_string')) {
@@ -827,7 +1140,6 @@ if (!function_exists('utf8_clean_string')) {
 		return trim($text);
 	}
 }
-
 
 if (!function_exists('utf8_case_fold_nfkc')) {
 	/**

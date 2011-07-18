@@ -398,7 +398,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			'' AS description,
 			'' AS headerdesc,
 			'' AS class_sfx,
-			0 AS allow_polls
+			0 AS allow_polls,
+			0 AS id_last_msg,
+			0 AS numPosts,
+			0 AS numTopics,
+			0 AS time_last_msg
 		FROM #__example_categories
 		ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
@@ -494,49 +498,6 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 	
 	/**
-	 * Count total number of attachments to be exported
-	 */
-	public function countAttachments() {
-		$query = "SELECT COUNT(*) FROM #__example_attachments";
-		$count = $this->getCount ( $query );
-		return $count;
-	}
-
-	/**
-	 * Export attachments in messages
-	 * 
-	 * Returns list of attachment objects containing database fields 
-	 * to #__kunena_attachments.
-	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
-	 * @param int $start Pagination start
-	 * @param int $limit Pagination limit
-	 * @return array
-	 */
-	public function &exportAttachments($start = 0, $limit = 0) {
-		$query = "SELECT
-			0 AS id,
-			0 AS mesid,
-			0 AS userid,
-			NULL AS hash,
-			NULL AS size,
-			NULL AS folder,
-			NULL AS filetype,
-			NULL AS filename
-		FROM #__attachments
-		ORDER BY id";
-		$result = $this->getExportData ( $query, $start, $limit, 'id' );
-		$copypath = JPATH_ROOT.'/media/example/attachments';
-		foreach ( $result as &$row ) {
-			// Folder is relative path like: "example/folder" or "example"
-			$row->folder = 'example'. ($row->folder ? '/'.$row->folder : '');
-			// Full path to the original file
-			$row->copyfile = "{$copypath}/{$row->folder}/{$row->filename}";
-		}
-		return $result;
-	}
-
-	/**
 	 * Count total polls to be exported
 	 */
 	public function countPolls() {
@@ -623,6 +584,49 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			0 AS lastvote
 		FROM #__example_polls_users";
 		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total number of attachments to be exported
+	 */
+	public function countAttachments() {
+		$query = "SELECT COUNT(*) FROM #__example_attachments";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export attachments in messages
+	 * 
+	 * Returns list of attachment objects containing database fields 
+	 * to #__kunena_attachments.
+	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAttachments($start = 0, $limit = 0) {
+		$query = "SELECT
+			0 AS id,
+			0 AS mesid,
+			0 AS userid,
+			NULL AS hash,
+			NULL AS size,
+			NULL AS folder,
+			NULL AS filetype,
+			NULL AS filename
+		FROM #__attachments
+		ORDER BY id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		$copypath = JPATH_ROOT.'/media/example/attachments';
+		foreach ( $result as &$row ) {
+			// Folder is relative path like: "example/folder" or "example"
+			$row->folder = 'example'. ($row->folder ? '/'.$row->folder : '');
+			// Full path to the original file
+			$row->copyfile = "{$copypath}/{$row->folder}/{$row->filename}";
+		}
 		return $result;
 	}
 

@@ -33,6 +33,7 @@ KunenaImporter 1.6.5-DEV
 
 18-July-2011 Matias
 ^ [#30] Code cleanup in importer & exporter
+^ [#5] Reviewed and fixed phpBB3 support, closes #5
 
 17-July-2011 Matias
 # [#30] Example exporter: Fix topic subscriptions import 
