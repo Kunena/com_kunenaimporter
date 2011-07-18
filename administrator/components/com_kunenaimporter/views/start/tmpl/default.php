@@ -75,7 +75,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon-container">
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=phpbb3&amp;<?php echo JUtility::getToken() ?>=1">
-									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/phpbb3-gray.png', 'phpBB3' ) ?>
+									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/phpbb3.png', 'phpBB3' ) ?>
 									<span>phpBB3</span>
 								</a>
 							</div>
