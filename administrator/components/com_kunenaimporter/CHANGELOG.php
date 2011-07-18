@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+18-July-2011 Matias
+^ [#30] Code cleanup in importer & exporter
+
 17-July-2011 Matias
 # [#30] Example exporter: Fix topic subscriptions import 
 # [#5] phpBB3 support: Fix dates in session import

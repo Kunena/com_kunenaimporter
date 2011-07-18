@@ -42,10 +42,10 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 */
 	public $external = true;
 	/**
-	 * Minimum required version
+	 * Minimum required version (adds MySQL 5 support)
 	 * @var string or null
 	 */
-	protected $versionmin = '2.0.21';
+	protected $versionmin = '2.0.19';
 	/**
 	 * Maximum accepted version
 	 * @var string or null

@@ -30,7 +30,7 @@ class KunenaimporterModelImport extends JModel {
 		'favorites'=>array('userid'),
 		'userprofile'=>array('userid'),
 		'sessions'=>array('userid'),
-		//'categories'=>array('checked_out'),
+		'categories'=>array('checked_out'),
 		'moderation'=>array('userid'),
 		'pollsusers'=>array('userid'),
 		'thankyou'=>array('userid', 'target_userid'),
@@ -41,7 +41,6 @@ class KunenaimporterModelImport extends JModel {
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
-		// $this->db->setDebug(0);
 	}
 
 	public function getImportOptions() {
@@ -77,12 +76,7 @@ class KunenaimporterModelImport extends JModel {
 		$result = $this->db->query () or die ( "<br />Enable keys failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	public function setAuthMethod($auth_method) {
-		$this->auth_method = $auth_method;
-	}
-
 	public function getUsername($name) {
-		//if ($this->auth_method == 'joomla') return $name;
 		return strtr ( $name, "<>\"'%;()&", '_________' );
 	}
 
@@ -176,7 +170,10 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
-		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
+		// FIXME: use kunena recount
+		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` 
+			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time 
+			WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 		unset ( $query );
@@ -199,12 +196,6 @@ class KunenaimporterModelImport extends JModel {
 		$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />{$option}: Invalid query:<br />$query<br />" . $this->db->errorMsg () );
-	}
-
-	public function truncateUsersMap() {
-		$query = "TRUNCATE TABLE `#__kunenaimporter_users`";
-		$this->db->setQuery ( $query );
-		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
 	public function truncateJoomlaUsers() {

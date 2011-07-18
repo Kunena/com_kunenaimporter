@@ -17,9 +17,20 @@ jimport ( 'joomla.application.application' );
 
 require_once (JPATH_COMPONENT . '/models/export.php');
 
+/**
+ * phpBB3 Exporter Class
+ * 
+ * Exports almost all data from phpBB3.
+ * @todo Configuration import needs some work
+ * @todo Forum ACL not exported (except for moderators)
+ * @todo URL avatars not exported
+ * @todo Ranks not exported
+ * @todo Private messages not exported
+ * @todo Some emoticons may be missing (images/db are not exported)
+ */
 class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	/**
-	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * Extension name
 	 * @var string
 	 */
 	public $name = 'phpbb3';
@@ -44,7 +55,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	protected $versionmax = '3.0.999';
 
-	public $auth_method;
 	protected $rokbridge = null;
 	protected $dbconfig = null;
 
@@ -146,8 +156,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// Check authentication method
 		$query = "SELECT config_value FROM #__config WHERE config_name='auth_method'";
 		$this->ext_database->setQuery ( $query );
-		$this->auth_method = $this->ext_database->loadResult () or die ( "<br />Invalid query:<br />$query<br />" . $this->ext_database->errorMsg () );
-		$this->addMessage ( '<div>phpBB authentication method: <b style="color:green">' . $this->auth_method . '</b></div>' );
+		$auth_method = $this->ext_database->loadResult () or die ( "<br />Invalid query:<br />$query<br />" . $this->ext_database->errorMsg () );
+		$this->addMessage ( '<div>phpBB authentication method: <b style="color:green">' . $auth_method . '</b></div>' );
 
 		// Find out which field is used as username
 		$fields = $this->ext_database->getTableFields('#__users');
@@ -178,10 +188,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$this->config = $this->ext_database->loadObjectList ('config_name');
 		}
 		return $this->config;
-	}
-
-	public function getAuthMethod() {
-		return $this->auth_method;
 	}
 
 	public function countCategories() {
