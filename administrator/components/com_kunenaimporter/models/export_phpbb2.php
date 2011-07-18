@@ -221,8 +221,6 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 
 	/**
 	 * Map Joomla user to external user
-	 *
-	 * You can usually remove this function if you are exporting Joomla component.
 	 * 
 	 * @param object $joomlauser StdClass(id, username, email)
 	 * @return int External user ID
@@ -260,26 +258,29 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
 		$query = "SELECT
-			user_id AS extid,
-			username AS extusername,
-			username AS name,
-			username AS username,
-			user_email AS email,
-			user_password AS password,
-			IF(user_level=1, 'Administrator', 'Registered') AS usertype,
-			(user_active=0) AS block,
-			FROM_UNIXTIME(user_regdate) AS registerDate,
-			IF(user_lastvisit>0, FROM_UNIXTIME(user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
+			u.user_id AS extid,
+			u.username AS extusername,
+			u.username AS name,
+			u.username AS username,
+			u.user_email AS email,
+			u.user_password AS password,
+			IF(u.user_level=1, 'Administrator', 'Registered') AS usertype,
+			IF(b.ban_userid>0 OR u.user_active=0, 1, 0) AS block,
+			FROM_UNIXTIME(u.user_regdate) AS registerDate,
+			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
 			NULL AS params
-		FROM #__users
+		FROM #__users AS u
+		LEFT JOIN #__banlist AS b ON u.user_id = b.ban_userid
 		WHERE user_id > 0
-		ORDER BY user_id";
+		GROUP BY u.user_id
+		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
 		foreach ( $result as &$row ) {
-			$row->extusername = html_entity_decode ( $row->extusername );
-			$row->name = html_entity_decode ( $row->name );
-			$row->username = html_entity_decode ( $row->username );
-
+			$this->parseText ( $row->extusername );
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->username );
+			$this->parseText ( $row->email );
+			
 			// Add prefix to password (for authentication plugin)
 			$row->password = 'phpbb2::'.$row->password;
 		}
@@ -306,25 +307,25 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 */
 	public function &exportUserProfile($start = 0, $limit = 0) {
 		$query = "SELECT
-			user_id AS userid,
+			u.user_id AS userid,
 			'' AS view,
-			user_sig AS signature,
-			(user_level=2) AS moderator,
+			u.user_sig AS signature,
+			(u.user_level=2) AS moderator,
 			NULL AS banned,
 			0 AS ordering,
-			user_posts AS posts,
-			user_avatar AS avatar,
+			u.user_posts AS posts,
+			u.user_avatar AS avatar,
 			0 AS karma,
 			0 AS karma_time,
 			0 AS uhits,
 			'' AS personalText,
 			0 AS gender,
 			NULL AS birthdate,
-			user_from AS location,
-			user_icq AS ICQ,
-			user_aim AS AIM,
-			user_yim AS YIM,
-			user_msnm AS MSN,
+			u.user_from AS location,
+			u.user_icq AS ICQ,
+			u.user_aim AS AIM,
+			u.user_yim AS YIM,
+			u.user_msnm AS MSN,
 			NULL AS SKYPE,
 			NULL AS TWITTER,
 			NULL AS FACEBOOK,
@@ -337,17 +338,17 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 			NULL AS BLOGSPOT,
 			NULL AS FLICKR,
 			NULL AS BEBO,
-			'' AS websitename,
-			user_website AS websiteurl,
+			u.user_website AS websitename,
+			u.user_website AS websiteurl,
 			0 AS rank,
-			(user_viewemail=0) AS hideEmail,
-			user_allow_viewonline AS showOnline,
-			user_avatar_type AS avatartype,
-			user_allowhtml,
-			user_allowbbcode
-		FROM #__users
-		WHERE user_id > 0
-		ORDER BY user_id";
+			(u.user_viewemail=0) AS hideEmail,
+			u.user_allow_viewonline AS showOnline,
+			u.user_avatar_type AS avatartype,
+			u.user_allowhtml,
+			u.user_allowbbcode
+		FROM #__users AS u
+		WHERE u.user_id > 0
+		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 
 		$path = $config['avatar_path']->value;
@@ -838,7 +839,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		$config['board_title'] = $result ['sitename']->value;
 		$config['email'] = $result ['board_email']->value;
 		$config['board_offline'] = $result ['board_disable']->value;
-		$config['board_ofset'] = $result ['board_timezone']->value;
+		// $config['board_ofset'] = $result ['board_timezone']->value;
 		// $config['offline_message'] = null;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
