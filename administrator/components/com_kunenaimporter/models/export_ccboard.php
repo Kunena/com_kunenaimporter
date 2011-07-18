@@ -123,7 +123,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 			NULL AS BLOGSPOT,
 			NULL AS FLICKR,
 			NULL AS BEBO,
-			NULL AS websitename,
+			www AS websitename,
 			www AS websiteurl,
 			rank AS rank,
 			showemail^1 AS hideEmail,

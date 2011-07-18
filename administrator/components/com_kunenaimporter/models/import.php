@@ -30,7 +30,7 @@ class KunenaimporterModelImport extends JModel {
 		'favorites'=>array('userid'),
 		'userprofile'=>array('userid'),
 		'sessions'=>array('userid'),
-		'categories'=>array('checked_out'),
+		//'categories'=>array('checked_out'),
 		'moderation'=>array('userid'),
 		'pollsusers'=>array('userid'),
 		'thankyou'=>array('userid', 'target_userid'),
@@ -400,7 +400,7 @@ class KunenaimporterModelImport extends JModel {
 					$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
 					$extuser->load($message->userid);
 					$extuser->lastvisitDate = $idmap[$message->userid]->lastvisitDate =$message->time;
-					$extuser->save();
+					$extuser->save($extuser->getProperties());
 				}
 				$message->userid = $user->userid;
 			}
