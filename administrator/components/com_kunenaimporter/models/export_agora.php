@@ -247,13 +247,14 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function &exportCategories($start=0, $limit=0) {
-	   $query = "SELECT MAX(id) FROM #__ccb_forums";
+	   $query = "SELECT MAX(id) FROM #__agora_forums";
 		$this->ext_database->setQuery ( $query );
 		$maxboard = $this->ext_database->loadResult ();
 		// Import the categories
 		$query="(SELECT
 			cat_name AS name,
 			disp_position AS ordering,
+			0 AS parent,
 			enable AS published,
 			NULL AS description,
 			NULL AS headerdesc,
@@ -261,12 +262,12 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			0 AS numTopics,
 			0 AS numPosts,
 			0 AS id_last_msg,
-			id+{$maxboard} AS id,
-			0 AS parent
+			id+{$maxboard} AS id
 		FROM #__agora_categories) UNION ALL
 		(SELECT
-		  forum_name AS name,
-		  sort_by AS ordering,
+			forum_name AS name,
+			sort_by AS ordering,
+			cat_id AS parent,
 			enable AS published,
 			forum_desc AS description,
 			forum_mdesc AS headerdesc,
@@ -274,8 +275,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			num_topics AS numTopics,
 			num_posts AS numPosts,
 			last_post_id AS id_last_msg,
-			id AS id,
-			parent_forum_id AS parent
+			id AS id
 		FROM #__agora_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
@@ -295,7 +295,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$query = "SELECT
 			p.id AS id,
 			t.poster AS name,
-			IF(t.id,0,p.topic_id) AS parent,
+			IF(t.posted=p.posted,0,p.topic_id) AS parent,
 			t.sticky AS ordering,
 			t.subject AS subject,
 			t.num_views AS hits,
@@ -392,9 +392,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	public function &exportPolls($start=0, $limit=0) {
 		$query="SELECT
 			p.pollid AS id,
-			p.options,
-			p.voters,
-			p.votes,
+			t.id AS threadid,
 			t.question AS title
 		FROM #__agora_polls AS p
 		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
