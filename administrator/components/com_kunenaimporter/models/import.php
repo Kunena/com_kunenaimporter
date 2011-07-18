@@ -30,23 +30,22 @@ class KunenaimporterModelImport extends JModel {
 		'favorites'=>array('userid'),
 		'userprofile'=>array('userid'),
 		'sessions'=>array('userid'),
-		//'categories'=>array('checked_out'),
+		'categories'=>array('checked_out'),
 		'moderation'=>array('userid'),
-		'polls_users'=>array('userid'),
+		'pollsusers'=>array('userid'),
 		'thankyou'=>array('userid', 'target_userid'),
-		'users_banned'=>array('userid', 'created_by', 'modified_by'),
+		'usersbanned'=>array('userid', 'created_by', 'modified_by'),
 		'whoisonline'=>array('userid'),
 	);
 
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
-		// $this->db->setDebug(0);
 	}
 
 	public function getImportOptions() {
 		// version
-		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
+		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'polls', 'pollsoptions', 'pollsusers', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
 		return $options;
 	}
 
@@ -77,12 +76,7 @@ class KunenaimporterModelImport extends JModel {
 		$result = $this->db->query () or die ( "<br />Enable keys failed:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
-	public function setAuthMethod($auth_method) {
-		$this->auth_method = $auth_method;
-	}
-
 	public function getUsername($name) {
-		//if ($this->auth_method == 'joomla') return $name;
 		return strtr ( $name, "<>\"'%;()&", '_________' );
 	}
 
@@ -176,7 +170,10 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
-		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
+		// FIXME: use kunena recount
+		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` 
+			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time 
+			WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 		unset ( $query );
@@ -199,12 +196,6 @@ class KunenaimporterModelImport extends JModel {
 		$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />{$option}: Invalid query:<br />$query<br />" . $this->db->errorMsg () );
-	}
-
-	public function truncateUsersMap() {
-		$query = "TRUNCATE TABLE `#__kunenaimporter_users`";
-		$this->db->setQuery ( $query );
-		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
 
 	public function truncateJoomlaUsers() {
@@ -277,8 +268,8 @@ class KunenaimporterModelImport extends JModel {
 			case 'subscriptions':
 			case 'favorites':
 			case 'polls':
-			case 'polls_options':
-			case 'polls_users':
+			case 'pollsoptions':
+			case 'pollsusers':
 				// lasttime:timestamp
 			case 'thankyou':
 			case 'usersbanned':
@@ -487,7 +478,7 @@ class KunenaimporterModelImport extends JModel {
 		$queries[] = "UPDATE `#__kunena_messages` SET `modified_by` = {$this->db->quote($newid)} WHERE `modified_by` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_moderation` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_polls_users` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
-		//$queries[] = "UPDATE `#__kunena_sessions` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_sessions` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_subscriptions` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_subscriptions_categories` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_thankyou` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";

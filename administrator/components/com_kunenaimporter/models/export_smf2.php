@@ -44,7 +44,6 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 */
 	protected $versionmax = '2.0.999';
 	
-	var $auth_method;
 	protected $dbconfig = null;
 	protected $config = null;
 

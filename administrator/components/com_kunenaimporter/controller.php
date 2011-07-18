@@ -119,7 +119,7 @@ class KunenaImporterController extends JController {
 
 	public function truncatemap() {
 		$importer = $this->getModel ( 'import' );
-		$importer->truncateUsersMap ();
+		$importer->truncateData ('users');
 		$app = JFactory::getApplication ();
 		$app->setUserState ( 'com_kunenaimporter.users', -1 );
 		$app->setUserState ( 'com_kunenaimporter.mapusers', -1 );
@@ -142,7 +142,6 @@ class KunenaImporterController extends JController {
 		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
-		$importer->setAuthMethod ( $exporter->getAuthMethod () );
 
 		if (!$success || $errormsg)
 			return;
@@ -232,7 +231,6 @@ class KunenaImporterController extends JController {
 		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
-		$importer->setAuthMethod ( $exporter->getAuthMethod () );
 
 		$options = $importer->getImportOptions ();
 		$state = $this->getParams ();

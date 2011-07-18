@@ -31,6 +31,16 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+18-July-2011 Matias
+^ [#30] Code cleanup in importer & exporter
+
+17-July-2011 Matias
+# [#30] Example exporter: Fix topic subscriptions import 
+# [#5] phpBB3 support: Fix dates in session import
++ [#30] Example exporter: Add polls support
++ [#37] Add nearly complete support for deprecated phpBB2
+^ [#35] Improve usability: Add menu image and missing gray icons, mark unfinished importers as gray
+
 16-July-2011 Matias
 ^ [#35] Improve usability: Cleaner look
 ^ [#35] Improve usability: Don't show unused configuration parameters

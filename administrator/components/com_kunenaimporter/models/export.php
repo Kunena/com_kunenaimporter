@@ -65,8 +65,6 @@ class KunenaimporterModelExport extends JModel {
 	var $ext_database = null;
 	var $ext_same = false;
 	var $messages = array ();
-	var $importOps = array ();
-	var $auth_method;
 
 	public function __construct() {
 		parent::__construct ();
@@ -78,7 +76,6 @@ class KunenaimporterModelExport extends JModel {
 		if (!$this->detectComponent()) return;
 
 		$this->ext_database = $this->getDatabase();
-		$this->buildImportOps ();
 		$this->initialize();
 	}
 
@@ -161,10 +158,6 @@ class KunenaimporterModelExport extends JModel {
 		return $exportOpt;
 	}
 
-	public function buildImportOps() {
-		$this->importOps = array();
-	}
-	
 	public function isCompatible($version) {
 		if ((!empty($this->versionmin) && version_compare($version, $this->versionmin, '<')) ||
 			(!empty($this->versionmax) && version_compare($version, $this->versionmax, '>'))) {
@@ -249,10 +242,6 @@ class KunenaimporterModelExport extends JModel {
 		return $parser->document->getElementByPath ( 'version' )->data ();
 	}
 
-	public function getAuthMethod() {
-		return $this->auth_method;
-	}
-
 	protected function addMessage($msg) {
 		$this->messages [] = $msg;
 	}
@@ -328,12 +317,16 @@ class KunenaimporterModelExport extends JModel {
 	protected function parseHtmlNode(DomNode $node, $output) {
 		$tag = $node->tagName;
 		switch ($tag) {
+			case 'br':
+				return "\n";
 			case 'b':
 			case 'strong':
 				return "[b]{$output}[/b]";
 			case 'i':
 			case 'em':
 				return "[i]{$output}[/i]";
+			case 'u':
+				return "[u]{$output}[/u]";
 			case 'span':
 				$style = $node->getAttribute('style');	
 				if ($style == 'text-decoration: underline;') $output = "[u]{$output}[/u]";
@@ -411,45 +404,19 @@ class KunenaimporterModelExport extends JModel {
 
 	public function countData($operation) {
 		$result = 0;
-		if (empty ( $this->importOps [$operation] )) {
-			$func = "count{$operation}";
-			if (method_exists($this, $func)) {
-				return $this->$func ();
-			}
-			return false;
+		$func = "count{$operation}";
+		if (method_exists($this, $func)) {
+			return $this->$func ();
 		}
-		$info = $this->importOps [$operation];
-		if (! empty ( $info ['from'] )) {
-			$query = "SELECT COUNT(*) FROM " . $info ['from'];
-			if (! empty ( $info ['where'] ))
-				$query .= ' WHERE ' . $info ['where'];
-			if (! empty ( $info ['orderby'] ))
-				$query .= ' ORDER BY ' . $info ['orderby'];
-			$result = $this->getCount ( $query );
-		} else if (! empty ( $info ['count'] ))
-			$result = $this->$info ['count'] ();
-		return $result;
+		return false;
 	}
 
 	public function &exportData($operation, $start = 0, $limit = 0) {
 		$result = array ();
-		if (empty ( $this->importOps [$operation] )) {
-			$func = "export{$operation}";
-			if (method_exists($this, $func)) {
-				$result = $this->$func ( $start, $limit );
-			}
-			return $result;
+		$func = "export{$operation}";
+		if (method_exists($this, $func)) {
+			$result = $this->$func ( $start, $limit );
 		}
-		$info = $this->importOps [$operation];
-		if (! empty ( $info ['select'] ) && ! empty ( $info ['from'] )) {
-			$query = "SELECT " . $info ['select'] . " FROM " . $info ['from'];
-			if (! empty ( $info ['where'] ))
-				$query .= ' WHERE ' . $info ['where'];
-			if (! empty ( $info ['orderby'] ))
-				$query .= ' ORDER BY ' . $info ['orderby'];
-			$result = $this->getExportData ( $query, $start, $limit );
-		} else if (! empty ( $info ['export'] ))
-			$result = $this->$info ['export'] ( $start, $limit );
 		return $result;
 	}
 
@@ -504,9 +471,5 @@ class KunenaimporterModelExport extends JModel {
 			$users[] = $extuser;
 		}
 		return $users;
-	}
-
-	public function &exportJoomlaUsers($start = 0, $limit = 0) {
-
 	}
 }
