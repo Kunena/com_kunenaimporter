@@ -258,25 +258,32 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			enable AS published,
 			NULL AS description,
 			NULL AS headerdesc,
-			0 AS moderators,
+			0 AS pub_access,
+			1 AS pub_recurse,
+			0 AS admin_access,
+			1 AS admin_recurse,
 			0 AS numTopics,
 			0 AS numPosts,
 			0 AS id_last_msg,
 			id+{$maxboard} AS id
 		FROM #__agora_categories) UNION ALL
 		(SELECT
-			forum_name AS name,
-			sort_by AS ordering,
-			cat_id AS parent,
-			enable AS published,
-			forum_desc AS description,
-			forum_mdesc AS headerdesc,
-			moderators,
-			num_topics AS numTopics,
-			num_posts AS numPosts,
-			last_post_id AS id_last_msg,
-			id AS id
-		FROM #__agora_forums)
+			f.forum_name AS name,
+			f.sort_by AS ordering,
+			cat.id+{$maxboard} AS parent,
+			f.enable AS published,
+			f.forum_desc AS description,
+			f.forum_mdesc AS headerdesc,
+			0 AS pub_access,
+			1 AS pub_recurse,
+			0 AS admin_access,
+			1 AS admin_recurse,
+			f.num_topics AS numTopics,
+			f.num_posts AS numPosts,
+			f.last_post_id AS id_last_msg,
+			f.id AS id
+		FROM #__agora_forums AS f
+		LEFT JOIN #__agora_categories AS cat ON f.cat_id=cat.id)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {

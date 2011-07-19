@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+19-July-2011 Xillibit
+# [#21] Little issue with parent on agora category import
+
 18-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (improve catégories, messages import)
 
