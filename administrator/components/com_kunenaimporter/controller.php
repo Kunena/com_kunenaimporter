@@ -22,6 +22,7 @@ class KunenaImporterController extends JController {
 		$this->item_type = 'Default';
 		$this->addModelPath ( JPATH_ADMINISTRATOR . '/components/com_kunenaimporter/models' );
 		parent::__construct ();
+		$this->registerTask ( 'start', 'start' );
 		$this->registerTask ( 'truncatemap', 'truncatemap' );
 		$this->registerTask ( 'mapusers', 'mapusers' );
 		$this->registerTask ( 'stopmapping', 'stopmapping' );
@@ -31,6 +32,49 @@ class KunenaImporterController extends JController {
 		$this->registerTask ( 'truncate', 'truncatetable' );
 	}
 
+	public function start() {
+		$app = JFactory::getApplication ();
+		if (! JRequest::checkToken (true)) {
+			$app->enqueueMessage ( JText::_ ( 'COM_KUNENAIMPORTER_ERROR_TOKEN' ), 'error' );
+			$this->redirectBack();
+		}
+		$params = getKunenaImporterParams();
+		$params->set('path', '');
+		$forum = JRequest::getString ( 'select', '' );
+		$success = false;
+		if ($forum) {
+			$exporter = $this->getModel ( 'export_' . $forum );
+			if ($exporter) $success = $exporter->detectComponent ();
+		}
+		if (!$success) {
+			$app->enqueueMessage ( JText::sprintf ( "Component '%s' was not detected!", $forum ), 'error' );
+			$this->redirectBack();
+		}
+
+		if ($params->get('extforum') != $forum) {
+			$table = JTable::getInstance ( 'component' );
+			if (! $table->loadByOption ( 'com_kunenaimporter' )) {
+				JError::raiseWarning ( 500, 'Not a valid component' );
+				return false;
+			}
+			$post = array('params' => array('extforum'=>$forum, 'path'=>$exporter->getPath(), 'usermode'=>'joomla', 'useradd'=>'no'));
+			$table->bind ( $post );
+			if (!$table->save ( $post )) {
+				$app->enqueueMessage ( JText::_ ( 'Saving configuration failed!' ), 'error' );
+				$this->redirectBack();
+			}
+			$app->setUserState ( 'com_kunenaimporter.state', null );
+			$app->setUserState ( 'com_kunenaimporter.Users', null );
+			$importer = $this->getModel ( 'import' );
+			$options = $importer->getImportOptions ();
+			foreach ( $options as $option ) {
+				$app->setUserState ( 'com_kunenaimporter.' . $option, -1 );
+			}
+		}
+
+		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
+	}
+	
 	public function stopmapping() {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
@@ -45,19 +89,29 @@ class KunenaImporterController extends JController {
 
 		$app = JFactory::getApplication ();
 
+		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
+		$params = new JParameter ( $component->params );
+		$newparams = JRequest::getVar ( 'params' );
+		if (!empty($newparams)) {
+			foreach ($newparams as $param=>$value) {
+				if ($params->get ( $param ) != $value) {
+					$this->save();
+					break;
+				}
+			}
+		}
+
 		$importer = $this->getModel ( 'import' );
 		$options = $importer->getImportOptions ();
 		$state = $this->getParams ();
 		$optlist = array ();
 		foreach ( $options as $option ) {
 			if (isset ( $state [$option] )) {
-				$app->setUserState ( 'com_kunenaimporter.' . $option, 0 );
+				$app->setUserState ( 'com_kunenaimporter.' . $option, -1 );
 				$importer->truncateData ( $option );
 				$optlist [] = $option;
 			}
 		}
-		// FIXME: !!!
-		//$importer->truncateJoomlaUsers();
 
 		$app->enqueueMessage ( 'Deleted ' . implode ( ', ', $optlist ) );
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
@@ -65,8 +119,11 @@ class KunenaImporterController extends JController {
 
 	public function truncatemap() {
 		$importer = $this->getModel ( 'import' );
-		$importer->truncateUsersMap ();
+		$importer->truncateData ('users');
 		$app = JFactory::getApplication ();
+		$app->setUserState ( 'com_kunenaimporter.users', -1 );
+		$app->setUserState ( 'com_kunenaimporter.mapusers', -1 );
+		$app->setUserState ( 'com_kunenaimporter.createusers', -1 );
 		$app->setUserState ( 'com_kunenaimporter.Users', 0 );
 		$app->enqueueMessage ( 'Deleted user mapping' );
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
@@ -85,7 +142,6 @@ class KunenaImporterController extends JController {
 		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
-		$importer->setAuthMethod ( $exporter->getAuthMethod () );
 
 		if (!$success || $errormsg)
 			return;
@@ -112,13 +168,18 @@ class KunenaImporterController extends JController {
 
 	public function selectuser() {
 		$extid = JRequest::getInt ( 'extid', 0 );
-		$cid = JRequest::getVar ( 'cid', array (0 ), 'post', 'array' );
+		$cid = JRequest::getVar ( 'cid', array (0), 'post', 'array' );
 		$userdata ['id'] = array_shift ( $cid );
-		if ($userdata ['id'] < 0) {
+		if ($userdata ['id'] == 'NEW') {
+			$userdata ['id'] = 0;
+		} elseif (!intval($userdata ['id'])) {
+			$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
+			return;
+		} elseif ($userdata ['id'] < 0) {
 			$userdata ['id'] = JRequest::getInt ( 'userid', 0 );
 		}
 		$replace = JRequest::getInt ( 'replace', 0 );
-
+		
 		require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
 		$importer = $this->getModel ( 'import' );
 
@@ -127,16 +188,22 @@ class KunenaImporterController extends JController {
 		$success = true;
 		$oldid = $extuser->id;
 		if ($oldid > 0) $importer->updateUserData($oldid, -$extid);
+		if ($userdata ['id'] == 0) {
+			$userdata ['id'] = $importer->createUser($extuser);
+			if (!is_numeric($userdata ['id'] )) {
+				$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users', $userdata ['id'], 'notice' );
+				return;
+			}
+		}
 		if ($userdata ['id'] > 0) $success = $importer->updateUserData(-$extid, $userdata ['id'], $replace);
 		if ($success && $extuser->save ( $userdata ) === false) {
-			echo "ERROR: Saving external data for $userdata->username failed: " . $extuser->getError () . "<br />";
+			die("ERROR: Saving external data for $userdata->username failed: " . $extuser->getError () . "<br />");
 			$importer->updateUserData($userdata ['id'], $oldid);
 		}
 		if (!$success) {
 			$importer->updateUserData(-$extid, $oldid);
 		}
 
-		$app = JFactory::getApplication ();
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
 
@@ -148,12 +215,22 @@ class KunenaImporterController extends JController {
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
+		$newparams = JRequest::getVar ( 'params' );
+		if (!empty($newparams)) {
+			foreach ($newparams as $param=>$value) {
+				if ($params->get ( $param ) != $value) {
+					$this->save();
+					$this->setredirect ( 'index.php?option=com_kunenaimporter', 'Configuration saved. Please try again.', 'notice' );
+					return;
+				}
+			}
+		}
+		
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 		$success = $exporter->detect ();
 		$errormsg = $exporter->getError ();
 		$importer = $this->getModel ( 'import' );
-		$importer->setAuthMethod ( $exporter->getAuthMethod () );
 
 		$options = $importer->getImportOptions ();
 		$state = $this->getParams ();
@@ -165,11 +242,20 @@ class KunenaImporterController extends JController {
 			$start = ( int ) $app->getUserState ( 'com_kunenaimporter.' . $option );
 			if (isset ( $state [$option] )) {
 				$count = 0;
+				// Whether to truncate Joomla users table
+				$truncatejoomla = $exporter->external && $params->get ('usermode') == 'external';
 				do {
+					if ($start < 0 || $state [$option]) {
+						$importer->truncateData ( $option, $truncatejoomla );
+						$state [$option] = $start = 0;
+					}
 					$data = $exporter->exportData ( $option, $start, $limit );
-					$importer->importData ( $option, $data );
+					$icount = $importer->importData ( $option, $data );
 					$count = count ( $data );
 					$start += $count;
+					if ($option == 'createusers') {
+						$app->setUserState ( 'com_kunenaimporter.mapusers', $app->getUserState ( 'com_kunenaimporter.mapusers' )+$icount );
+					}
 					$app->setUserState ( 'com_kunenaimporter.' . $option, $start );
 					$timeout = $this->checkTimeout ();
 					unset ( $data );
@@ -179,13 +265,15 @@ class KunenaImporterController extends JController {
 				break;
 		}
 
+		$message = null;
+		$view = '';
 		if ($timeout)
 			$view = '&view=import';
 		else {
-			$app->enqueueMessage ( "Import done!" );
-			$view = '';
+			$message = "Import done!";
 		}
-		$this->setredirect ( 'index.php?option=com_kunenaimporter' . $view );
+		$app->setUserState ( 'com_kunenaimporter.state', $state );
+		$this->setredirect ( 'index.php?option=com_kunenaimporter' . $view, $message );
 
 	/*
 		// Check errors
@@ -236,8 +324,13 @@ class KunenaImporterController extends JController {
 	}
 
 	public function display() {
-		$params = $this->getParams ();
-		$cmd = JRequest::getCmd ( 'view', 'default' );
+		$params = getKunenaImporterParams();
+		$forum = $params->get('extforum');
+		if (!$forum) {
+			$cmd = 'start';
+		}
+
+		$cmd = !empty($cmd) ? $cmd : JRequest::getCmd ( 'view', 'default' );
 		$view = $this->getView ( $cmd, 'html' );
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
@@ -245,8 +338,11 @@ class KunenaImporterController extends JController {
 		$extforum = $params->get ( 'extforum' );
 		$view->setModel ( $this->getModel ( $extforum ? 'export_' . $extforum : 'export' ), false );
 
-		JSubMenuHelper::addEntry ( JText::_ ( 'Importer Configuration' ), 'index.php?option=com_kunenaimporter', $cmd == 'default' );
-		JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );
+		if ($cmd != 'start') {
+			JSubMenuHelper::addEntry ( JText::_ ( 'Choose Your Software' ), 'index.php?option=com_kunenaimporter&view=start', $cmd == 'default' );
+			JSubMenuHelper::addEntry ( JText::_ ( 'Importer Configuration' ), 'index.php?option=com_kunenaimporter', $cmd == 'default' );
+			JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );
+		}
 
 		$view->display ();
 	}
@@ -278,6 +374,11 @@ class KunenaImporterController extends JController {
 				$state = array ();
 			JRequest::setVar ( 'cid', $state, 'post' );
 		}
-		return array_flip ( $state );
+		return $state;
+	}
+
+	protected function redirectBack() {
+		$httpReferer = JRequest::getVar ( 'HTTP_REFERER', JURI::base ( true ), 'server' );
+		JFactory::getApplication ()->redirect ( $httpReferer );
 	}
 }

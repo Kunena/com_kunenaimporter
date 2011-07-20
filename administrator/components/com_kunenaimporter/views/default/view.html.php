@@ -13,18 +13,23 @@ defined ( '_JEXEC' ) or die ();
 
 // Import Joomla! libraries
 jimport ( 'joomla.application.component.view' );
+jimport('joomla.html.pane');
 
 class KunenaimporterViewDefault extends JView {
 
 	function display($tpl = null) {
 		$app = JFactory::getApplication ();
 		$params = getKunenaImporterParams ();
-		$this->assign ( 'params', $params );
 
 		$importer = $this->getModel ( 'import' );
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 
+		$this->pane	= JPane::getInstance('sliders');
+		$this->assign ( 'title', $exporter->title );
+		if ($exporter->external) {
+			$this->assign ( 'params', $params );
+		}
 		$this->options = '';
 		if (is_object ( $exporter )) {
 
@@ -45,7 +50,9 @@ class KunenaimporterViewDefault extends JView {
 			JToolBarHelper::custom ( 'truncate', 'delete', 'delete', JText::_ ( 'Truncate' ), false );
 			JToolBarHelper::divider ();
 		}
-		JToolBarHelper::save ( 'save', JText::_ ( 'Save Settings' ) );
+		if ($exporter->external) {
+			JToolBarHelper::save ( 'save', JText::_ ( 'Save Settings' ) );
+		}
 
 		parent::display ( $tpl );
 	}

@@ -171,6 +171,49 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 
 	/**
+	 * Count total number of users to be exported (external applications only)
+	 */
+	public function countUsers() {
+		return false;
+	}
+
+	/**
+	 * Export users (external applications only)
+	 * 
+	 * Returns list of user extuser objects containing database fields 
+	 * to #__kunenaimporter_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUsers($start = 0, $limit = 0) {
+		$result = array();
+		return $result;	
+		
+		$query = "SELECT
+			NULL AS extid,
+			'' AS extusername,
+			'' AS name,
+			'' AS username,
+			'' AS email,
+			'' AS password,
+			'Registered' AS usertype,
+			0 AS block,
+			'0000-00-00 00:00:00' AS registerDate,
+			'0000-00-00 00:00:00' AS lastvisitDate,
+			NULL AS params,
+		FROM #__users
+		ORDER BY user_id";
+		$result = $this->getExportData ( $query, $start, $limit, 'extid' );
+		foreach ( $result as &$row ) {
+			// Add prefix to password (for authentication plugin)
+			$row->password = 'example::'.$row->password;
+		}
+		return $result;
+	}
+
+	/**
 	 * Count total number of user profiles to be exported
 	 */
 	public function countUserProfile() {
@@ -202,7 +245,6 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			'' AS avatar,
 			0 AS karma,
 			0 AS karma_time,
-			1 AS group_id,
 			0 AS uhits,
 			'' AS personalText,
 			0 AS gender,
@@ -356,7 +398,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			'' AS description,
 			'' AS headerdesc,
 			'' AS class_sfx,
-			0 AS allow_polls
+			0 AS allow_polls,
+			0 AS id_last_msg,
+			0 AS numPosts,
+			0 AS numTopics,
+			0 AS time_last_msg
 		FROM #__example_categories
 		ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
@@ -452,6 +498,96 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	}
 	
 	/**
+	 * Count total polls to be exported
+	 */
+	public function countPolls() {
+		$query="SELECT COUNT(*) FROM #__example_polls";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export polls
+	 * 
+	 * Returns list of poll objects containing database fields 
+	 * to #__kunena_polls.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPolls($start=0, $limit=0) {
+		$query="SELECT
+			0 AS id,
+			'' AS title,
+			0 AS threadid,
+			'0000-00-00 00:00:00' AS polltimetolive
+		FROM #__example_polls";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll options to be exported
+	 */
+	public function countPollsOptions() {
+		$query="SELECT COUNT(*) FROM #__example_polls_options";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll options
+	 * 
+	 * Returns list of poll options objects containing database fields 
+	 * to #__kunena_polls_options.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsOptions($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS id,
+			0 AS pollid,
+			'' AS text,
+			0 AS votes
+		FROM #__example_polls_options";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total poll users to be exported
+	 */
+	public function countPollsUsers() {
+		$query="SELECT COUNT(*) FROM #__example_polls_users";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll users
+	 * 
+	 * Returns list of poll users objects containing database fields 
+	 * to #__kunena_polls_users.
+	 * 
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsUsers($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			0 AS pollid,
+			0 AS userid,
+			0 AS votes,
+			'0000-00-00 00:00:00' AS lasttime,
+			0 AS lastvote
+		FROM #__example_polls_users";
+		$result = $this->getExportData($query, $start, $limit);
+		return $result;
+	}
+
+	/**
 	 * Count total number of attachments to be exported
 	 */
 	public function countAttachments() {
@@ -513,9 +649,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportSubscriptions($start = 0, $limit = 0) {
+		// future1 = notify status (1=message sent)
 		$query = "SELECT
 			0 AS thread,
-			0 AS userid
+			0 AS userid,
+			0 AS future1
 		FROM #__example_subscriptions";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
@@ -581,6 +719,9 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		if ($start)
 			return $config;
 
+		// Time delta in seconds from UTC (=JFactory::getDate()->toUnix())
+		// $config['timedelta'] = JFactory::getDate()->toUnix() - time() - $offsetinseconds;
+		
 		// Get configuration and fill any values from below:
 
 		// $config['board_title'] = null;

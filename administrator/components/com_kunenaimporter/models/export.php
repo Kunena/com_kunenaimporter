@@ -65,8 +65,6 @@ class KunenaimporterModelExport extends JModel {
 	var $ext_database = null;
 	var $ext_same = false;
 	var $messages = array ();
-	var $importOps = array ();
-	var $auth_method;
 
 	public function __construct() {
 		parent::__construct ();
@@ -78,7 +76,6 @@ class KunenaimporterModelExport extends JModel {
 		if (!$this->detectComponent()) return;
 
 		$this->ext_database = $this->getDatabase();
-		$this->buildImportOps ();
 		$this->initialize();
 	}
 
@@ -91,17 +88,34 @@ class KunenaimporterModelExport extends JModel {
 		if (!$this->external) return;
 		// No path set, try auto detecting forum
 		if (!$this->params->get('path')) {
-			$folders = JFolder::folders(JPATH_ROOT);
-			foreach ($folders as $folder) {
-				if ($this->detectComponent(JPATH_ROOT."/{$folder}")) {
-					$path = $folder;
-					break;
+			// Find forum from Joomla root
+			if ($this->detectComponent(JPATH_ROOT)) {
+				$path = '.';
+				break;
+			}
+			// Count parent directories to www root
+			$parents = trim(JURI::root(true), '/');
+			$parents = $parents ? count(explode('/', $parents)) : 0;
+			// Create subdirectory lists
+			while ($parents >= 0) {
+				$ppath = trim(str_repeat('/..', $parents), '/');
+				$folders[$ppath] = JFolder::folders(JPATH_ROOT."/{$ppath}");
+				$parents--;
+			}
+			// Find forum from all subdirectories
+			foreach ($folders as $ppath=>$parent) {
+				foreach ($parent as $folder) {
+					if ($this->detectComponent(JPATH_ROOT."/{$ppath}/{$folder}")) {
+						$path = trim("{$ppath}/{$folder}", '/');;
+						break;
+					}
 				}
 			}
 		}
 
 		$this->relpath = isset($path) ? $path : $this->params->get('path');
 		$this->basepath = JPATH_ROOT."/{$this->relpath}";
+		$this->params->set('path', $this->relpath);
 		return $absolute ? $this->basepath : $this->relpath;
 	}
 	
@@ -144,10 +158,6 @@ class KunenaimporterModelExport extends JModel {
 		return $exportOpt;
 	}
 
-	public function buildImportOps() {
-		$this->importOps = array();
-	}
-	
 	public function isCompatible($version) {
 		if ((!empty($this->versionmin) && version_compare($version, $this->versionmin, '<')) ||
 			(!empty($this->versionmax) && version_compare($version, $this->versionmax, '>'))) {
@@ -157,8 +167,6 @@ class KunenaimporterModelExport extends JModel {
 	}
 
 	public function detect() {
-		$this->addMessage ( '<h2>Importer Status</h2>' );
-
 		// Kunena detection and version check
 		$minKunenaVersion = '1.6.4';
 		if (! class_exists ( 'Kunena' ) || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
@@ -177,10 +185,11 @@ class KunenaimporterModelExport extends JModel {
 		
 		if ($this->external) {
 			if (is_dir($this->basepath)) {
-				$this->addMessage ( '<div>Using relative path: <b style="color:green">./' . $this->relpath . '</b></div>' );
+				$this->relpath = JPath::clean($this->relpath);
+				$this->addMessage ( '<div>Using relative path: <b style="color:green">' . $this->relpath . '</b></div>' );
 			} else {
 				$this->error = $this->title." not found from {$this->basepath}";
-				$this->addMessage ( '<div>Using relative path: <b style="color:red">./' . $this->relpath . '</b></div>' );
+				$this->addMessage ( '<div>Using relative path: <b style="color:red">' . $this->relpath . '</b></div>' );
 				$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
 				return false;
 			}
@@ -231,10 +240,6 @@ class KunenaimporterModelExport extends JModel {
 		$parser = JFactory::getXMLParser ( 'Simple' );
 		$parser->loadFile ( $xml );
 		return $parser->document->getElementByPath ( 'version' )->data ();
-	}
-
-	public function getAuthMethod() {
-		return $this->auth_method;
 	}
 
 	protected function addMessage($msg) {
@@ -312,12 +317,16 @@ class KunenaimporterModelExport extends JModel {
 	protected function parseHtmlNode(DomNode $node, $output) {
 		$tag = $node->tagName;
 		switch ($tag) {
+			case 'br':
+				return "\n";
 			case 'b':
 			case 'strong':
 				return "[b]{$output}[/b]";
 			case 'i':
 			case 'em':
 				return "[i]{$output}[/i]";
+			case 'u':
+				return "[u]{$output}[/u]";
 			case 'span':
 				$style = $node->getAttribute('style');	
 				if ($style == 'text-decoration: underline;') $output = "[u]{$output}[/u]";
@@ -395,45 +404,19 @@ class KunenaimporterModelExport extends JModel {
 
 	public function countData($operation) {
 		$result = 0;
-		if (empty ( $this->importOps [$operation] )) {
-			$func = "count{$operation}";
-			if (method_exists($this, $func)) {
-				return $this->$func ();
-			}
-			return false;
+		$func = "count{$operation}";
+		if (method_exists($this, $func)) {
+			return $this->$func ();
 		}
-		$info = $this->importOps [$operation];
-		if (! empty ( $info ['from'] )) {
-			$query = "SELECT COUNT(*) FROM " . $info ['from'];
-			if (! empty ( $info ['where'] ))
-				$query .= ' WHERE ' . $info ['where'];
-			if (! empty ( $info ['orderby'] ))
-				$query .= ' ORDER BY ' . $info ['orderby'];
-			$result = $this->getCount ( $query );
-		} else if (! empty ( $info ['count'] ))
-			$result = $this->$info ['count'] ();
-		return $result;
+		return false;
 	}
 
 	public function &exportData($operation, $start = 0, $limit = 0) {
 		$result = array ();
-		if (empty ( $this->importOps [$operation] )) {
-			$func = "export{$operation}";
-			if (method_exists($this, $func)) {
-				$result = $this->$func ( $start, $limit );
-			}
-			return $result;
+		$func = "export{$operation}";
+		if (method_exists($this, $func)) {
+			$result = $this->$func ( $start, $limit );
 		}
-		$info = $this->importOps [$operation];
-		if (! empty ( $info ['select'] ) && ! empty ( $info ['from'] )) {
-			$query = "SELECT " . $info ['select'] . " FROM " . $info ['from'];
-			if (! empty ( $info ['where'] ))
-				$query .= ' WHERE ' . $info ['where'];
-			if (! empty ( $info ['orderby'] ))
-				$query .= ' ORDER BY ' . $info ['orderby'];
-			$result = $this->getExportData ( $query, $start, $limit );
-		} else if (! empty ( $info ['export'] ))
-			$result = $this->$info ['export'] ( $start, $limit );
 		return $result;
 	}
 
@@ -468,7 +451,25 @@ class KunenaimporterModelExport extends JModel {
 		return $users;
 	}
 
-	public function &exportJoomlaUsers($start = 0, $limit = 0) {
+	public function countCreateUsers() {
+		if (!$this->external || $this->params->get('useradd') != 'yes') return false;
+		$db = JFactory::getDBO();
+		$query = "SELECT COUNT(*) FROM #__kunenaimporter_users";
+		$db->setQuery ( $query );
+		return $db->loadResult();
+	}
 
+	public function &exportCreateUsers($start = 0, $limit = 0) {
+		$db = JFactory::getDBO();
+		$query = "SELECT * FROM #__kunenaimporter_users ORDER BY extid";
+		$db->setQuery ( $query, $start, $limit );
+		$extusers = $db->loadObjectList ( 'id' );
+		$users = array();
+		foreach ($extusers as $user) {
+			$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
+			$extuser->load ( $user->extid );
+			$users[] = $extuser;
+		}
+		return $users;
 	}
 }

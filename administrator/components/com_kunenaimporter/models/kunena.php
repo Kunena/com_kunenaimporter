@@ -64,6 +64,11 @@ class KunenaImporterTableExtUser extends KunenaImporterTable {
 		parent::__construct ( '#__kunenaimporter_users', 'extid', $database );
 	}
 
+	public function check() {
+		if (empty($this->gid)) $this->gid = 18;
+		return true;
+	}
+	
 	public function loadIdMap($list) {
 		if (empty($list)) return array();
 		$list = implode(',', $list);
@@ -238,7 +243,7 @@ class KunenaImporterTablePolls extends KunenaImporterTable {
 	}
 }
 
-class KunenaImporterTablePolls_Options extends KunenaImporterTable {
+class KunenaImporterTablePollsOptions extends KunenaImporterTable {
 	var $id = null;
 	var $pollid = null;
 	var $text = null;
@@ -249,7 +254,7 @@ class KunenaImporterTablePolls_Options extends KunenaImporterTable {
 	}
 }
 
-class KunenaImporterTablePolls_Users extends KunenaImporterTable {
+class KunenaImporterTablePollsUsers extends KunenaImporterTable {
 	var $pollid = null;
 	var $userid = null;
 	var $votes = null;
@@ -307,20 +312,25 @@ class KunenaImporterTableSubscriptions extends KunenaImporterTable {
 	}
 
 	public function store($updateNulls = false) {
-		$this->_db->setQuery ( "INSERT INTO #__kunena_subscriptions (thread, userid) VALUES ({$this->thread}, {$this->userid})" );
+		$this->_db->setQuery ( "INSERT INTO #__kunena_subscriptions (thread, userid, future1) VALUES ({$this->thread}, {$this->userid}, {$this->future1})" );
 		$this->_db->query ();
 		return !$this->_db->getErrorNum ();
 	}
-
 }
 
 class KunenaImporterTableSubscriptions_Categories extends KunenaImporterTable {
-	var $thread = null;
+	var $catid = null;
 	var $userid = null;
 	var $future1 = null;
 
 	function __construct($database) {
-		parent::__construct ( '#__kunena_subscriptions_categories', 'thread', $database );
+		parent::__construct ( '#__kunena_subscriptions_categories', 'catid', $database );
+	}
+
+	public function store($updateNulls = false) {
+		$this->_db->setQuery ( "INSERT INTO #__kunena_subscriptions (catid, userid, future1) VALUES ({$this->catid}, {$this->userid}, {$this->future1})" );
+		$this->_db->query ();
+		return !$this->_db->getErrorNum ();
 	}
 }
 

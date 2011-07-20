@@ -37,12 +37,41 @@ KunenaImporter 1.6.5-DEV
 18-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (improve catégories, messages import)
 
+18-July-2011 Matias
+^ [#30] Code cleanup in importer & exporter
+^ [#5] Reviewed and fixed phpBB3 support, closes #5
+
 17-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (avatar galleries import for agora)
+
+17-July-2011 Matias
+# [#30] Example exporter: Fix topic subscriptions import
+# [#5] phpBB3 support: Fix dates in session import
++ [#30] Example exporter: Add polls support
++ [#37] Add nearly complete support for deprecated phpBB2
+^ [#35] Improve usability: Add menu image and missing gray icons, mark unfinished importers as gray
+
+16-July-2011 Matias
+^ [#35] Improve usability: Cleaner look
+^ [#35] Improve usability: Don't show unused configuration parameters
+^ [#35] Improve usability: Select all import options by default (one click import)
+# [#35] Improve usability: Truncate selected tables before import (no more white screens on duplicate entries)
+^ [#35] Improve usability: Unselect already imported tasks
+^ [#35] Improve usability: Changing configuration options should have effect when clicking "Import" or "Truncate"
+# [#5] phpBB3 support: Fix various issues with user import
++ [#30] Example exporter: Add missing functions countUsers() and exportUsers()
+# [#5] phpBB3 support: Fix database version detection for deprecated phpBB2
++ [#37] Add initial support for deprecated phpBB2
+
+15-July-2011 Matias
++ [#5] phpBB3 and SMF2 support: allow user to create new Joomla users, either manually or automatically
 
 14-July-2011 Xillibit
 # [#21] Improve ccboard and agora support (improvements on agora categories import, messages import)
 # [#21] Improve ccboard and agora support (improvements on messages import)
+
+14-July-2011 Matias
++ [#35] Improve usability: Nice startup screen with cool icons and usage instructions
 
 13-July-2011 Matias
 + [#27] Full support for ccBoard 1.2-RC
