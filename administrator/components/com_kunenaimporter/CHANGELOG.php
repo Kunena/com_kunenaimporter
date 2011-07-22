@@ -31,12 +31,21 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+19-July-2011 Xillibit
+# [#21] Little issue with parent on agora category import
+
+18-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (improve catégories, messages import)
+
 18-July-2011 Matias
 ^ [#30] Code cleanup in importer & exporter
 ^ [#5] Reviewed and fixed phpBB3 support, closes #5
 
+17-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (avatar galleries import for agora)
+
 17-July-2011 Matias
-# [#30] Example exporter: Fix topic subscriptions import 
+# [#30] Example exporter: Fix topic subscriptions import
 # [#5] phpBB3 support: Fix dates in session import
 + [#30] Example exporter: Add polls support
 + [#37] Add nearly complete support for deprecated phpBB2
@@ -56,6 +65,10 @@ KunenaImporter 1.6.5-DEV
 
 15-July-2011 Matias
 + [#5] phpBB3 and SMF2 support: allow user to create new Joomla users, either manually or automatically
+
+14-July-2011 Xillibit
+# [#21] Improve ccboard and agora support (improvements on agora categories import, messages import)
+# [#21] Improve ccboard and agora support (improvements on messages import)
 
 14-July-2011 Matias
 + [#35] Improve usability: Nice startup screen with cool icons and usage instructions
