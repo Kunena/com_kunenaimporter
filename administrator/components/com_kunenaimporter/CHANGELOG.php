@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+24-July-2011 Xillibit
+# [#25] Make working messages, categories import with ninjaboard
+
 19-July-2011 Xillibit
 # [#21] Little issue with parent on agora category import
 

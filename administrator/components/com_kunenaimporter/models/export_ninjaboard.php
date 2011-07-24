@@ -34,9 +34,23 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	 * @var string or null
 	 */
 	protected $versionmax = null;
-	
+
 	public function countConfig() {
 		return 1;
+	}
+
+	/**
+	 * Get NinjaBoard version
+	 */
+	public function getVersion() {
+		// NinjaBoard version can be found from manifest.xml file
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/manifest.xml";
+		if (!JFile::exists ( $xml )) {
+			return false;
+		}
+		$parser = JFactory::getXMLParser ( 'Simple' );
+		$parser->loadFile ( $xml );
+		return $parser->document->getElementByPath ( 'version' )->data ();
 	}
 
 	public function &exportConfig($start=0, $limit=0) {
@@ -221,7 +235,7 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 		// $config['pubprofile'] = null;
 		// $config['thankyou_max'] = null;
 		$result = array('1'=>$config);
-		
+
 		return $result;
 
 	}
@@ -235,21 +249,28 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	public function &exportCategories($start=0, $limit=0) {
 		// Import the forums - Ninjaboard does not store separate categories
 		$query="(SELECT
+			ninjaboard_forum_id AS id,
 			enabled AS published,
 			title AS name,
 			description AS description,
 			/* forum_mdesc AS headerdesc, TODO: extract description ouf of param */
 			topics AS numTopics,
+			ordering,
 			posts AS numPosts,
 			last_post_id AS id_last_msg,
 			ninjaboard_forum_id AS id,
-			parent_id AS parent
+			IF(path=='/',0,) AS parent
 		FROM #__ninjaboard_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {
-			$row->name = prep($row->name);
-			$row->description = prep($row->description);
+			if( $row->parent=='/' ) {
+				$row->parent='0';
+			} else {
+				$row->parent=preg_replace('#/?#','',$row->parent);
+			}
+			$row->name = $this->prep($row->name);
+			$row->description = $this->prep($row->description);
 		}
 		return $result;
 	}
@@ -260,31 +281,26 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	}
 
 	public function &exportMessages($start = 0, $limit = 0) {
-/* TODO: Build ninjaboard logic 
+		// TODO: in replies the subject is empty, need to find a way to fill it
  		$query = "SELECT
-			t.id AS id,
-			t.poster AS name,
-			IF(p.topic_id=t.id,0,p.topic_id) AS parent,
-			t.sticky AS ordering,
-			t.subject AS subject,
-			t.num_views AS hits,
-			t.closed AS locked,
+ 			p.ninjaboard_post_id AS id,
+			IF(p.ninjaboard_post_id=t.ninjaboard_topic_id,0,t.ninjaboard_topic_id) AS parent,
+			t.first_post_id AS thread,
 			t.forum_id AS catid,
-			u.jos_id AS userid,
-			p.poster_ip AS ip,
-			p.poster_email AS email,
-			p.message AS message,
-			p.posted AS time,
-			p.topic_id AS thread
-			p.edited AS modified_time,
-			p.edited_by AS modified_by
-
-			FROM `#__agora_topics` AS t
-			LEFT JOIN `#__agora_posts` AS p ON p.topic_id = t.id
-			LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
-			WHERE t.announcements='0'
-			ORDER BY t.id";
-*/
+			u.username AS name,
+			p.subject,
+			p.text AS message,
+			UNIX_TIMESTAMP(p.created_time) AS time,
+			p.created_user_id AS userid,
+			p.modified_user_id AS modified_by,
+			UNIX_TIMESTAMP(p.modified) AS modified_time,
+			p.edit_reason AS modified_reason,
+			p.user_ip AS ip,
+			p.locked,
+			p.ninjaboard_topic_id AS topic_emoticon
+			FROM #__ninjaboard_posts AS p
+			LEFT JOIN #__ninjaboard_topics AS t ON t.ninjaboard_topic_id=p.ninjaboard_topic_id
+			LEFT JOIN #__users AS u ON u.id=p.created_user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
 			$row->subject = $this->prep ( $row->subject );
@@ -306,27 +322,31 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 		$query="SELECT image AS location, text FROM #__agora_smilies";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
-	}
+	}*/
 
 	public function countRanks() {
 		return false;
 
-		$query="SELECT COUNT(*) FROM #__agora_ranks";
+		$query="SELECT COUNT(*) FROM #__ninjaboard_ranks";
 		return $this->getCount($query);
 	}
 
 	public function &exportRanks($start=0, $limit=0)
 	{
 		$query="SELECT
-			rank AS rank_title,
-			min_posts AS rank_min,
-			image AS rank_image,
-			user_type AS rank_special
-		FROM #__agora_ranks";
+			title AS rank_title,
+			min AS rank_min,
+			rank_file AS rank_image
+		FROM #__ninjaboard_ranks";
 		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $rank ) {
+			$this->parseText ( $row->rank_title );
+			// Full path to the original file
+			$rank->copyfile = JPATH_ROOT . "/media/com_ninjaboard/images/rank/{$rank->rank_image}";
+		}
 		return $result;
 	}
-*/
+
 	public function countUserprofile() {
 		$query="SELECT COUNT(*) FROM #__ninjaboard_people";
 		return $this->getCount($query);
@@ -334,15 +354,49 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 
 	public function &exportUserprofile($start=0, $limit=0) {
 		$query="SELECT
-			ninjaboard_person_id AS user_id,
+			ninjaboard_person_id AS userid,
 			signature,
 			posts AS posts,
-			avatar
+			avatar,
+			'flat' AS view,
+			'' AS signature,
+			0 AS moderator,
+			NULL AS banned,
+			0 AS ordering,
+			0 AS karma,
+			0 AS karma_time,
+			0 AS uhits,
+			'' AS personalText,
+			0 AS gender,
+			NULL AS birthdate,
+			NULL AS location,
+			NULL AS ICQ,
+			NULL AS AIM,
+			NULL AS YIM,
+			NULL AS MSN,
+			NULL AS SKYPE,
+			NULL AS TWITTER,
+			NULL AS FACEBOOK,
+			NULL AS GTALK,
+			NULL AS MYSPACE,
+			NULL AS LINKEDIN,
+			NULL AS DELICIOUS,
+			NULL AS FRIENDFEED,
+			NULL AS DIGG,
+			NULL AS BLOGSPOT,
+			NULL AS FLICKR,
+			NULL AS BEBO,
+			NULL AS websitename,
+			NULL AS websiteurl,
+			NULL AS rank,
+			0 AS hideEmail,
+			1 AS showOnline
 		FROM #__ninjaboard_people";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ( $result as $key => &$row ) {
-			//$row->copypath = JPATH_BASE . '/components/com_agora/img/pre_avatars/'. $row->id;
+		  if ( !empty($row->avatar) ) $row->copypath = JPATH_ROOT . $row->avatar;
 		}
+		return $result;
 	}
 
 	public function countSubscriptions() {
@@ -358,6 +412,44 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 		FROM `#__ninjaboard_subscriptions`
 		WHERE subscription_type=3";
 		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+
+	/**
+	 * Count total number of attachments to be exported
+	 */
+	public function countAttachments() {
+		$query = "SELECT COUNT(*) FROM #__ninjaboard_attachments";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export attachments in messages
+	 *
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportAttachments($start = 0, $limit = 0) {
+		$query = "SELECT
+			ninjaboard_attachment_id AS id,
+			file AS filname,
+			joomla_user_id AS userid,
+			post_id AS mesid,
+			NULL AS hash,
+			NULL AS size,
+			NULL AS folder,
+			NULL AS filetype
+		FROM #__ninjaboard_attachments
+		ORDER BY id";
+		$result = $this->getExportData ( $query, $start, $limit, 'id' );
+		$copypath = JPATH_ROOT.'/media/com_ninjaboard/attachments';
+		foreach ( $result as &$row ) {
+			// Full path to the original file
+			$row->copyfile = "{$copypath}/{$row->filename}";
+		}
 		return $result;
 	}
 
