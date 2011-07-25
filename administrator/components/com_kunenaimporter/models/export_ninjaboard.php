@@ -259,7 +259,7 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 			posts AS numPosts,
 			last_post_id AS id_last_msg,
 			ninjaboard_forum_id AS id,
-			IF(path=='/',0,) AS parent
+			path AS parent
 		FROM #__ninjaboard_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
