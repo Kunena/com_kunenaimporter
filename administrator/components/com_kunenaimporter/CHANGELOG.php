@@ -31,6 +31,15 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+30-July-2011 Xillibit
+# [#25] Improvements on agora import : polls options, user avatar
+
+25-July-2011 Xillibit
+# [#25] Fix missing thing in ninjaboard categories import
+
+24-July-2011 Xillibit
+# [#25] Make working messages, categories import with ninjaboard
+
 19-July-2011 Xillibit
 # [#21] Little issue with parent on agora category import
 
