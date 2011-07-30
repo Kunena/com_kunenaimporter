@@ -247,7 +247,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function &exportCategories($start=0, $limit=0) {
-	   $query = "SELECT MAX(id) FROM #__agora_forums";
+		$query = "SELECT MAX(id) FROM #__agora_forums";
 		$this->ext_database->setQuery ( $query );
 		$maxboard = $this->ext_database->loadResult ();
 		// Import the categories
@@ -319,7 +319,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		FROM `#__agora_topics` AS t
 		LEFT JOIN `#__agora_posts` AS p ON t.id=p.topic_id
 		LEFT JOIN `#__agora_users` AS u ON p.poster_id = u.id
-		WHERE t.announcements='0'	";;
+		WHERE t.announcements='0'	";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
 		foreach ( $result as &$row ) {
@@ -340,6 +340,10 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	{
 		$query="SELECT image AS location, text FROM #__agora_smilies";
 		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $smiley ) {
+			// Full path to the original file
+			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/smilies/{$smiley->image}";
+		}
 		return $result;
 	}
 
@@ -359,6 +363,11 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			user_type AS rank_special
 		FROM #__agora_ranks";
 		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $rank ) {
+			$this->parseText ( $row->rank_title );
+			// Full path to the original file
+			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/ranks/{$rank->rank_image}";
+		}
 		return $result;
 	}
 
@@ -369,6 +378,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 
 	public function &exportUserprofile($start=0, $limit=0) {
 		$query="SELECT
+			id,
 			jos_id AS userid,
 			group_id,
 			url AS websiteurl,
@@ -379,14 +389,28 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			skype AS SKYPE,
 			location,
 			signature,
+			url AS websiteurl,
 			gender,
-			birthday AS birhtdate,
+			IF(birthday,FROM_UNIXTIME(birthday, '%Y-%m-%d'),'0001-01-01' ) AS birthdate,
 			aboutme AS personnalText,
 			num_posts AS posts
 		FROM #__agora_users";
 		$result = $this->getExportData($query, $start, $limit);
-		foreach ( $result as $key => &$row ) {
-			//$row->copypath = JPATH_BASE . '/components/com_agora/img/pre_avatars/'. $row->id;
+		foreach ( $result as $profile ) {
+			if ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png') ) {
+				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png';
+				$avatar = $profile->id.'.png';
+			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg') ) {
+				$avatar_pathr = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg';
+				$avatar = $profile->id.'.jpg';
+			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif') ) {
+				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif';
+				$avatar = $profile->id.'.gif';
+			} else {
+				$avatar_path = '';
+			}
+			$profile->avatar = $avatar;
+			$profile->copypath =  $avatar_path;
 		}
 		return $result;
 	}
@@ -404,6 +428,74 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		FROM #__agora_polls AS p
 		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
 		$result = $this->getExportData($query, $start, $limit);
+
+		return $result;
+	}
+
+	/**
+	 * Count total poll options to be exported
+	 */
+	public function countPollsOptions() {
+		$query="SELECT COUNT(*) FROM #__agora_polls";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export poll options
+	 *
+	 * Returns list of poll options objects containing database fields
+	 * to #__kunena_polls_options.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportPollsOptions($start=0, $limit=0) {
+		// WARNING: from unknown reason pollid = threadid!!!
+		$query="SELECT
+			p.id,
+			t.id AS pollid,
+			p.votes,
+			p.options
+		FROM #__agora_polls AS p
+		LEFT JOIN #__agora_topics AS t ON p.pollid=t.id";
+		$tlp = $this->getExportData($query, $start, $limit);
+
+		$array = array();
+		$y = 0;
+
+		foreach ($tlp as $item) {
+			$array[$y]['pollid'] = $item->pollid;
+			$array[$y]['options'] = unserialize($item->options);
+			$array[$y]['votes'] = unserialize($item->votes);
+
+			$y++;
+		}
+
+		$result = array();
+
+		foreach($array as $it) {
+			$tmp = array();
+			foreach($it['votes'] as $key=>$value) {
+				$tmp[$key] = $value;
+			}
+
+			foreach($it['options'] as $key=>$value) {
+				$opt = new stdClass();
+				$opt->pollid = $it['pollid'];
+				$opt->text  = $value;
+				if (isset($tmp[$key])) $opt->votes = $tmp[$key];
+				$result[] = $opt;
+			}
+		}
+
+		$i =1;
+		foreach($result as $item) {
+			$item->id = $i;
+			$i++;
+		}
+
+		return $result;
 	}
 
 	public function countSubscriptions() {
@@ -416,7 +508,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 			w.topic_id AS thread,
 			u.jos_id AS userid
 		FROM `#__agora_subscriptions` AS w
-    LEFT JOIN `#__agora_users` AS u ON w.user_id=u.id";
+		LEFT JOIN `#__agora_users` AS u ON w.user_id=u.id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
