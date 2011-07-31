@@ -31,6 +31,9 @@ Legend:
 
 KunenaImporter 1.6.5-DEV
 
+31-July-2011 Xillibit
++ [#42] Add support for Joo!BB
+
 30-July-2011 Xillibit
 # [#25] Improvements on agora import : polls options, user avatar
 
