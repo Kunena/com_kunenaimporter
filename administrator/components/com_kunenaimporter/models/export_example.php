@@ -15,10 +15,10 @@ require_once (JPATH_COMPONENT . '/models/export.php');
 
 /**
  * Example Exporter Class
- * 
+ *
  * This class can be used as a base to export all data from your favorite forum software.
  * If you want to migrate something else than Joomla component, check also phpBB3 and SMF2 exporters.
- * 
+ *
  * NOTE: Sor simplicity, please remove functions which you haven't modified!
  */
 class KunenaimporterModelExport_example extends KunenaimporterModelExport {
@@ -47,12 +47,12 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 * @var string or null
 	 */
 	protected $versionmax = null;
-	
+
 	/**
 	 * Get external forum path from importer configuration
-	 * 
+	 *
 	 * You can usually remove this function if you are exporting Joomla component.
-	 * 
+	 *
 	 * @return string Relative path
 	 */
 	public function getPath($absolute = false) {
@@ -62,9 +62,9 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Detect if component exists
-	 * 
+	 *
 	 * You can usually remove this function if you are exporting Joomla component.
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detectComponent() {
@@ -74,15 +74,15 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Get database object
-	 * 
+	 *
 	 * You can usually remove this function if you are exporting Joomla component.
-	 * 
+	 *
 	 * @return JDatabase or JError or null
 	 */
 	public function getDatabase() {
 		return JFactory::getDBO ();
 	}
-	
+
 	/**
 	 * Initialization needed by exporter
 	 */
@@ -91,7 +91,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Get configuration
-	 * 
+	 *
 	 * You can usually remove this function if you are exporting Joomla component.
 	 * By default this function gets configuration from component parameters.
 	 */
@@ -104,11 +104,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Full detection
-	 * 
+	 *
 	 * Make sure that everything is OK for full import.
 	 * Use $this->addMessage($html) to add status messages.
 	 * If you return false, remember also to fill $this->error
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detect() {
@@ -119,7 +119,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Get component version
-	 * 
+	 *
 	 * You can usually remove this function if you are exporting Joomla component.
 	 */
 	public function getVersion() {
@@ -135,7 +135,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Remove htmlentities, addslashes etc
-	 * 
+	 *
 	 * @param string $s String
 	 */
 	protected function parseText(&$s) {
@@ -148,7 +148,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 */
 	protected function parseBBCode(&$s) {
 	}
-	
+
 	/**
 	 * Convert HTML to Kunena BBCode
 	 *
@@ -157,12 +157,12 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	protected function parseHTML(&$s) {
 		parent::parseHTML($s);
 	}
-	
+
 	/**
 	 * Map Joomla user to external user
 	 *
 	 * You can usually remove this function if you are exporting Joomla component.
-	 * 
+	 *
 	 * @param object $joomlauser StdClass(id, username, email)
 	 * @return int External user ID
 	 */
@@ -179,18 +179,18 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export users (external applications only)
-	 * 
-	 * Returns list of user extuser objects containing database fields 
+	 *
+	 * Returns list of user extuser objects containing database fields
 	 * to #__kunenaimporter_users.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
 	public function &exportUsers($start = 0, $limit = 0) {
 		$result = array();
-		return $result;	
-		
+		return $result;
+
 		$query = "SELECT
 			NULL AS extid,
 			'' AS extusername,
@@ -224,11 +224,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export user profiles
-	 * 
-	 * Returns list of user profile objects containing database fields 
+	 *
+	 * Returns list of user profile objects containing database fields
 	 * to #__kunena_users.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -298,11 +298,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export user ranks
-	 * 
-	 * Returns list of rank objects containing database fields 
+	 *
+	 * Returns list of rank objects containing database fields
 	 * to #__kunena_ranks.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -335,10 +335,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export user session information
-	 * 
-	 * Returns list of attachment objects containing database fields 
+	 *
+	 * Returns list of attachment objects containing database fields
 	 * to #__kunena_sessions.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -365,14 +365,14 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export sections and categories
-	 * 
-	 * Returns list of category objects containing database fields 
+	 *
+	 * Returns list of category objects containing database fields
 	 * to #__kunena_categories.
 	 * All categories without parent are sections.
-	 * 
+	 *
 	 * NOTE: it's very important to keep category IDs (containing topics) the same!
 	 * If there are two tables for sections and categories, change IDs on sections..
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -414,7 +414,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		}
 		return $result;
 	}
-	
+
 	/**
 	 * Count total number of moderator columns to be exported
 	 */
@@ -426,11 +426,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export moderator columns
-	 * 
-	 * Returns list of moderator objects containing database fields 
+	 *
+	 * Returns list of moderator objects containing database fields
 	 * to #__kunena_moderation.
 	 * NOTE: Global moderator doesn't have columns in this table!
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -455,10 +455,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export messages
-	 * 
-	 * Returns list of message objects containing database fields 
+	 *
+	 * Returns list of message objects containing database fields
 	 * to #__kunena_messages (and #__kunena_messages_text.message).
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -483,7 +483,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			0 AS moved,
 			0 AS modified_by,
 			0 AS modified_time,
-			'' AS modified_reason
+			'' AS modified_reason,
 			'' AS message
 		FROM #__example_messages";
 		$result = $this->getExportData ( $query, $start, $limit );
@@ -496,7 +496,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		}
 		return $result;
 	}
-	
+
 	/**
 	 * Count total polls to be exported
 	 */
@@ -507,10 +507,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export polls
-	 * 
-	 * Returns list of poll objects containing database fields 
+	 *
+	 * Returns list of poll objects containing database fields
 	 * to #__kunena_polls.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -536,10 +536,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export poll options
-	 * 
-	 * Returns list of poll options objects containing database fields 
+	 *
+	 * Returns list of poll options objects containing database fields
 	 * to #__kunena_polls_options.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -566,10 +566,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export poll users
-	 * 
-	 * Returns list of poll users objects containing database fields 
+	 *
+	 * Returns list of poll users objects containing database fields
 	 * to #__kunena_polls_users.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -598,11 +598,11 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export attachments in messages
-	 * 
-	 * Returns list of attachment objects containing database fields 
+	 *
+	 * Returns list of attachment objects containing database fields
 	 * to #__kunena_attachments.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -640,10 +640,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export topic subscriptions
-	 * 
-	 * Returns list of subscription objects containing database fields 
+	 *
+	 * Returns list of subscription objects containing database fields
 	 * to #__kunena_subscriptions.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -668,10 +668,10 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export avatar galleries
-	 * 
+	 *
 	 * Returns list of folder=>fullpath to be copied, where fullpath points
 	 * to the directory in the filesystem.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -683,7 +683,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Internal function to fetch all avatar galleries
-	 * 
+	 *
 	 * @return array (folder=>full path, ...)
 	 */
 	protected function &getAvatarGalleries() {
@@ -698,7 +698,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		}
 		return $galleries;
 	}
-	
+
 	/**
 	 * Count global configurations to be exported
 	 * @return 1
@@ -709,7 +709,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 	/**
 	 * Export global configuration
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array (1=>(array(option=>value, ...)))
@@ -721,7 +721,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 
 		// Time delta in seconds from UTC (=JFactory::getDate()->toUnix())
 		// $config['timedelta'] = JFactory::getDate()->toUnix() - time() - $offsetinseconds;
-		
+
 		// Get configuration and fill any values from below:
 
 		// $config['board_title'] = null;
