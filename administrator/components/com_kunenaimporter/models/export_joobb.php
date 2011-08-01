@@ -48,26 +48,59 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 		return substr ( $this->ext_database->loadResult (),0 ,5);
 	}
 
+	/**
+	 * Get JooBB configuration
+	 */
+	public function &getConfig() {
+		if (empty($this->config)) {
+			$query = "SELECT board_settings,feed_settings,view_settings,user_settings_defaults,attachment_settings FROM `#__joobb_configs`";
+			$this->ext_database->setQuery ( $query );
+			$config = $this->ext_database->loadObjectList ();
+
+			$config_options = array();
+
+			foreach($config as $opt) {
+				foreach($opt as $value) {
+					$config_options[] = preg_split('/[\r\n]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+				}
+			}
+
+			$config_settings = new stdClass();
+
+			foreach($config_options as $options) {
+				foreach($options as $key=>$value) {
+					$tmp = explode('=',$value);
+					$config_settings->$tmp[0] =$tmp[1];
+				}
+			}
+
+			$this->config = $config;
+		}
+		return $this->config;
+	}
+
 	public function &exportConfig($start=0, $limit=0) {
 		$config = array();
 		if ($start) return $config;
 
+		$JooBBConfig = $this->getConfig ();
+
 		$config['id'] = 1;
-		// $config['board_title'] = null;
+		$config['board_title'] = $JooBBConfig->board_name;
 		// $config['email'] = null;
 		// $config['board_offline'] = null;
 		// $config['board_ofset'] = null;
 		// $config['offline_message'] = null;
-		// $config['enablerss'] = null;
+		$config['enablerss'] = $JooBBConfig->enable_feeds;
 		// $config['enablepdf'] = null;
-		// $config['threads_per_page'] = null;
-		// $config['messages_per_page'] = null;
-		// $config['messages_per_page_search'] = null;
+		$config['threads_per_page'] = $JooBBConfig->topics_per_page;
+		$config['messages_per_page'] = $JooBBConfig->posts_per_page;
+		$config['messages_per_page_search'] = $JooBBConfig->search_results_per_page;
 		// $config['showhistory'] = null;
 		// $config['historylimit'] = null;
 		// $config['shownew'] = null;
 		// $config['jmambot'] = null;
-		// $config['disemoticons'] = null;
+		$config['disemoticons'] = $JooBBConfig->enable_emotions;
 		// $config['template'] = null;
 		// $config['showannouncement'] = null;
 		// $config['avataroncat'] = null;
@@ -105,15 +138,15 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 		// $config['allowavatargallery'] = null;
 		// $config['avatarquality'] = null;
 		// $config['avatarsize'] = null;
-		// $config['allowimageupload'] = null;
+		$config['allowimageupload'] = $JooBBConfig->enable_attachments;
 		// $config['allowimageregupload'] = null;
 		// $config['imageheight'] = null;
 		// $config['imagewidth'] = null;
-		// $config['imagesize'] = null;
-		// $config['allowfileupload'] = null;
+		$config['imagesize'] = $JooBBConfig->attachment_max_file_size;
+		$config['allowfileupload'] = $JooBBConfig->enable_attachments;
 		// $config['allowfileregupload'] = null;
 		// $config['filetypes'] = null;
-		// $config['filesize'] = null;
+		$config['filesize'] = $JooBBConfig->attachment_max_file_size;
 		// $config['showranking'] = null;
 		// $config['rankimages'] = null;
 		// $config['avatar_src'] = null;
@@ -157,7 +190,7 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 		// $config['highlightcode'] = null;
 		// $config['rss_type'] = null;
 		// $config['rss_timelimit'] = null;
-		// $config['rss_limit'] = null;
+		$config['rss_limit'] = $JooBBConfig->feed_items_count;
 		// $config['rss_included_categories'] = null;
 		// $config['rss_excluded_categories'] = null;
 		// $config['rss_specification'] = null;

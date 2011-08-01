@@ -33,9 +33,12 @@ KunenaImporter 1.6.5-DEV
 
 31-July-2011 Xillibit
 + [#42] Add support for Joo!BB
++ [#42] Configuration options import for Joo!BB
++ [#25] Configuration options import for NinjaBoard
++ [#44] Add suuport for Discussions
 
 30-July-2011 Xillibit
-# [#25] Improvements on agora import : polls options, user avatar
+# [#21] Improvements on agora import : polls options, user avatar
 
 25-July-2011 Xillibit
 # [#25] Fix missing thing in ninjaboard categories import
