@@ -463,11 +463,12 @@ class KunenaimporterModelExport extends JModel {
 		$db = JFactory::getDBO();
 		$query = "SELECT * FROM #__kunenaimporter_users ORDER BY extid";
 		$db->setQuery ( $query, $start, $limit );
-		$extusers = $db->loadObjectList ( 'id' );
+		$extusers = $db->loadObjectList ( 'extid' );
 		$users = array();
 		foreach ($extusers as $user) {
 			$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
-			$extuser->load ( $user->extid );
+			$extuser->bind ( get_object_vars($user) );
+			$extuser->exists ( true );
 			$users[] = $extuser;
 		}
 		return $users;
