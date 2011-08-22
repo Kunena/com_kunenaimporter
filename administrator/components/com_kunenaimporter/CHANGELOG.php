@@ -29,7 +29,10 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.6.5-DEV
+KunenaImporter 1.7.0-DEV
+
+22-August-2011 Matias
+^ Updated version to 1.7.0-DEV, Kunena 1.7 required
 
 31-July-2011 Xillibit
 + [#42] Add support for Joo!BB
@@ -211,8 +214,6 @@ KunenaImporter 1.6.5-DEV
 + [#20178] Create new exporter for SMF2 (standalone)
 # [#20178] phpBB3: Fix subscriptions export
 - [#20178] Remove database options from configuration
-
-KunenaImporter 1.6.0-RC1
 
 24-August-2011 Matias
 ^ [#20178] phpBB3: Update exporter for Kunena 1.6 (add some missing fields, do not add slashes)
