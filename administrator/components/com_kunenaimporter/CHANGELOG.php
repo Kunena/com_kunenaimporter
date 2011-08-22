@@ -33,6 +33,7 @@ KunenaImporter 1.7.0-DEV
 
 22-August-2011 Matias
 ^ Updated version to 1.7.0-DEV, Kunena 1.7 required
+# [#37] Fix PNphpBB2 user import
 
 31-July-2011 Xillibit
 + [#42] Add support for Joo!BB
