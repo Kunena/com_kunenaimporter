@@ -19,6 +19,13 @@ defined ( '_JEXEC' ) or die ();
 define ( 'COM_KUNENAIMPORTER_BASEDIR', JPATH_COMPONENT_ADMINISTRATOR );
 define ( 'COM_KUNENAIMPORTER_BASEURL', JURI::root () . 'administrator/index.php?option=com_kunenaimporter' );
 
+// Access check.
+if (version_compare(JVERSION, '1.6', '>')) {
+	if (!JFactory::getUser()->authorise('core.manage', 'com_kunenaimporter')) {
+		return JError::raiseWarning(404, JText::_('JERROR_ALERTNOAUTHOR'));
+	}
+}
+
 $document = JFactory::getDocument ();
 $document->addStyleSheet ( 'components/com_kunenaimporter/assets/importer.css' );
 

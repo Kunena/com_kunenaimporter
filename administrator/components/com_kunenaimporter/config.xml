@@ -29,10 +29,13 @@
 			<option value="ninjaboard">NinjaBoard</option>
 			<!-- <option value="kunena">Kunena</option> -->
 			<option value="phpbb3">phpBB3</option>
-			<!-- <option value="phpbb2">phpBB2</option> -->
-			<!-- <option value="pnphpbb2">PNphpBB2</option> -->
+			<option value="phpbb2">phpBB2</option>
+			<option value="pnphpbb2">PNphpBB2</option>
 			<option value="smf2">SMF2</option>
 		</field>
 		<field name="path" type="text" default="" label="COM_KUNENAIMPORTER_CONFIG_PATH_LABEL" description="COM_KUNENAIMPORTER_CONFIG_PATH_DESC" size="30" />
+	</fieldset>
+	<fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL" description="JCONFIG_PERMISSIONS_DESC">
+		<field name="rules" type="rules" label="JCONFIG_PERMISSIONS_LABEL" class="inputbox" filter="rules" validate="rules" component="com_kunenaimporter" section="component" />
 	</fieldset>
 </config>
