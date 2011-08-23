@@ -29,14 +29,6 @@ if (version_compare(JVERSION, '1.6', '>')) {
 $document = JFactory::getDocument ();
 $document->addStyleSheet ( 'components/com_kunenaimporter/assets/importer.css' );
 
-// Test if Kunena is installed and if the minimum version requirement is met
-$app = JFactory::getApplication ();
-$minKunenaVersion = '1.7';
-if (!class_exists('Kunena') || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
-	$app->enqueueMessage( JText::sprintf ( 'COM_KUNENAIMPORTER_DEPENDENCY_FAIL', $minKunenaVersion ) );
-	return null;
-}
-
 // Require the base controller
 require_once JPATH_COMPONENT . DS . 'controller.php';
 

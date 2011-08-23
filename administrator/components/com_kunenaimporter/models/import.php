@@ -171,8 +171,8 @@ class KunenaimporterModelImport extends JModel {
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
 		// FIXME: use kunena recount
-		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` 
-			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time 
+		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages`
+			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time
 			WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
@@ -420,7 +420,7 @@ class KunenaimporterModelImport extends JModel {
 				if (empty ( $message->name ))
 					$message->name = $user->username;
 			}
-			
+
 			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
 			if ($msgtable->save ( $message ) === false)
 				die ( "ERROR: " . $msgtable->getError () );
@@ -453,7 +453,7 @@ class KunenaimporterModelImport extends JModel {
 		}
 		return $user;
 	}
-	
+
 	public function createUser($extuser) {
 		if ($extuser->id) return 0;
 		$data = get_object_vars($extuser);
