@@ -28,7 +28,23 @@ class KunenaimporterViewDefault extends JView {
 		$this->pane	= JPane::getInstance('sliders');
 		$this->assign ( 'title', $exporter->exttitle );
 		if ($exporter->external) {
-			$this->assign ( 'params', $params );
+			if (version_compare(JVERSION, '1.6', '>')) {
+				jimport('joomla.form.form');
+
+				// Add the search path for the admin component config.xml file.
+				JForm::addFormPath(JPATH_ADMINISTRATOR.'/components/com_kunenaimporter');
+
+				// Get the form.
+				$form = JForm::getInstance('com_config.component', 'config', array('control' => 'params', 'load_data' => false), false, '/config');
+
+				// Bind the form to the data.
+				if ($form && $params) {
+					$form->bind($params);
+				}
+				$this->assign ( 'form', $form );
+			} else {
+				$this->assign ( 'params', $params );
+			}
 		}
 		$this->options = '';
 		if (is_object ( $exporter )) {

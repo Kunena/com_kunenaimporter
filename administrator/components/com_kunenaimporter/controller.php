@@ -47,7 +47,7 @@ class KunenaImporterController extends JController {
 			if ($exporter) $success = $exporter->detectComponent ();
 		}
 		if (!$success) {
-			$app->enqueueMessage ( JText::sprintf ( "Component '%s' was not detected!", $forum ), 'error' );
+			$app->enqueueMessage ( JText::sprintf ( "Component '%s' was not detected!", is_object($exporter) ? $exporter->exttitle : $forum ), 'error' );
 			if (!$exporter->external) $this->redirectBack();
 		}
 
@@ -316,8 +316,14 @@ class KunenaImporterController extends JController {
 	public function save() {
 		$component = 'com_kunenaimporter';
 
-		$table = JTable::getInstance ( 'component' );
-		if (! $table->loadByOption ( $component )) {
+		if (version_compare(JVERSION, '1.6', '>')) {
+			$table = JTable::getInstance ( 'extension' );
+			$success = $table->load ( array('element'=>'com_kunenaimporter') );
+		} else {
+			$table = JTable::getInstance ( 'component' );
+			$success = $table->loadByOption ( 'com_kunenaimporter' );
+		}
+		if (! $success ) {
 			JError::raiseWarning ( 500, 'Not a valid component' );
 			return false;
 		}
