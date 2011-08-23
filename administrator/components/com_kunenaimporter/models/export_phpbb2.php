@@ -30,12 +30,12 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 * Extension name
 	 * @var string
 	 */
-	public $name = 'phpbb2';
+	public $extname = 'phpbb2';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'phpBB2';
+	public $exttitle = 'phpBB2';
 	/**
 	 * External application
 	 * @var bool

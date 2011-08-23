@@ -33,6 +33,7 @@ KunenaImporter 1.7.0-DEV
 
 22-August-2011 Matias
 + [#20] Add support for Joomla 1.7: Backend ACL
+# [#20] Add support for Joomla 1.7: Make basic functionality to work
 
 22-August-2011 Matias
 ^ Updated version to 1.7.0-DEV, Kunena 1.7 required

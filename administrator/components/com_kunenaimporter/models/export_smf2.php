@@ -22,12 +22,12 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'smf2';
+	public $extname = 'smf2';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'SMF2';
+	public $exttitle = 'SMF2';
 	/**
 	 * External application
 	 * @var bool
@@ -43,19 +43,19 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 * @var string or null
 	 */
 	protected $versionmax = '2.0.999';
-	
+
 	protected $dbconfig = null;
 	protected $config = null;
 
 	/**
 	 * Detect if component exists
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detectComponent($path = null) {
 		if ($path === null) $path = $this->basepath;
 		// Make sure that configuration file exist, but check also something else
-		if (!JFile::exists("{$path}/Settings.php") 
+		if (!JFile::exists("{$path}/Settings.php")
 			|| !JFile::exists("{$path}/Sources/BoardIndex.php")) {
 			return false;
 		}
@@ -115,7 +115,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
-			
+
 		$dbconfig = $this->getDBConfig();
 		$query = "SELECT variable, value FROM #__settings";
 		$this->ext_database->setQuery ( $query );

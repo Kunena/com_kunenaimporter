@@ -18,12 +18,12 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'agora';
+	public $extname = 'agora';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Agora';
+	public $exttitle = 'Agora';
 	/**
 	 * Minimum required version
 	 * @var string or null

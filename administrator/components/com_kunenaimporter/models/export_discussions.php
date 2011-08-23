@@ -18,12 +18,12 @@ class KunenaimporterModelExport_Discussions extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'discussions';
+	public $extname = 'discussions';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Discussions';
+	public $exttitle = 'Discussions';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -52,7 +52,7 @@ class KunenaimporterModelExport_Discussions extends KunenaimporterModelExport {
 		$config = array();
 		if ($start) return $config;
 
-		// FIX ME: the default config values are stored in JPATH_ADMINISTRATOR . "/components/com_{$this->name}/config.xml";
+		// FIX ME: the default config values are stored in JPATH_ADMINISTRATOR . "/components/com_{$this->extname}/config.xml";
 		// but when you change these value i don't where the data are stored, there is no table in database for that !
 
 		$config['id'] = 1;

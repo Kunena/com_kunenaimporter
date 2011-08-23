@@ -27,12 +27,12 @@ class KunenaimporterModelExport extends JModel {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = null;
+	public $extname = null;
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = null;
+	public $exttitle = null;
 	/**
 	 * External application
 	 * @var bool
@@ -72,7 +72,7 @@ class KunenaimporterModelExport extends JModel {
 		// Get component parameters
 		$this->params = getKunenaImporterParams();
 
-		$this->getPath();		
+		$this->getPath();
 		if (!$this->detectComponent()) return;
 
 		$this->ext_database = $this->getDatabase();
@@ -81,7 +81,7 @@ class KunenaimporterModelExport extends JModel {
 
 	/**
 	 * Get forum path from importer configuration
-	 * 
+	 *
 	 * @return string Relative path
 	 */
 	public function getPath($absolute = false) {
@@ -118,9 +118,9 @@ class KunenaimporterModelExport extends JModel {
 		$this->params->set('path', $this->relpath);
 		return $absolute ? $this->basepath : $this->relpath;
 	}
-	
+
 	public function detectComponent() {
-		if ($this->external || !JComponentHelper::getComponent ( "com_{$this->name}", true )->enabled) {
+		if (!$this->extname || $this->external || !JComponentHelper::getComponent ( "com_{$this->extname}", true )->enabled) {
 			return false;
 		}
 		return true;
@@ -129,17 +129,17 @@ class KunenaimporterModelExport extends JModel {
 	public function getDatabase() {
 		return JFactory::getDBO ();
 	}
-	
+
 	public function initialize() {
 	}
 
 	public function &getConfig() {
 		if (empty($this->config)) {
-			$this->config = JComponentHelper::getParams( "com_{$this->name}" );
+			$this->config = JComponentHelper::getParams( "com_{$this->extname}" );
 		}
 		return $this->config;
 	}
-	
+
 	public function getExportOptions($importer) {
 		$app = JFactory::getApplication ();
 
@@ -182,13 +182,13 @@ class KunenaimporterModelExport extends JModel {
 			$this->error = 'Forum not selected!';
 			return false;
 		}
-		
+
 		if ($this->external) {
 			if (is_dir($this->basepath)) {
 				$this->relpath = JPath::clean($this->relpath);
 				$this->addMessage ( '<div>Using relative path: <b style="color:green">' . $this->relpath . '</b></div>' );
 			} else {
-				$this->error = $this->title." not found from {$this->basepath}";
+				$this->error = $this->exttitle." not found from {$this->basepath}";
 				$this->addMessage ( '<div>Using relative path: <b style="color:red">' . $this->relpath . '</b></div>' );
 				$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
 				return false;
@@ -196,12 +196,12 @@ class KunenaimporterModelExport extends JModel {
 		}
 
 		if (!$this->detectComponent()) {
-			$this->error = $this->title.' has not been installed into your system!';
-			$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:red">FAILED</b></div>' );
+			$this->error = $this->exttitle.' has not been installed into your system!';
+			$this->addMessage ( '<div>Detecting '.$this->exttitle.': <b style="color:red">FAILED</b></div>' );
 			$this->addMessage ( '<br /><div><b>Error:</b> ' . $this->error . '</div>' );
 			return false;
 		}
-		$this->addMessage ( '<div>Detecting '.$this->title.': <b style="color:green">OK</b></div>' );
+		$this->addMessage ( '<div>Detecting '.$this->exttitle.': <b style="color:green">OK</b></div>' );
 
 		if (JError::isError ( $this->ext_database ))
 			$this->error = $this->ext_database->toString ();
@@ -218,22 +218,22 @@ class KunenaimporterModelExport extends JModel {
 		// Check if version is compatible with importer
 		$this->version = $this->getVersion();
 		if (!$this->isCompatible($this->version)) {
-			$this->error = "Unsupported forum: {$this->title} {$this->version}";
-			$this->addMessage ( '<div>'.$this->title.' version: <b style="color:red">' . $this->version . '</b></div>' );
+			$this->error = "Unsupported forum: {$this->exttitle} {$this->version}";
+			$this->addMessage ( '<div>'.$this->exttitle.' version: <b style="color:red">' . $this->version . '</b></div>' );
 			$this->addMessage ( '<div><b>Error:</b> ' . $this->error . '</div>' );
 			return false;
 		}
-		$this->addMessage ( '<div>'.$this->title.' version: <b style="color:green">' . $this->version . '</b></div>' );
-		
+		$this->addMessage ( '<div>'.$this->exttitle.' version: <b style="color:green">' . $this->version . '</b></div>' );
+
 		return true;
 	}
-	
+
 	/**
 	 * Get component version
 	 */
 	public function getVersion() {
 		// Version can usually be found from <name>.xml file
-		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/{$this->name}.xml";
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->extname}/{$this->extname}.xml";
 		if (!JFile::exists ( $xml )) {
 			return false;
 		}
@@ -256,7 +256,7 @@ class KunenaimporterModelExport extends JModel {
 
 	/**
 	 * Remove htmlentities, addslashes etc
-	 * 
+	 *
 	 * @param string $s String
 	 */
 	protected function parseText(&$s) {
@@ -269,7 +269,7 @@ class KunenaimporterModelExport extends JModel {
 	 */
 	protected function parseBBCode(&$s) {
 	}
-	
+
 	/**
 	 * Convert HTML to Kunena BBCode
 	 *
@@ -292,7 +292,7 @@ class KunenaimporterModelExport extends JModel {
 		$html = trim($this->parseHtmlChildren($node));
 		libxml_clear_errors();
 	}
-	
+
 	protected function parseHtmlChildren(DomNode $node) {
 		$output = '';
 		if ($node->hasChildNodes ()) {
@@ -313,7 +313,7 @@ class KunenaimporterModelExport extends JModel {
 		}
 		return $this->parseHtmlNode ( $node, $output );
 	}
-	
+
 	protected function parseHtmlNode(DomNode $node, $output) {
 		$tag = $node->tagName;
 		switch ($tag) {
@@ -328,7 +328,7 @@ class KunenaimporterModelExport extends JModel {
 			case 'u':
 				return "[u]{$output}[/u]";
 			case 'span':
-				$style = $node->getAttribute('style');	
+				$style = $node->getAttribute('style');
 				if ($style == 'text-decoration: underline;') $output = "[u]{$output}[/u]";
 				return $output;
 			case 'a':
@@ -359,7 +359,7 @@ class KunenaimporterModelExport extends JModel {
 			case 'p':
 				$output = trim($output);
 				if (!$output) return;
-				$style = $node->getAttribute('style');	
+				$style = $node->getAttribute('style');
 				if ($node->getAttribute('class' == 'caption')) $output = "[center]{$output}[/center]";
 				elseif ($style == 'text-align: left;') $output = "[left]{$output}[/left]";
 				elseif ($style == 'text-align: center;') $output = "[center]{$output}[/center]";
@@ -368,10 +368,10 @@ class KunenaimporterModelExport extends JModel {
 			case 'div':
 			default:
 				return "{$output}";
-				
-		}		
+
+		}
 	}
-	
+
 	/**
 	 * Map Joomla user to external user
 	 *

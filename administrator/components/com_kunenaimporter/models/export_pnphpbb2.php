@@ -19,12 +19,12 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 	 * Extension name
 	 * @var string
 	 */
-	public $name = 'pnphpbb2';
+	public $extname = 'pnphpbb2';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'PNphpBB2';
+	public $exttitle = 'PNphpBB2';
 	/**
 	 * Minimum required version
 	 * @var string or null

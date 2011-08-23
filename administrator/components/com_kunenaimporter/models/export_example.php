@@ -26,12 +26,12 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'example';
+	public $extname = 'example';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Example';
+	public $exttitle = 'Example';
 	/**
 	 * External application (non-Joomla)
 	 * @var bool
@@ -124,7 +124,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 */
 	public function getVersion() {
 		// Version can usually be found from <name>.xml file
-		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/{$this->name}.xml";
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->extname}/{$this->extname}.xml";
 		if (!JFile::exists ( $xml )) {
 			return false;
 		}

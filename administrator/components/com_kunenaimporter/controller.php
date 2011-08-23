@@ -52,8 +52,14 @@ class KunenaImporterController extends JController {
 		}
 
 		if ($params->get('extforum') != $forum) {
-			$table = JTable::getInstance ( 'component' );
-			if (! $table->loadByOption ( 'com_kunenaimporter' )) {
+			if (version_compare(JVERSION, '1.6', '>')) {
+				$table = JTable::getInstance ( 'extension' );
+				$success = $table->load ( array('element'=>'com_kunenaimporter') );
+			} else {
+				$table = JTable::getInstance ( 'component' );
+				$success = $table->loadByOption ( 'com_kunenaimporter' );
+			}
+			if (! $success) {
 				JError::raiseWarning ( 500, 'Not a valid component' );
 				return false;
 			}
@@ -74,7 +80,7 @@ class KunenaImporterController extends JController {
 
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
 	}
-	
+
 	public function stopmapping() {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
@@ -179,7 +185,7 @@ class KunenaImporterController extends JController {
 			$userdata ['id'] = JRequest::getInt ( 'userid', 0 );
 		}
 		$replace = JRequest::getInt ( 'replace', 0 );
-		
+
 		require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
 		$importer = $this->getModel ( 'import' );
 
@@ -225,7 +231,7 @@ class KunenaImporterController extends JController {
 				}
 			}
 		}
-		
+
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 		$success = $exporter->detect ();

@@ -54,9 +54,6 @@ JHTML::_('behavior.tooltip');
 					<?php echo JHTML::_('grid.sort',   'Enabled', 'a.block', @$this->lists['order_Dir'], @$this->lists['order'] ); ?>
 				</th>
 				<th width="15%" class="title">
-					<?php echo JHTML::_('grid.sort',   'Group', 'groupname', @$this->lists['order_Dir'], @$this->lists['order'] ); ?>
-				</th>
-				<th width="15%" class="title">
 					<?php echo JHTML::_('grid.sort',   'E-Mail', 'a.email', @$this->lists['order_Dir'], @$this->lists['order'] ); ?>
 				</th>
 				<th width="10%" class="title">
@@ -114,9 +111,6 @@ JHTML::_('behavior.tooltip');
 				<td align="center">
 					<a href="javascript:void(0);" onclick="return listItemTask('cb<?php echo $i;?>','<?php echo $task;?>')">
 						<img src="images/<?php echo $img;?>" width="16" height="16" border="0" alt="<?php echo $alt; ?>" /></a>
-				</td>
-				<td>
-					<?php echo JText::_( $row->groupname ); ?>
 				</td>
 				<td>
 					<a href="mailto:<?php echo $row->email; ?>">

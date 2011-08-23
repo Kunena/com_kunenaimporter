@@ -26,7 +26,7 @@ class KunenaimporterViewDefault extends JView {
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 
 		$this->pane	= JPane::getInstance('sliders');
-		$this->assign ( 'title', $exporter->title );
+		$this->assign ( 'title', $exporter->exttitle );
 		if ($exporter->external) {
 			$this->assign ( 'params', $params );
 		}

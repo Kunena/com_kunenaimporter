@@ -18,12 +18,12 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'joobb';
+	public $extname = 'joobb';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Joo!BB';
+	public $exttitle = 'Joo!BB';
 	/**
 	 * Minimum required version
 	 * @var string or null
