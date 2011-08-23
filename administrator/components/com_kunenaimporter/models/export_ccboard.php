@@ -221,7 +221,8 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id) FROM #__ccb_forums";
 		$this->ext_database->setQuery ( $query );
-		$maxforum = $this->ext_database->loadResult ();
+		$maxforum = (int) $this->ext_database->loadResult ();
+
 		// Import the categories
 		$query = "(SELECT
 			id AS id,

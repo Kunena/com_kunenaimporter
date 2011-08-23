@@ -440,7 +440,7 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(forum_id) FROM #__forums";
 		$this->ext_database->setQuery ( $query );
-		$maxforum = $this->ext_database->loadResult ();
+		$maxforum = (int) $this->ext_database->loadResult ();
 		// Import the categories
 		$query = "(SELECT
 			cat_id+{$maxforum} AS id,

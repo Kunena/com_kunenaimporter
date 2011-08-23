@@ -317,7 +317,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id_board) FROM #__boards";
 		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
+		$maxboard = (int) $this->ext_database->loadResult ();
 		$query = "(SELECT
 			id_board AS id,
 			IF(id_parent,id_parent,id_cat+{$maxboard}) AS parent,

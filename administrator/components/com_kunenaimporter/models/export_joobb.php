@@ -295,7 +295,7 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id) FROM #__joobb_forums";
 		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
+		$maxboard = (int) $this->ext_database->loadResult ();
 		$query = "(SELECT
 			id+{$maxboard} AS id,
 			name AS name,
