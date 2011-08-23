@@ -38,6 +38,7 @@ KunenaImporter 1.7.0-DEV
 # [#20] Add support for Joomla 1.7: Make component parameters to work
 # [#12] Fix MySQL error if there are no sections in the forum (all exports)
 # [#12] Fix MySQL error in phpBB3 import & all gallery exports
+# [#20] Add support for Joomla 1.7: Error loading component: com_xxx
 
 22-August-2011 Matias
 ^ Updated version to 1.7.0-DEV, Kunena 1.7 required

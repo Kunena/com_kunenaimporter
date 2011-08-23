@@ -120,10 +120,27 @@ class KunenaimporterModelExport extends JModel {
 	}
 
 	public function detectComponent() {
-		if (!$this->extname || $this->external || !JComponentHelper::getComponent ( "com_{$this->extname}", true )->enabled) {
-			return false;
+		static $enabled = null;
+		if ($enabled === null) {
+			if (!$this->extname || $this->external) {
+				// External software needs its own detection
+				$enabled = false;
+			} elseif (version_compare(JVERSION, '1.6', '>')) {
+				// Joomla 1.6+
+				$db = JFactory::getDbo();
+				$query = $db->getQuery(true);
+				$query->select('extension_id AS "id", element AS "option", params, enabled');
+				$query->from('#__extensions');
+				$query->where('`type` = '.$db->quote('component'));
+				$query->where('`element` = '.$db->quote("com_{$this->extname}"));
+				$db->setQuery($query);
+				$enabled = $db->loadObject();
+			} else {
+				// Joomla 1.5
+				$enabled = JComponentHelper::getComponent ( "com_{$this->extname}", true )->enabled;
 		}
-		return true;
+		}
+		return $enabled;
 	}
 
 	public function getDatabase() {

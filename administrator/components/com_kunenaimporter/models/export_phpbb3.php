@@ -65,8 +65,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	public function getPath($absolute = false) {
 		// Load rokBridge configuration (if exists)
-		if ($this->rokbridge === null) $this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
-		$path = $this->rokbridge->get('phpbb3_path');
+		if ($this->rokbridge === null && version_compare(JVERSION, '1.6', '<')) {
+			$this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
+		}
+		$path = $this->rokbridge ? $this->rokbridge->get('phpbb3_path') : '';
 		if (!$this->params->get('path') && $path) {
 			// Get phpBB3 path from rokBridge
 			$this->relpath = $path;
@@ -162,7 +164,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		if (!parent::detect()) return false;
 
 		// Check RokBridge
-		if ($this->rokbridge->get('phpbb3_path')) {
+		if ($this->rokbridge && $this->rokbridge->get('phpbb3_path')) {
 			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
 		}
 
