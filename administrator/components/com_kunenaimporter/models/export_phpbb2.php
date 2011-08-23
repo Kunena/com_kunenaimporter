@@ -783,8 +783,8 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	/**

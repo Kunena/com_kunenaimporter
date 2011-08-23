@@ -374,7 +374,8 @@ class KunenaimporterModelImport extends JModel {
 				// Copy gallery
 				if (JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++ ;
 				// Create index.html
-				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
+				$contents = '<html><body></body></html>';
+				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html", $contents);
 			} elseif(is_file($path)) {
 				if (JFile::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++;
 			}

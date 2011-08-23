@@ -65,7 +65,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	public function getPath($absolute = false) {
 		// Load rokBridge configuration (if exists)
-		$this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
+		if ($this->rokbridge === null) $this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
 		$path = $this->rokbridge->get('phpbb3_path');
 		if (!$this->params->get('path') && $path) {
 			// Get phpBB3 path from rokBridge
@@ -832,7 +832,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Count total number of subscription items to be exported
 	 */
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM #__topics_watch INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		$query = "SELECT COUNT(*) FROM #__topics_watch AS w INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
 		return $this->getCount ( $query );
 	}
 
@@ -875,8 +875,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	/**

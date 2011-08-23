@@ -610,8 +610,8 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return count($this->getAvatarGalleries());
 	}
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	protected function prep($s) {
