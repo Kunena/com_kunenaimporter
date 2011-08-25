@@ -18,12 +18,12 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'agora';
+	public $extname = 'agora';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Agora';
+	public $exttitle = 'Agora';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -553,8 +553,8 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	/**

@@ -53,14 +53,15 @@ JHTML::_('behavior.tooltip');
 		<tbody>
 			<tr class="<?php echo "row"; ?>">
 			<?php
-				$img = $this->user->block ? 'publish_x.png' : 'tick.png';
+			$dateformat = version_compare(JVERSION, '1.6', '>') ? 'Y-m-d H:i:s' : '%Y-%m-%d %H:%M:%S';
+			$img = $this->user->block ? 'publish_x.png' : 'tick.png';
 				$alt = $this->user->block ? JText::_( 'Enabled' ) : JText::_( 'Blocked' );
 				if ($this->user->lastvisitDate == "0000-00-00 00:00:00") {
 					$lvisit = JText::_( 'Never' );
 				} else {
-					$lvisit = JHTML::_('date', $this->user->lastvisitDate, '%Y-%m-%d %H:%M:%S');
+					$lvisit = JHTML::_('date', $this->user->lastvisitDate, $dateformat);
 				}
-				$rdate = JHTML::_('date', $this->user->registerDate, '%Y-%m-%d %H:%M:%S');
+				$rdate = JHTML::_('date', $this->user->registerDate, $dateformat);
 			?>
 				<td>
 					<?php echo '#';?>
@@ -103,9 +104,9 @@ JHTML::_('behavior.tooltip');
 				if ($row->lastvisitDate == "0000-00-00 00:00:00") {
 					$lvisit = JText::_( 'Never' );
 				} else {
-					$lvisit = JHTML::_('date', $row->lastvisitDate, '%Y-%m-%d %H:%M:%S');
+					$lvisit = JHTML::_('date', $row->lastvisitDate, $dateformat);
 				}
-				$rdate = JHTML::_('date', $row->registerDate, '%Y-%m-%d %H:%M:%S');
+				$rdate = JHTML::_('date', $row->registerDate, $dateformat);
 			?>
 			<tr class="<?php echo "row$k"; ?>">
 				<td>

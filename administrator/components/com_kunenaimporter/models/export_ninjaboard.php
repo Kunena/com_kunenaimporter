@@ -18,12 +18,12 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'ninjaboard';
+	public $extname = 'ninjaboard';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'NinjaBoard';
+	public $exttitle = 'NinjaBoard';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -44,7 +44,7 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 	 */
 	public function getVersion() {
 		// NinjaBoard version can be found from manifest.xml file
-		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/manifest.xml";
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->extname}/manifest.xml";
 		if (!JFile::exists ( $xml )) {
 			return false;
 		}

@@ -15,20 +15,19 @@ jimport ( 'joomla.application.component.view' );
 
 class KunenaImporterViewUsers extends JView {
 	function display($tpl = null) {
-		global $mainframe, $option;
-
+		$app = JFactory::getApplication();
 		$db = JFactory::getDBO ();
 		$currentUser = JFactory::getUser ();
 		$acl = JFactory::getACL ();
 
-		$filter_order = $mainframe->getUserStateFromRequest ( "$option.filter_order", 'filter_order', 'a.username', 'cmd' );
-		$filter_order_Dir = $mainframe->getUserStateFromRequest ( "$option.filter_order_Dir", 'filter_order_Dir', 'asc', 'word' );
-		$filter_type = $mainframe->getUserStateFromRequest ( "$option.filter_type", 'filter_type', 'unmapped', 'string' );
-		$search = $mainframe->getUserStateFromRequest ( "$option.search", 'search', '', 'string' );
+		$filter_order = $app->getUserStateFromRequest ( "com_kunenaimporter.filter_order", 'filter_order', 'a.username', 'cmd' );
+		$filter_order_Dir = $app->getUserStateFromRequest ( "com_kunenaimporter.filter_order_Dir", 'filter_order_Dir', 'asc', 'word' );
+		$filter_type = $app->getUserStateFromRequest ( "com_kunenaimporter.filter_type", 'filter_type', 'unmapped', 'string' );
+		$search = $app->getUserStateFromRequest ( "com_kunenaimporter.search", 'search', '', 'string' );
 		$search = JString::strtolower ( $search );
 
-		$limit = $mainframe->getUserStateFromRequest ( 'global.list.limit', 'limit', $mainframe->getCfg ( 'list_limit' ), 'int' );
-		$limitstart = $mainframe->getUserStateFromRequest ( $option . '.limitstart', 'limitstart', 0, 'int' );
+		$limit = $app->getUserStateFromRequest ( 'global.list.limit', 'limit', $app->getCfg ( 'list_limit' ), 'int' );
+		$limitstart = $app->getUserStateFromRequest ( "com_kunenaimporter.limitstart", 'limitstart', 0, 'int' );
 
 		$where = array ();
 		if (isset ( $search ) && $search != '') {
@@ -50,13 +49,6 @@ class KunenaImporterViewUsers extends JView {
 				break;
 			default:
 		}
-		// exclude any child group id's for this user
-		$pgids = $acl->get_group_children ( $currentUser->get ( 'gid' ), 'ARO', 'RECURSE' );
-
-		if (is_array ( $pgids ) && count ( $pgids ) > 0) {
-			JArrayHelper::toInteger ( $pgids );
-			$where [] = 'a.gid NOT IN (' . implode ( ',', $pgids ) . ')';
-		}
 		$filter = '';
 
 		$orderby = ' ORDER BY ' . $filter_order . ' ' . $filter_order_Dir;
@@ -69,7 +61,7 @@ class KunenaImporterViewUsers extends JView {
 		jimport ( 'joomla.html.pagination' );
 		$pagination = new JPagination ( $total, $limitstart, $limit );
 
-		$query = 'SELECT a.*, g.name AS groupname' . ' FROM #__kunenaimporter_users AS a LEFT JOIN #__core_acl_aro_groups AS g ON g.id = a.gid' . $filter . $where . $orderby;
+		$query = 'SELECT a.* FROM #__kunenaimporter_users AS a ' . $filter . $where . $orderby;
 		$db->setQuery ( $query, $pagination->limitstart, $pagination->limit );
 		$rows = $db->loadObjectList ();
 

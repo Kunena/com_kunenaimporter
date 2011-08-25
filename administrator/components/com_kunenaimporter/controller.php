@@ -47,13 +47,19 @@ class KunenaImporterController extends JController {
 			if ($exporter) $success = $exporter->detectComponent ();
 		}
 		if (!$success) {
-			$app->enqueueMessage ( JText::sprintf ( "Component '%s' was not detected!", $forum ), 'error' );
-			$this->redirectBack();
+			$app->enqueueMessage ( JText::sprintf ( "Component '%s' was not detected!", is_object($exporter) ? $exporter->exttitle : $forum ), 'error' );
+			if (!$exporter->external) $this->redirectBack();
 		}
 
 		if ($params->get('extforum') != $forum) {
-			$table = JTable::getInstance ( 'component' );
-			if (! $table->loadByOption ( 'com_kunenaimporter' )) {
+			if (version_compare(JVERSION, '1.6', '>')) {
+				$table = JTable::getInstance ( 'extension' );
+				$success = $table->load ( array('element'=>'com_kunenaimporter') );
+			} else {
+				$table = JTable::getInstance ( 'component' );
+				$success = $table->loadByOption ( 'com_kunenaimporter' );
+			}
+			if (! $success) {
 				JError::raiseWarning ( 500, 'Not a valid component' );
 				return false;
 			}
@@ -74,7 +80,7 @@ class KunenaImporterController extends JController {
 
 		$this->setredirect ( 'index.php?option=com_kunenaimporter' );
 	}
-	
+
 	public function stopmapping() {
 		$this->setredirect ( 'index.php?option=com_kunenaimporter&view=users' );
 	}
@@ -84,6 +90,8 @@ class KunenaImporterController extends JController {
 	}
 
 	public function truncatetable() {
+		if (!$this->checkDependencies()) return;
+
 		$limit = 1000;
 		$timeout = false;
 
@@ -118,6 +126,8 @@ class KunenaImporterController extends JController {
 	}
 
 	public function truncatemap() {
+		if (!$this->checkDependencies()) return;
+
 		$importer = $this->getModel ( 'import' );
 		$importer->truncateData ('users');
 		$app = JFactory::getApplication ();
@@ -130,6 +140,8 @@ class KunenaImporterController extends JController {
 	}
 
 	public function mapusers() {
+		if (!$this->checkDependencies()) return;
+
 		$limit = 100;
 		$timeout = false;
 
@@ -167,6 +179,8 @@ class KunenaImporterController extends JController {
 	}
 
 	public function selectuser() {
+		if (!$this->checkDependencies()) return;
+
 		$extid = JRequest::getInt ( 'extid', 0 );
 		$cid = JRequest::getVar ( 'cid', array (0), 'post', 'array' );
 		$userdata ['id'] = array_shift ( $cid );
@@ -179,7 +193,7 @@ class KunenaImporterController extends JController {
 			$userdata ['id'] = JRequest::getInt ( 'userid', 0 );
 		}
 		$replace = JRequest::getInt ( 'replace', 0 );
-		
+
 		require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
 		$importer = $this->getModel ( 'import' );
 
@@ -208,6 +222,8 @@ class KunenaImporterController extends JController {
 	}
 
 	public function importforum() {
+		if (!$this->checkDependencies()) return;
+
 		$limit = 1000;
 		$timeout = false;
 
@@ -225,7 +241,7 @@ class KunenaImporterController extends JController {
 				}
 			}
 		}
-		
+
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
 		$success = $exporter->detect ();
@@ -300,8 +316,14 @@ class KunenaImporterController extends JController {
 	public function save() {
 		$component = 'com_kunenaimporter';
 
-		$table = JTable::getInstance ( 'component' );
-		if (! $table->loadByOption ( $component )) {
+		if (version_compare(JVERSION, '1.6', '>')) {
+			$table = JTable::getInstance ( 'extension' );
+			$success = $table->load ( array('element'=>'com_kunenaimporter') );
+		} else {
+			$table = JTable::getInstance ( 'component' );
+			$success = $table->loadByOption ( 'com_kunenaimporter' );
+		}
+		if (! $success ) {
 			JError::raiseWarning ( 500, 'Not a valid component' );
 			return false;
 		}
@@ -324,6 +346,7 @@ class KunenaImporterController extends JController {
 	}
 
 	public function display() {
+		$this->checkDependencies();
 		$params = getKunenaImporterParams();
 		$forum = $params->get('extforum');
 		if (!$forum) {
@@ -336,12 +359,14 @@ class KunenaImporterController extends JController {
 		$params = new JParameter ( $component->params );
 		$view->setModel ( $this->getModel ( 'import' ), true );
 		$extforum = $params->get ( 'extforum' );
-		$view->setModel ( $this->getModel ( $extforum ? 'export_' . $extforum : 'export' ), false );
+		$view->setModel ( $export = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' ), false );
 
 		if ($cmd != 'start') {
 			JSubMenuHelper::addEntry ( JText::_ ( 'Choose Your Software' ), 'index.php?option=com_kunenaimporter&view=start', $cmd == 'default' );
 			JSubMenuHelper::addEntry ( JText::_ ( 'Importer Configuration' ), 'index.php?option=com_kunenaimporter', $cmd == 'default' );
-			JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );
+			if ($export->external) {
+				JSubMenuHelper::addEntry ( JText::_ ( 'Migrate Users' ), 'index.php?option=com_kunenaimporter&view=users', $cmd == 'users' );
+			}
 		}
 
 		$view->display ();
@@ -380,5 +405,16 @@ class KunenaImporterController extends JController {
 	protected function redirectBack() {
 		$httpReferer = JRequest::getVar ( 'HTTP_REFERER', JURI::base ( true ), 'server' );
 		JFactory::getApplication ()->redirect ( $httpReferer );
+	}
+
+	protected function checkDependencies() {
+		// Test if Kunena is installed and if the minimum version requirement is met
+		$minKunenaVersion = '1.7';
+		if (!class_exists('Kunena') || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
+			$app = JFactory::getApplication ();
+			$app->enqueueMessage( JText::sprintf ( 'COM_KUNENAIMPORTER_DEPENDENCY_FAIL', $minKunenaVersion ), 'error' );
+			return false;
+		}
+		return true;
 	}
 }

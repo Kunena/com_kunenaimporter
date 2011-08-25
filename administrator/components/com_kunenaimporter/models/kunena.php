@@ -11,9 +11,6 @@
  */
 defined ( '_JEXEC' ) or die ();
 
-require_once (JPATH_ROOT . '/components/com_kunena/lib/kunena.defines.php');
-require_once (KUNENA_PATH_LIB . '/kunena.config.class.php');
-
 class KunenaImporterTable extends JTable {
 	protected $_exists;
 
@@ -68,7 +65,7 @@ class KunenaImporterTableExtUser extends KunenaImporterTable {
 		if (empty($this->gid)) $this->gid = 18;
 		return true;
 	}
-	
+
 	public function loadIdMap($list) {
 		if (empty($list)) return array();
 		$list = implode(',', $list);
@@ -155,6 +152,8 @@ class KunenaImporterTableCategories extends KunenaImporterTable {
 	}
 }
 
+if (class_exists('Kunena')) {
+require_once (KUNENA_PATH_LIB . '/kunena.config.class.php');
 class KunenaImporterTableConfig extends CKunenaConfig {
 	protected function bind($array, $ignore = '') {
 		if (! is_array ( $array )) {
@@ -175,6 +174,7 @@ class KunenaImporterTableConfig extends CKunenaConfig {
 		$this->bind ( $data );
 		$this->create ();
 	}
+}
 }
 
 class KunenaImporterTableFavorites extends KunenaImporterTable {

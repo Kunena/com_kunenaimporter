@@ -15,7 +15,7 @@ require_once (JPATH_COMPONENT . '/models/export.php');
 
 /**
  * ccBoard Exporter Class
- * 
+ *
  * Exports almost all data from ccBoard.
  * @todo Some emoticons are missing
  * @todo Configuration import needs some work
@@ -27,12 +27,12 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	 * Extension name
 	 * @var string
 	 */
-	public $name = 'ccboard';
+	public $extname = 'ccboard';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'ccBoard';
+	public $exttitle = 'ccBoard';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -49,7 +49,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	 */
 	public function getVersion() {
 		// ccBoard version can be found from ccboard.xml file
-		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->name}/{$this->name}.xml";
+		$xml = JPATH_ADMINISTRATOR . "/components/com_{$this->extname}/{$this->extname}.xml";
 		if (!JFile::exists ( $xml )) {
 			return false;
 		}
@@ -80,11 +80,11 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export user profiles
-	 * 
-	 * Returns list of user profile objects containing database fields 
+	 *
+	 * Returns list of user profile objects containing database fields
 	 * to #__kunena_users.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -162,11 +162,11 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export user ranks
-	 * 
-	 * Returns list of rank objects containing database fields 
+	 *
+	 * Returns list of rank objects containing database fields
 	 * to #__kunena_ranks.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -192,7 +192,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		}
 		return $result;
 	}
-	
+
 	/**
 	 * Count total number of categories to be exported
 	 */
@@ -206,14 +206,14 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export sections and categories
-	 * 
-	 * Returns list of category objects containing database fields 
+	 *
+	 * Returns list of category objects containing database fields
 	 * to #__kunena_categories.
 	 * All categories without parent are sections.
-	 * 
+	 *
 	 * NOTE: it's very important to keep category IDs (containing topics) the same!
 	 * If there are two tables for sections and categories, change IDs on sections..
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -221,7 +221,8 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id) FROM #__ccb_forums";
 		$this->ext_database->setQuery ( $query );
-		$maxforum = $this->ext_database->loadResult ();
+		$maxforum = (int) $this->ext_database->loadResult ();
+
 		// Import the categories
 		$query = "(SELECT
 			id AS id,
@@ -244,9 +245,9 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 			'' AS headerdesc,
 			'' AS class_sfx,
 			0 AS allow_polls
-			
-		FROM #__ccb_forums) 
-		UNION ALL 
+
+		FROM #__ccb_forums)
+		UNION ALL
 		(SELECT
 			id+{$maxforum} AS id,
 			0 AS parent,
@@ -291,24 +292,24 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export moderator columns
-	 * 
-	 * Returns list of moderator objects containing database fields 
+	 *
+	 * Returns list of moderator objects containing database fields
 	 * to #__kunena_moderation.
 	 * NOTE: Global moderator doesn't have columns in this table!
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
 	public function &exportModeration($start = 0, $limit = 0) {
-		$query = "SELECT 
-			user_id AS userid, 
+		$query = "SELECT
+			user_id AS userid,
 			forum_id AS catid
 		FROM #__ccb_moderators";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
-	
+
 	/**
 	 * Count total number of messages to be exported
 	 */
@@ -320,10 +321,10 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export messages
-	 * 
-	 * Returns list of message objects containing database fields 
+	 *
+	 * Returns list of message objects containing database fields
 	 * to #__kunena_messages (and #__kunena_messages_text.message).
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -380,11 +381,11 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export attachments in messages
-	 * 
-	 * Returns list of attachment objects containing database fields 
+	 *
+	 * Returns list of attachment objects containing database fields
 	 * to #__kunena_attachments.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -427,22 +428,22 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export avatar galleries
-	 * 
+	 *
 	 * Returns list of folder=>fullpath to be copied, where fullpath points
 	 * to the directory in the filesystem.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	/**
 	 * Internal function to fetch all avatar galleries
-	 * 
+	 *
 	 * @return array (folder=>full path, ...)
 	 */
 	protected function &getAvatarGalleries() {
@@ -460,7 +461,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 
 	/**
 	 * Export global configuration
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array (1=>(array(option=>value, ...)))
@@ -469,15 +470,15 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
-		
+
 		$ccBoardConfig = $this->getConfig ();
 
 		// Save HTML/BBCode setting
 		$ccBoardConfig->ccbeditor;
-		
+
 		// time delta in seconds from UTC (=JFactory::getDate()->toUnix())
 		$config['timedelta'] = JFactory::getDate()->toUnix() - time() - $ccBoardConfig->timeoffset*60*60;
-		
+
 		$config['board_title'] = $ccBoardConfig->boardname;
 		// $config['email'] = null;
 		$config['board_offline'] = $ccBoardConfig->boardlocked;

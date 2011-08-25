@@ -29,7 +29,23 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.6.5-DEV
+KunenaImporter 1.7.0-DEV
+
+25-August-2011 Matias
+# [#20] Add support for Joomla 1.7: make user creation to work
+
+23-August-2011 Matias
++ [#20] Add support for Joomla 1.7: Backend ACL
+# [#20] Add support for Joomla 1.7: Make basic functionality to work
+# [#12] Display component also when Kunena is not installed
+# [#20] Add support for Joomla 1.7: Make component parameters to work
+# [#12] Fix MySQL error if there are no sections in the forum (all exports)
+# [#12] Fix MySQL error in phpBB3 import & all gallery exports
+# [#20] Add support for Joomla 1.7: Error loading component: com_xxx
+
+22-August-2011 Matias
+^ Updated version to 1.7.0-DEV, Kunena 1.7 required
+# [#37] Fix PNphpBB2 user import
 
 31-July-2011 Xillibit
 + [#42] Add support for Joo!BB
@@ -211,8 +227,6 @@ KunenaImporter 1.6.5-DEV
 + [#20178] Create new exporter for SMF2 (standalone)
 # [#20178] phpBB3: Fix subscriptions export
 - [#20178] Remove database options from configuration
-
-KunenaImporter 1.6.0-RC1
 
 24-August-2011 Matias
 ^ [#20178] phpBB3: Update exporter for Kunena 1.6 (add some missing fields, do not add slashes)

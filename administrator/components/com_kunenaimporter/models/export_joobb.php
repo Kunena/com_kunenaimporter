@@ -18,12 +18,12 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'joobb';
+	public $extname = 'joobb';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'Joo!BB';
+	public $exttitle = 'Joo!BB';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -295,7 +295,7 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id) FROM #__joobb_forums";
 		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
+		$maxboard = (int) $this->ext_database->loadResult ();
 		$query = "(SELECT
 			id+{$maxboard} AS id,
 			name AS name,
