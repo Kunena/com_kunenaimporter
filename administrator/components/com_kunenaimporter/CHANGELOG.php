@@ -31,7 +31,10 @@ Legend:
 
 KunenaImporter 1.7.0-DEV
 
-22-August-2011 Matias
+25-August-2011 Matias
+# [#20] Add support for Joomla 1.7: make user creation to work
+
+23-August-2011 Matias
 + [#20] Add support for Joomla 1.7: Backend ACL
 # [#20] Add support for Joomla 1.7: Make basic functionality to work
 # [#12] Display component also when Kunena is not installed

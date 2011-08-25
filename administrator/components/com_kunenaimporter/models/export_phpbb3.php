@@ -316,7 +316,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			u.{$username} AS username,
 			u.user_email AS email,
 			u.user_password AS password,
-			IF(u.user_type=3, 'Super Administrator', 'Registered') AS usertype,
+			IF(u.user_type=3, 'Administrator', 'Registered') AS usertype,
 			IF(b.ban_userid>0 OR u.user_type=1, 1, 0) AS block,
 			FROM_UNIXTIME(u.user_regdate) AS registerDate,
 			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,

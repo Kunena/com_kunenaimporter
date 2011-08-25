@@ -74,6 +74,7 @@ JHTML::_('behavior.tooltip');
 		<tbody>
 		<?php
 			$k = 0;
+			$dateformat = version_compare(JVERSION, '1.6', '>') ? 'Y-m-d H:i:s' : '%Y-%m-%d';
 			foreach ($this->items as $i=>$row)
 			{
 				$img 	= $row->block ? 'publish_x.png' : 'tick.png';
@@ -84,9 +85,9 @@ JHTML::_('behavior.tooltip');
 				if ($row->lastvisitDate == "0000-00-00 00:00:00") {
 					$lvisit = JText::_( 'Never' );
 				} else {
-					$lvisit	= JHTML::_('date', $row->lastvisitDate, '%Y-%m-%d %H:%M:%S');
+					$lvisit	= JHTML::_('date', $row->lastvisitDate, $dateformat);
 				}
-				$rdate = JHTML::_('date', $row->registerDate, '%Y-%m-%d %H:%M:%S');
+				$rdate = JHTML::_('date', $row->registerDate, $dateformat);
 			?>
 			<tr class="<?php echo "row$k"; ?>">
 				<td>

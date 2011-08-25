@@ -547,7 +547,6 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			CONCAT('smf2::', u.password_salt,':',u.passwd) AS password,
 			'Registered' AS usertype,
 			IF(is_activated>0,0,1) AS block,
-			0 AS gid,
 			FROM_UNIXTIME(u.date_registered) AS registerDate,
 			IF(u.last_login>0, FROM_UNIXTIME(u.last_login), '0000-00-00 00:00:00') AS lastvisitDate,
 			NULL AS params
