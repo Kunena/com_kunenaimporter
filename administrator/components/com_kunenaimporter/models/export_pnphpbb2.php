@@ -16,15 +16,15 @@ require_once (JPATH_COMPONENT . '/models/export_phpbb2.php');
 
 class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB2 {
 	/**
-	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * Extension name
 	 * @var string
 	 */
-	public $name = 'pnphpbb2';
+	public $extname = 'pnphpbb2';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'PNphpBB2';
+	public $exttitle = 'PNphpBB2';
 	/**
 	 * Minimum required version
 	 * @var string or null
@@ -61,48 +61,31 @@ class KunenaimporterModelExport_PNphpBB2 extends KunenaimporterModelExport_phpBB
 		$prefix = $this->ext_database->_table_prefix;
 		$prefix = substr ( $prefix, 0, strpos ( $prefix, '_phpbb_' ) );
 
-		// PostNuke
 		$query = "SELECT
-			u.pn_uid AS extuserid,
+			u.pn_uid AS extid,
+			u.pn_uname AS extusername,
+			u.pn_uname AS name,
 			u.pn_uname AS username,
-			pn_email AS email,
-			pn_pass AS password,
-			pn_user_regdate,
-			f.*,
-			(b.ban_userid>0) AS blocked
+			u.pn_email AS email,
+			CONCAT('postnuke::', u.pn_pass) AS password,
+			IF(f.user_level=1, 'Administrator', 'Registered') AS usertype,
+			IF(b.ban_userid > 0 OR f.user_active = 0, 1, 0) AS block,
+			FROM_UNIXTIME(MIN(u.pn_user_regdate, f.user_regdate)) AS registerDate,
+			IF(f.user_lastvisit>0, FROM_UNIXTIME(f.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
+			NULL AS params
 		FROM #__users AS f
 		LEFT JOIN {$prefix}_users AS u ON u.pn_uid = user_id
 		LEFT OUTER JOIN #__banlist AS b ON u.pn_uid = b.ban_userid
-		WHERE user_id > 0 && user_lastvisit>0
+		WHERE user_id > 0
 		ORDER BY u.pn_uid";
 
 		$result = $this->getExportData ( $query, $start, $limit, 'extuserid' );
-
 		foreach ( $result as &$row ) {
-			$row->name = $row->username = $row->username;
-
-			if ($row->user_regdate > $row->pn_user_regdate)
-				$row->user_regdate = $row->pn_user_regdate;
-				// Convert date for last visit and register date.
-			$row->registerDate = date ( "Y-m-d H:i:s", $row->user_regdate );
-			$row->lastvisitDate = date ( "Y-m-d H:i:s", $row->user_lastvisit );
-
-			// Set user type and group id - 1=admin, 2=moderator
-			if ($row->user_level == "1") {
-				$row->usertype = "Administrator";
-			} else {
-				$row->usertype = "Registered";
-			}
-
-			// Convert bbcode in signature
-			$row->user_sig = prep ( $row->user_sig );
-
-			// No imported users will get mails from the admin
-			$row->emailadmin = "0";
-
-			unset ( $row->user_regdate, $row->user_lastvisit, $row->user_level );
+			$this->parseText ( $row->extusername );
+			$this->parseText ( $row->name );
+			$this->parseText ( $row->username );
+			$this->parseText ( $row->email );
 		}
 		return $result;
 	}
-
 }

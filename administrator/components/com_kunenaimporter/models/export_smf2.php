@@ -22,12 +22,12 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
 	 * @var string
 	 */
-	public $name = 'smf2';
+	public $extname = 'smf2';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'SMF2';
+	public $exttitle = 'SMF2';
 	/**
 	 * External application
 	 * @var bool
@@ -43,19 +43,19 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	 * @var string or null
 	 */
 	protected $versionmax = '2.0.999';
-	
+
 	protected $dbconfig = null;
 	protected $config = null;
 
 	/**
 	 * Detect if component exists
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detectComponent($path = null) {
 		if ($path === null) $path = $this->basepath;
 		// Make sure that configuration file exist, but check also something else
-		if (!JFile::exists("{$path}/Settings.php") 
+		if (!JFile::exists("{$path}/Settings.php")
 			|| !JFile::exists("{$path}/Sources/BoardIndex.php")) {
 			return false;
 		}
@@ -115,7 +115,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$config = array ();
 		if ($start)
 			return $config;
-			
+
 		$dbconfig = $this->getDBConfig();
 		$query = "SELECT variable, value FROM #__settings";
 		$this->ext_database->setQuery ( $query );
@@ -317,7 +317,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT MAX(id_board) FROM #__boards";
 		$this->ext_database->setQuery ( $query );
-		$maxboard = $this->ext_database->loadResult ();
+		$maxboard = (int) $this->ext_database->loadResult ();
 		$query = "(SELECT
 			id_board AS id,
 			IF(id_parent,id_parent,id_cat+{$maxboard}) AS parent,
@@ -547,7 +547,6 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 			CONCAT('smf2::', u.password_salt,':',u.passwd) AS password,
 			'Registered' AS usertype,
 			IF(is_activated>0,0,1) AS block,
-			0 AS gid,
 			FROM_UNIXTIME(u.date_registered) AS registerDate,
 			IF(u.last_login>0, FROM_UNIXTIME(u.last_login), '0000-00-00 00:00:00') AS lastvisitDate,
 			NULL AS params
@@ -610,8 +609,8 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		return count($this->getAvatarGalleries());
 	}
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	protected function prep($s) {

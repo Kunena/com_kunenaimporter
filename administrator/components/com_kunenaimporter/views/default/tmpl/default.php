@@ -34,6 +34,20 @@ if (!empty($this->errormsg)) $disabled = ' disabled="disabled"';
 			<?php echo $this->params->render('params'); ?>
 		</td>
 		<?php endif ?>
+		<?php if (!empty($this->form)) : ?>
+		<td class="config">
+			<ul class="config-option-list">
+			<?php foreach ($this->form->getFieldset('config') as $field): ?>
+				<li>
+				<?php if (!$field->hidden) : ?>
+				<?php echo $field->label; ?>
+				<?php endif; ?>
+				<?php echo $field->input; ?>
+				</li>
+			<?php endforeach; ?>
+			</ul>
+		</td>
+		<?php endif ?>
 	</tr>
 </table>
 

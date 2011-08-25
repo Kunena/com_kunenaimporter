@@ -19,7 +19,7 @@ require_once (JPATH_COMPONENT . '/models/export.php');
 
 /**
  * phpBB3 Exporter Class
- * 
+ *
  * Exports almost all data from phpBB3.
  * @todo Configuration import needs some work
  * @todo Forum ACL not exported (except for moderators)
@@ -33,12 +33,12 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Extension name
 	 * @var string
 	 */
-	public $name = 'phpbb3';
+	public $extname = 'phpbb3';
 	/**
 	 * Display name
 	 * @var string
 	 */
-	public $title = 'phpBB3';
+	public $exttitle = 'phpBB3';
 	/**
 	 * External application
 	 * @var bool
@@ -60,13 +60,15 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Get forum path from importer configuration
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function getPath($absolute = false) {
 		// Load rokBridge configuration (if exists)
-		$this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
-		$path = $this->rokbridge->get('phpbb3_path');
+		if ($this->rokbridge === null && version_compare(JVERSION, '1.6', '<')) {
+			$this->rokbridge = JComponentHelper::getParams( 'com_rokbridge' );
+		}
+		$path = $this->rokbridge ? $this->rokbridge->get('phpbb3_path') : '';
 		if (!$this->params->get('path') && $path) {
 			// Get phpBB3 path from rokBridge
 			$this->relpath = $path;
@@ -78,7 +80,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Detect if component and config.php exists
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detectComponent($path=null) {
@@ -136,7 +138,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$phpbb_root_path = $this->basepath.'/';
 		$phpEx = substr(strrchr(__FILE__, '.'), 1);
 	}
-	
+
 	public function &getConfig() {
 		if (empty($this->config)) {
 			// Check if database settings are correct
@@ -150,11 +152,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Full detection
-	 * 
+	 *
 	 * Make sure that everything is OK for full import.
 	 * Use $this->addMessage($html) to add status messages.
 	 * If you return false, remember also to fill $this->error
-	 * 
+	 *
 	 * @return bool
 	 */
 	public function detect() {
@@ -162,7 +164,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		if (!parent::detect()) return false;
 
 		// Check RokBridge
-		if ($this->rokbridge->get('phpbb3_path')) {
+		if ($this->rokbridge && $this->rokbridge->get('phpbb3_path')) {
 			$this->addMessage ( '<div>RokBridge: <b style="color:green">detected</b></div>' );
 		}
 
@@ -193,7 +195,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Remove htmlentities, addslashes etc
-	 * 
+	 *
 	 * @param string $s String
 	 */
 	protected function parseText(&$s) {
@@ -264,7 +266,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Map Joomla user to external user
-	 * 
+	 *
 	 * @param object $joomlauser StdClass(id, username, email)
 	 * @return int External user ID
 	 */
@@ -295,10 +297,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export users
-	 * 
-	 * Returns list of user extuser objects containing database fields 
+	 *
+	 * Returns list of user extuser objects containing database fields
 	 * to #__kunenaimporter_users.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -314,7 +316,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			u.{$username} AS username,
 			u.user_email AS email,
 			u.user_password AS password,
-			IF(u.user_type=3, 'Super Administrator', 'Registered') AS usertype,
+			IF(u.user_type=3, 'Administrator', 'Registered') AS usertype,
 			IF(b.ban_userid>0 OR u.user_type=1, 1, 0) AS block,
 			FROM_UNIXTIME(u.user_regdate) AS registerDate,
 			IF(u.user_lastvisit>0, FROM_UNIXTIME(u.user_lastvisit), '0000-00-00 00:00:00') AS lastvisitDate,
@@ -361,9 +363,9 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		if ($mods === null) {
 			// Get users in moderator groups
 			$query = "SELECT
-				u.user_id AS userid, 
+				u.user_id AS userid,
 				ag.forum_id AS catid
-			FROM phpbb_acl_roles AS ar 
+			FROM phpbb_acl_roles AS ar
 			INNER JOIN phpbb_acl_groups AS ag ON ar.role_id=ag.auth_role_id
 			INNER JOIN phpbb_user_group AS ug ON ug.group_id=ag.group_id
 			INNER JOIN phpbb_users AS u ON u.user_id=ug.user_id AND u.user_id > 0 AND u.user_type != 2
@@ -378,7 +380,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$query = "SELECT
 				u.user_id AS userid,
 				au.forum_id AS catid
-			FROM #__acl_roles AS ar 
+			FROM #__acl_roles AS ar
 			INNER JOIN #__acl_users AS au ON ar.role_id=au.auth_role_id
 			INNER JOIN #__users AS u ON u.user_id=au.user_id AND u.user_id > 0 AND u.user_type != 2
 			WHERE role_type='m_'";
@@ -389,13 +391,13 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		}
 		return $mods;
 	}
-	
+
 	/**
 	 * Export user profiles
-	 * 
-	 * Returns list of user profile objects containing database fields 
+	 *
+	 * Returns list of user profile objects containing database fields
 	 * to #__kunena_users.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -444,7 +446,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		ORDER BY u.user_id";
 		$result = $this->getExportData ( $query, $start, $limit, 'userid' );
 		$moderators = $this->getModerators();
-		
+
 		$config = $this->getConfig();
 		$path = $config['avatar_path']->value;
 		$salt = $config['avatar_salt']->value;
@@ -473,7 +475,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 						$row->avatar = '';
 				}
 			}
-			
+
 			$this->parseBBCode ( $row->signature );
 			$this->parseText ( $row->location );
 			$this->parseText ( $row->AIM );
@@ -496,10 +498,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export user session information
-	 * 
-	 * Returns list of attachment objects containing database fields 
+	 *
+	 * Returns list of attachment objects containing database fields
 	 * to #__kunena_sessions.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -527,14 +529,14 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export sections and categories
-	 * 
-	 * Returns list of category objects containing database fields 
+	 *
+	 * Returns list of category objects containing database fields
 	 * to #__kunena_categories.
 	 * All categories without parent are sections.
-	 * 
+	 *
 	 * NOTE: it's very important to keep category IDs (containing topics) the same!
 	 * If there are two tables for sections and categories, change IDs on sections..
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -603,11 +605,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export moderator columns
-	 * 
-	 * Returns list of moderator objects containing database fields 
+	 *
+	 * Returns list of moderator objects containing database fields
 	 * to #__kunena_moderation.
 	 * NOTE: Global moderator doesn't have columns in this table!
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -638,10 +640,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export messages
-	 * 
-	 * Returns list of message objects containing database fields 
+	 *
+	 * Returns list of message objects containing database fields
 	 * to #__kunena_messages (and #__kunena_messages_text.message).
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -704,10 +706,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export polls
-	 * 
-	 * Returns list of poll objects containing database fields 
+	 *
+	 * Returns list of poll objects containing database fields
 	 * to #__kunena_polls.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -734,10 +736,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export poll options
-	 * 
-	 * Returns list of poll options objects containing database fields 
+	 *
+	 * Returns list of poll options objects containing database fields
 	 * to #__kunena_polls_options.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -766,10 +768,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export poll users
-	 * 
-	 * Returns list of poll users objects containing database fields 
+	 *
+	 * Returns list of poll users objects containing database fields
 	 * to #__kunena_polls_users.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -799,11 +801,11 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export attachments in messages
-	 * 
-	 * Returns list of attachment objects containing database fields 
+	 *
+	 * Returns list of attachment objects containing database fields
 	 * to #__kunena_attachments.
 	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
@@ -832,26 +834,26 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Count total number of subscription items to be exported
 	 */
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM #__topics_watch INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		$query = "SELECT COUNT(*) FROM #__topics_watch AS w INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
 		return $this->getCount ( $query );
 	}
 
 	/**
 	 * Export topic subscriptions
-	 * 
-	 * Returns list of subscription objects containing database fields 
+	 *
+	 * Returns list of subscription objects containing database fields
 	 * to #__kunena_subscriptions.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
 	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
-			t.topic_first_post_id AS thread, 
+			t.topic_first_post_id AS thread,
 			w.user_id AS userid,
 			w.notify_status AS future1
-		FROM #__topics_watch AS w 
+		FROM #__topics_watch AS w
 		INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
@@ -866,22 +868,22 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export avatar galleries
-	 * 
+	 *
 	 * Returns list of folder=>fullpath to be copied, where fullpath points
 	 * to the directory in the filesystem.
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
 	public function &exportAvatarGalleries($start = 0, $limit = 0) {
-		$galleries = $this->getAvatarGalleries();
-		return array_slice($galleries, $start, $limit);
+		$galleries = array_slice($this->getAvatarGalleries(), $start, $limit);
+		return $galleries;
 	}
 
 	/**
 	 * Internal function to fetch all avatar galleries
-	 * 
+	 *
 	 * @return array (folder=>full path, ...)
 	 */
 	protected function &getAvatarGalleries() {
@@ -910,7 +912,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 
 	/**
 	 * Export global configuration
-	 * 
+	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array (1=>(array(option=>value, ...)))
@@ -921,7 +923,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			return $config;
 
 		$result = $this->getConfig();
-			
+
 		// Time delta in seconds from UTC (=JFactory::getDate()->toUnix())
 		$config['timedelta'] = JFactory::getDate()->toUnix() - time();
 

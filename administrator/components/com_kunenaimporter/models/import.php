@@ -37,10 +37,18 @@ class KunenaimporterModelImport extends JModel {
 		'usersbanned'=>array('userid', 'created_by', 'modified_by'),
 		'whoisonline'=>array('userid'),
 	);
+	protected $usertypes = null;
 
 	public function __construct() {
 		parent::__construct ();
 		$this->db = JFactory::getDBO ();
+		if (version_compare(JVERSION, '1.6', '>')) {
+			// Joomla 1.6+
+			$this->usertypes = array('Registered' => 2, 'Author' => 3, 'Editor' => 4, 'Publisher' => 5, 'Manager' => 6, 'Administrator' => 7);
+		} else {
+			// Joomla 1.5
+			$this->usertypes = array('Registered' => 18, 'Author' => 19, 'Editor' => 20, 'Publisher' => 21, 'Manager' => 23, 'Administrator' => 24);
+		}
 	}
 
 	public function getImportOptions() {
@@ -171,8 +179,8 @@ class KunenaimporterModelImport extends JModel {
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
 		// FIXME: use kunena recount
-		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages` 
-			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time 
+		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages`
+			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time
 			WHERE `#__kunena_categories`.id_last_msg=`#__kunena_messages`.id AND `#__kunena_categories`.id_last_msg>0";
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />Invalid query:<br />$query<br />" . $this->db->errorMsg () );
@@ -199,23 +207,45 @@ class KunenaimporterModelImport extends JModel {
 	}
 
 	public function truncateJoomlaUsers() {
-		// Leave only Super Administrators
 		$this->db = JFactory::getDBO();
-		$query="DELETE FROM #__users WHERE gid != 25";
-		$this->db->setQuery($query);
-		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
-		$query="ALTER TABLE `#__users` AUTO_INCREMENT = 0";
-		$this->db->setQuery($query);
-		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
-		$query="DELETE #__core_acl_aro AS a FROM #__core_acl_aro AS a LEFT JOIN #__users AS u ON a.value=u.id WHERE u.id IS NULL";
-		$this->db->setQuery($query);
-		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
-		$query="DELETE FROM #__core_acl_groups_aro_map WHERE group_id != 25";
-		$this->db->setQuery($query);
-		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
-		$query="ALTER TABLE `#__core_acl_aro` AUTO_INCREMENT = 0";
-		$this->db->setQuery($query);
-		$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+		// Leave only Super Administrators
+		if (version_compare(JVERSION, '1.6', '>')) {
+			// Joomla 1.6+
+			// @TODO: what to do with #__contact_details?
+			$query = "SELECT u.id FROM #__users AS u INNER JOIN #__user_usergroup_map AS m ON u.id=m.user_id WHERE m.group_id=8";
+			$this->db->setQuery($query);
+			$admins = implode(',', $this->db->loadResultArray());
+			if (!$admins) return;
+			$query="DELETE FROM #__users WHERE id NOT IN ({$admins})";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="ALTER TABLE #__users AUTO_INCREMENT = 0";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="DELETE FROM #__user_usergroup_map WHERE user_id NOT IN ({$admins})";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="DELETE FROM #__user_profiles WHERE user_id NOT IN ({$admins})";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+		} else {
+			// Joomla 1.5
+			$query="DELETE FROM #__users WHERE gid != 25";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="ALTER TABLE `#__users` AUTO_INCREMENT = 0";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="DELETE #__core_acl_aro AS a FROM #__core_acl_aro AS a LEFT JOIN #__users AS u ON a.value=u.id WHERE u.id IS NULL";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="DELETE FROM #__core_acl_groups_aro_map WHERE group_id != 25";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$query="ALTER TABLE `#__core_acl_aro` AUTO_INCREMENT = 0";
+			$this->db->setQuery($query);
+			$result = $this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+		}
 	}
 
 	public function importData($option, &$data) {
@@ -374,7 +404,8 @@ class KunenaimporterModelImport extends JModel {
 				// Copy gallery
 				if (JFolder::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++ ;
 				// Create index.html
-				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html",'<html><body></body></html>');
+				$contents = '<html><body></body></html>';
+				JFile::write(JPATH_ROOT."/media/kunena/avatars/gallery/{$item}/index.html", $contents);
 			} elseif(is_file($path)) {
 				if (JFile::copy($path, JPATH_ROOT."/media/kunena/avatars/gallery/{$item}", '', true)) $count++;
 			}
@@ -420,7 +451,7 @@ class KunenaimporterModelImport extends JModel {
 				if (empty ( $message->name ))
 					$message->name = $user->username;
 			}
-			
+
 			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
 			if ($msgtable->save ( $message ) === false)
 				die ( "ERROR: " . $msgtable->getError () );
@@ -453,17 +484,33 @@ class KunenaimporterModelImport extends JModel {
 		}
 		return $user;
 	}
-	
+
 	public function createUser($extuser) {
 		if ($extuser->id) return 0;
 		$data = get_object_vars($extuser);
 		if (empty($data['password2'])) unset($data['password']);
 		$user = new JUser();
 		if (!$user->bind($data)) die('Error binding user');
+		$this->setUserGroup($user, $extuser->usertype);
 		if (!$user->save()) return $user->getError();
 		$data['id'] = $user->id;
 		if (!$extuser->save($data)) die('Error saving extuser');
 		return $user->id;
+	}
+
+	public function setUserGroup($user, $usertype) {
+		if (!isset($this->usertypes[$usertype])) {
+			$usertype = 'Registered';
+		}
+		$groupid = $this->usertypes[$usertype];
+		if (version_compare(JVERSION, '1.6', '>')) {
+			// Joomla 1.6+
+			$user->groups = array($usertype => $groupid);
+		} else {
+			// Joomla 1.5
+			$user->gid = $groupid;
+		}
+
 	}
 
 	public function updateUserData($oldid, $newid, $replace = false) {
