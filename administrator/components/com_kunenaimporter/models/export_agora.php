@@ -13,9 +13,19 @@ defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
 
+/**
+ * Agora Exporter Class
+ *
+ * Exports data from Agora Forum.
+ * @todo Configuration import needs some work
+ * @todo Forum ACL not exported (except for moderators)
+ * @todo Uploaded avatars are not supported
+ * @todo Ranks not exported
+ * @todo Some emoticons may be missing (images/db are not exported)
+ */
 class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	/**
-	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * Extension name without prefix
 	 * @var string
 	 */
 	public $extname = 'agora';
@@ -408,6 +418,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 				$avatar = $profile->id.'.gif';
 			} else {
 				$avatar_path = '';
+				$avatar = '';
 			}
 			$profile->avatar = $avatar;
 			$profile->copypath =  $avatar_path;
@@ -499,16 +510,17 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM `#__agora_subscriptions`";
+		$query = "SELECT COUNT(*) FROM #__agora_subscriptions";
 		return $this->getCount ( $query );
 	}
 
 	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
 			w.topic_id AS thread,
-			u.jos_id AS userid
-		FROM `#__agora_subscriptions` AS w
-		LEFT JOIN `#__agora_users` AS u ON w.user_id=u.id";
+			u.jos_id AS userid,
+			w.emailed AS future1
+		FROM #__agora_subscriptions AS w
+		INNER JOIN #__agora_users AS u ON w.user_id=u.id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
@@ -565,11 +577,11 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	protected function &getAvatarGalleries() {
 		static $galleries = false;
 		if ($galleries === false) {
-			$copypath = JPATH_ROOT.'/components/com_agora/img/pre_avatars';
+			$path = JPATH_ROOT.'/components/com_agora/img/pre_avatars';
 			$galleries = array();
-			$files = JFolder::files($copypath, '\.(?i)(gif|jpg|jpeg|png)$', true);
-			foreach ($files as $file) {
-				$galleries[$file] = "{$copypath}/{$file}";
+			$folders = JFolder::folders($path);
+			foreach ($folders as $folder) {
+				$galleries[$folder] = "{$path}/{$folder}";
 			}
 		}
 		return $galleries;
