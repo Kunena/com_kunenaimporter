@@ -34,6 +34,7 @@ KunenaImporter 1.7.0-DEV
 28-August-2011 Matias
 # [#26] Agora: Fix avatar gallery import
 # [#26] Agora: Fix subscriptions import
+# [#26] Agora: Convert most BBCode tags
 
 25-August-2011 Matias
 # [#20] Add support for Joomla 1.7: make user creation to work

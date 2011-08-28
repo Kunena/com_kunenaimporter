@@ -46,12 +46,42 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	protected $versionmax = null;
 
 	/**
+	 * Get configuration
+	 */
+	public function &getConfig() {
+		if (empty($this->config)) {
+			$query="SELECT conf_name, conf_value AS value FROM #__agora_config";
+			$this->config = $this->getExportData($query, 0, 1000, 'conf_name');
+		}
+		return $this->config;
+	}
+
+	/**
 	 * Get component version
 	 */
 	public function getVersion() {
-		$query = "SELECT conf_value FROM `#__agora_config` WHERE `conf_name` = 'o_cur_version'";
-		$this->ext_database->setQuery ( $query );
-		return $this->ext_database->loadResult ();
+		$config = $this->getConfig();
+		return $config['o_cur_version']->value;
+	}
+
+	/**
+	 * Convert BBCode to Kunena BBCode
+	 *
+	 * @param string $s String
+	 */
+	protected function parseBBCode(&$s) {
+		$s = preg_replace ( '/\[s\]/', '[strike]', $s );
+		$s = preg_replace ( '/\[\/s\]/', '[/strike]', $s );
+
+		$s = preg_replace ( '/\[justify\]/', '', $s );
+		$s = preg_replace ( '/\[\/justify\]/', '', $s );
+		
+		$s = preg_replace ( '/\[size=[1-9]\]/', '[size=1]', $s );
+		$s = preg_replace ( '/\[size=(10|11)\]/', '[size=2]', $s );
+		$s = preg_replace ( '/\[size=(12|13)\]/', '[size=3]', $s );
+		$s = preg_replace ( '/\[size=(14|15|16|17):(.*?)\]/', '[size=4]', $s );
+		$s = preg_replace ( '/\[size=(18|19|20|21|22|23)\]/', '[size=5]', $s );
+		$s = preg_replace ( '/\[size=([2-9][0-9])\]/', '[size=6]', $s );
 	}
 
 	public function countConfig() {
@@ -62,11 +92,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$config = array();
 		if ($start) return $config;
 
-		$query="SELECT conf_name, conf_value AS value FROM #__agora_config";
-		$result = $this->getExportData($query, 0, 1000, 'conf_name');
-
-		if (!$result) return $config;
-
+		$result = $this->getConfig();
 		$config['id'] = 1;
 		// $config['board_title'] = null;
 		// $config['email'] = null;
@@ -296,10 +322,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		LEFT JOIN #__agora_categories AS cat ON f.cat_id=cat.id)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
-		foreach ($result as $key=>&$row) {
-			$row->name = $this->prep($row->name);
-			$row->description = $this->prep($row->description);
-		}
 		return $result;
 	}
 
@@ -333,8 +355,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
 		foreach ( $result as &$row ) {
-			$row->subject = $this->prep ( $row->subject );
-			$row->message = $this->prep ( $row->message );
+			$this->parseBBCode( $row->message );
 		}
 		return $result;
 	}
@@ -541,10 +562,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		LEFT JOIN `#__agora_users` AS u ON ban.username=u.username";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
-	}
-
-	protected function prep($s) {
-		return $s;
 	}
 
 	/**
