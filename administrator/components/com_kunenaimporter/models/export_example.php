@@ -301,7 +301,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	 *
 	 * Returns list of rank objects containing database fields
 	 * to #__kunena_ranks.
-	 * NOTE: copies all files found in $row->copyfile (full path) to Kunena.
+	 * NOTE: copies all files found in $row->copypath (full path) to Kunena.
 	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
@@ -320,7 +320,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 		foreach ( $result as $rank ) {
 			$this->parseText ( $row->rank_title );
 			// Full path to the original file
-			$rank->copyfile = JPATH_ROOT . "/components/com_example/assets/ranks/{$rank->rank_image}";
+			$rank->copypath = JPATH_ROOT . "/components/com_example/assets/ranks/{$rank->rank_image}";
 		}
 		return $result;
 	}

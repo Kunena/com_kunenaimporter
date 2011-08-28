@@ -84,6 +84,134 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$s = preg_replace ( '/\[size=([2-9][0-9])\]/', '[size=6]', $s );
 	}
 
+	/**
+	 * Count total number of user profiles to be exported
+	 */
+	public function countUserprofile() {
+		$query = "SELECT COUNT(*) FROM #__agora_users";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export user profiles
+	 *
+	 * Returns list of user profile objects containing database fields
+	 * to #__kunena_users.
+	 * NOTE: copies avatars to Kunena.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserprofile($start=0, $limit=0) {
+		$query = "SELECT
+			jos_id AS userid,
+			'flat' AS view,
+			signature AS signature,
+			0 AS moderator,
+			NULL AS banned,
+			reverse_posts AS ordering,
+			num_posts AS posts,
+			'' AS avatar,
+			IF(reputation_enable>0, rep_plus-rep_minus, 0) AS karma,
+			0 AS karma_time,
+			0 AS uhits,
+			'' AS personalText,
+			gender AS gender,
+			IF(birthday,FROM_UNIXTIME(birthday, '%Y-%m-%d'),'0001-01-01' ) AS birthdate,
+			location AS location,
+			icq AS ICQ,
+			aim AS AIM,
+			yahoo AS YIM,
+			msn AS MSN,
+			skype AS SKYPE,
+			NULL AS TWITTER,
+			NULL AS FACEBOOK,
+			jabber AS GTALK,
+			NULL AS MYSPACE,
+			NULL AS LINKEDIN,
+			NULL AS DELICIOUS,
+			NULL AS FRIENDFEED,
+			NULL AS DIGG,
+			NULL AS BLOGSPOT,
+			NULL AS FLICKR,
+			NULL AS BEBO,
+			NULL AS websitename,
+			url AS websiteurl,
+			NULL AS rank,
+			0 AS hideEmail,
+			1 AS showOnline,
+			use_avatar
+		FROM #__agora_users
+		ORDER BY userid";
+		$result = $this->getExportData($query, $start, $limit);
+		$path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/';
+		foreach ( $result as $profile ) {
+			if ($profile->use_avatar) {
+				if ( JFile::exists("{$path}/{$profile->userid}.png") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.png";
+					$profile->avatar = $profile->userid.'.png';
+				} elseif ( JFile::exists("{$path}/{$profile->userid}.jpg") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.jpg";
+					$profile->avatar = $profile->userid.'.jpg';
+				} elseif ( JFile::exists("{$path}/{$profile->userid}.gif") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.gif";
+					$profile->avatar = $profile->userid.'.gif';
+				}
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of ranks to be exported
+	 */
+	public function countRanks() {
+		$query="SELECT COUNT(*) FROM #__agora_ranks";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export user ranks
+	 *
+	 * Returns list of rank objects containing database fields
+	 * to #__kunena_ranks.
+	 * NOTE: copies all files found in $row->copypath (full path) to Kunena.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportRanks($start=0, $limit=0) {
+		$query="SELECT
+			id AS rank_id,
+			rank AS rank_title,
+			min_posts AS rank_min,
+			0 AS rank_special,
+			image AS rank_image,
+			user_type
+		FROM #__agora_ranks";
+		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $rank ) {
+			$this->parseText ( $row->rank_title );
+			if ($rank->rank_image) {
+				// Full path to the original file
+				$rank->copypath = JPATH_ROOT . "/components/com_agora/img/ranks/{$rank->rank_image}";
+			}
+			if ($rank->user_type == 'admin') {
+				$rank->rank_min = 0;
+				$rank->rank_special = 1;
+				$rank->rank_image = 'rankadmin.'.JFile::getExt($rank->rank_image);
+			}
+			if ($rank->user_type == 'moderator') {
+				$rank->rank_min = 0;
+				$rank->rank_special = 1;
+				$rank->rank_image = 'rankmod.'.JFile::getExt($rank->rank_image);
+			}
+		}
+		return $result;
+	}
+
 	public function countConfig() {
 		return 1;
 	}
@@ -374,75 +502,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		foreach ( $result as $smiley ) {
 			// Full path to the original file
 			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/smilies/{$smiley->image}";
-		}
-		return $result;
-	}
-
-	public function countRanks() {
-		return false;
-
-		$query="SELECT COUNT(*) FROM #__agora_ranks";
-		return $this->getCount($query);
-	}
-
-	public function &exportRanks($start=0, $limit=0)
-	{
-		$query="SELECT
-			rank AS rank_title,
-			min_posts AS rank_min,
-			image AS rank_image,
-			user_type AS rank_special
-		FROM #__agora_ranks";
-		$result = $this->getExportData($query, $start, $limit);
-		foreach ( $result as $rank ) {
-			$this->parseText ( $row->rank_title );
-			// Full path to the original file
-			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/ranks/{$rank->rank_image}";
-		}
-		return $result;
-	}
-
-	public function countUserprofile() {
-		$query="SELECT COUNT(*) FROM #__agora_users";
-		return $this->getCount($query);
-	}
-
-	public function &exportUserprofile($start=0, $limit=0) {
-		$query="SELECT
-			id,
-			jos_id AS userid,
-			group_id,
-			url AS websiteurl,
-			icq AS ICQ,
-			msn AS MSN,
-			aim AS AIM,
-			yahoo AS YAHOO,
-			skype AS SKYPE,
-			location,
-			signature,
-			url AS websiteurl,
-			gender,
-			IF(birthday,FROM_UNIXTIME(birthday, '%Y-%m-%d'),'0001-01-01' ) AS birthdate,
-			aboutme AS personnalText,
-			num_posts AS posts
-		FROM #__agora_users";
-		$result = $this->getExportData($query, $start, $limit);
-		foreach ( $result as $profile ) {
-			if ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png') ) {
-				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png';
-				$avatar = $profile->id.'.png';
-			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg') ) {
-				$avatar_pathr = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg';
-				$avatar = $profile->id.'.jpg';
-			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif') ) {
-				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif';
-				$avatar = $profile->id.'.gif';
-			} else {
-				$avatar_path = '';
-				$avatar = '';
-			}
-			$profile->avatar = $avatar;
-			$profile->copypath =  $avatar_path;
 		}
 		return $result;
 	}
