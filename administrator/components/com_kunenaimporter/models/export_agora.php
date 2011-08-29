@@ -13,9 +13,19 @@ defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
 
+/**
+ * Agora Exporter Class
+ *
+ * Exports data from Agora Forum.
+ * @todo Configuration import needs some work
+ * @todo Forum ACL not exported (except for moderators)
+ * @todo Uploaded avatars are not supported
+ * @todo Ranks not exported
+ * @todo Some emoticons may be missing (images/db are not exported)
+ */
 class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	/**
-	 * Extension name ([a-z0-9_], wihtout 'com_' prefix)
+	 * Extension name without prefix
 	 * @var string
 	 */
 	public $extname = 'agora';
@@ -36,12 +46,170 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	protected $versionmax = null;
 
 	/**
+	 * Get configuration
+	 */
+	public function &getConfig() {
+		if (empty($this->config)) {
+			$query="SELECT conf_name, conf_value AS value FROM #__agora_config";
+			$this->config = $this->getExportData($query, 0, 1000, 'conf_name');
+		}
+		return $this->config;
+	}
+
+	/**
 	 * Get component version
 	 */
 	public function getVersion() {
-		$query = "SELECT conf_value FROM `#__agora_config` WHERE `conf_name` = 'o_cur_version'";
-		$this->ext_database->setQuery ( $query );
-		return $this->ext_database->loadResult ();
+		$config = $this->getConfig();
+		return $config['o_cur_version']->value;
+	}
+
+	/**
+	 * Convert BBCode to Kunena BBCode
+	 *
+	 * @param string $s String
+	 */
+	protected function parseBBCode(&$s) {
+		$s = preg_replace ( '/\[s\]/', '[strike]', $s );
+		$s = preg_replace ( '/\[\/s\]/', '[/strike]', $s );
+
+		$s = preg_replace ( '/\[justify\]/', '', $s );
+		$s = preg_replace ( '/\[\/justify\]/', '', $s );
+		
+		$s = preg_replace ( '/\[size=[1-9]\]/', '[size=1]', $s );
+		$s = preg_replace ( '/\[size=(10|11)\]/', '[size=2]', $s );
+		$s = preg_replace ( '/\[size=(12|13)\]/', '[size=3]', $s );
+		$s = preg_replace ( '/\[size=(14|15|16|17):(.*?)\]/', '[size=4]', $s );
+		$s = preg_replace ( '/\[size=(18|19|20|21|22|23)\]/', '[size=5]', $s );
+		$s = preg_replace ( '/\[size=([2-9][0-9])\]/', '[size=6]', $s );
+	}
+
+	/**
+	 * Count total number of user profiles to be exported
+	 */
+	public function countUserprofile() {
+		$query = "SELECT COUNT(*) FROM #__agora_users";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export user profiles
+	 *
+	 * Returns list of user profile objects containing database fields
+	 * to #__kunena_users.
+	 * NOTE: copies avatars to Kunena.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserprofile($start=0, $limit=0) {
+		$query = "SELECT
+			jos_id AS userid,
+			'flat' AS view,
+			signature AS signature,
+			0 AS moderator,
+			NULL AS banned,
+			reverse_posts AS ordering,
+			num_posts AS posts,
+			'' AS avatar,
+			IF(reputation_enable>0, rep_plus-rep_minus, 0) AS karma,
+			0 AS karma_time,
+			0 AS uhits,
+			'' AS personalText,
+			gender AS gender,
+			IF(birthday,FROM_UNIXTIME(birthday, '%Y-%m-%d'),'0001-01-01' ) AS birthdate,
+			location AS location,
+			icq AS ICQ,
+			aim AS AIM,
+			yahoo AS YIM,
+			msn AS MSN,
+			skype AS SKYPE,
+			NULL AS TWITTER,
+			NULL AS FACEBOOK,
+			jabber AS GTALK,
+			NULL AS MYSPACE,
+			NULL AS LINKEDIN,
+			NULL AS DELICIOUS,
+			NULL AS FRIENDFEED,
+			NULL AS DIGG,
+			NULL AS BLOGSPOT,
+			NULL AS FLICKR,
+			NULL AS BEBO,
+			NULL AS websitename,
+			url AS websiteurl,
+			NULL AS rank,
+			0 AS hideEmail,
+			1 AS showOnline,
+			use_avatar
+		FROM #__agora_users
+		ORDER BY userid";
+		$result = $this->getExportData($query, $start, $limit);
+		$path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/';
+		foreach ( $result as $profile ) {
+			if ($profile->use_avatar) {
+				if ( JFile::exists("{$path}/{$profile->userid}.png") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.png";
+					$profile->avatar = $profile->userid.'.png';
+				} elseif ( JFile::exists("{$path}/{$profile->userid}.jpg") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.jpg";
+					$profile->avatar = $profile->userid.'.jpg';
+				} elseif ( JFile::exists("{$path}/{$profile->userid}.gif") ) {
+					$profile->copypath = "{$path}/{$profile->userid}.gif";
+					$profile->avatar = $profile->userid.'.gif';
+				}
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Count total number of ranks to be exported
+	 */
+	public function countRanks() {
+		$query="SELECT COUNT(*) FROM #__agora_ranks";
+		return $this->getCount($query);
+	}
+
+	/**
+	 * Export user ranks
+	 *
+	 * Returns list of rank objects containing database fields
+	 * to #__kunena_ranks.
+	 * NOTE: copies all files found in $row->copypath (full path) to Kunena.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportRanks($start=0, $limit=0) {
+		$query="SELECT
+			id AS rank_id,
+			rank AS rank_title,
+			min_posts AS rank_min,
+			0 AS rank_special,
+			image AS rank_image,
+			user_type
+		FROM #__agora_ranks";
+		$result = $this->getExportData($query, $start, $limit);
+		foreach ( $result as $rank ) {
+			$this->parseText ( $row->rank_title );
+			if ($rank->rank_image) {
+				// Full path to the original file
+				$rank->copypath = JPATH_ROOT . "/components/com_agora/img/ranks/{$rank->rank_image}";
+			}
+			if ($rank->user_type == 'admin') {
+				$rank->rank_min = 0;
+				$rank->rank_special = 1;
+				$rank->rank_image = 'rankadmin.'.JFile::getExt($rank->rank_image);
+			}
+			if ($rank->user_type == 'moderator') {
+				$rank->rank_min = 0;
+				$rank->rank_special = 1;
+				$rank->rank_image = 'rankmod.'.JFile::getExt($rank->rank_image);
+			}
+		}
+		return $result;
 	}
 
 	public function countConfig() {
@@ -52,11 +220,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$config = array();
 		if ($start) return $config;
 
-		$query="SELECT conf_name, conf_value AS value FROM #__agora_config";
-		$result = $this->getExportData($query, 0, 1000, 'conf_name');
-
-		if (!$result) return $config;
-
+		$result = $this->getConfig();
 		$config['id'] = 1;
 		// $config['board_title'] = null;
 		// $config['email'] = null;
@@ -286,10 +450,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		LEFT JOIN #__agora_categories AS cat ON f.cat_id=cat.id)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
-		foreach ($result as $key=>&$row) {
-			$row->name = $this->prep($row->name);
-			$row->description = $this->prep($row->description);
-		}
 		return $result;
 	}
 
@@ -323,8 +483,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 
 		foreach ( $result as &$row ) {
-			$row->subject = $this->prep ( $row->subject );
-			$row->message = $this->prep ( $row->message );
+			$this->parseBBCode( $row->message );
 		}
 		return $result;
 	}
@@ -343,74 +502,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		foreach ( $result as $smiley ) {
 			// Full path to the original file
 			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/smilies/{$smiley->image}";
-		}
-		return $result;
-	}
-
-	public function countRanks() {
-		return false;
-
-		$query="SELECT COUNT(*) FROM #__agora_ranks";
-		return $this->getCount($query);
-	}
-
-	public function &exportRanks($start=0, $limit=0)
-	{
-		$query="SELECT
-			rank AS rank_title,
-			min_posts AS rank_min,
-			image AS rank_image,
-			user_type AS rank_special
-		FROM #__agora_ranks";
-		$result = $this->getExportData($query, $start, $limit);
-		foreach ( $result as $rank ) {
-			$this->parseText ( $row->rank_title );
-			// Full path to the original file
-			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/ranks/{$rank->rank_image}";
-		}
-		return $result;
-	}
-
-	public function countUserprofile() {
-		$query="SELECT COUNT(*) FROM #__agora_users";
-		return $this->getCount($query);
-	}
-
-	public function &exportUserprofile($start=0, $limit=0) {
-		$query="SELECT
-			id,
-			jos_id AS userid,
-			group_id,
-			url AS websiteurl,
-			icq AS ICQ,
-			msn AS MSN,
-			aim AS AIM,
-			yahoo AS YAHOO,
-			skype AS SKYPE,
-			location,
-			signature,
-			url AS websiteurl,
-			gender,
-			IF(birthday,FROM_UNIXTIME(birthday, '%Y-%m-%d'),'0001-01-01' ) AS birthdate,
-			aboutme AS personnalText,
-			num_posts AS posts
-		FROM #__agora_users";
-		$result = $this->getExportData($query, $start, $limit);
-		foreach ( $result as $profile ) {
-			if ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png') ) {
-				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.png';
-				$avatar = $profile->id.'.png';
-			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg') ) {
-				$avatar_pathr = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.jpg';
-				$avatar = $profile->id.'.jpg';
-			} elseif ( JFile::exists(JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif') ) {
-				$avatar_path = JPATH_ROOT . '/components/com_agora/img/pre_avatars/'. $profile->id.'.gif';
-				$avatar = $profile->id.'.gif';
-			} else {
-				$avatar_path = '';
-			}
-			$profile->avatar = $avatar;
-			$profile->copypath =  $avatar_path;
 		}
 		return $result;
 	}
@@ -499,16 +590,17 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	}
 
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM `#__agora_subscriptions`";
+		$query = "SELECT COUNT(*) FROM #__agora_subscriptions";
 		return $this->getCount ( $query );
 	}
 
 	public function &exportSubscriptions($start = 0, $limit = 0) {
 		$query = "SELECT
 			w.topic_id AS thread,
-			u.jos_id AS userid
-		FROM `#__agora_subscriptions` AS w
-		LEFT JOIN `#__agora_users` AS u ON w.user_id=u.id";
+			u.jos_id AS userid,
+			w.emailed AS future1
+		FROM #__agora_subscriptions AS w
+		INNER JOIN #__agora_users AS u ON w.user_id=u.id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
@@ -529,10 +621,6 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		LEFT JOIN `#__agora_users` AS u ON ban.username=u.username";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
-	}
-
-	protected function prep($s) {
-		return $s;
 	}
 
 	/**
@@ -565,11 +653,11 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	protected function &getAvatarGalleries() {
 		static $galleries = false;
 		if ($galleries === false) {
-			$copypath = JPATH_ROOT.'/components/com_agora/img/pre_avatars';
+			$path = JPATH_ROOT.'/components/com_agora/img/pre_avatars';
 			$galleries = array();
-			$files = JFolder::files($copypath, '\.(?i)(gif|jpg|jpeg|png)$', true);
-			foreach ($files as $file) {
-				$galleries[$file] = "{$copypath}/{$file}";
+			$folders = JFolder::folders($path);
+			foreach ($folders as $folder) {
+				$galleries[$folder] = "{$path}/{$folder}";
 			}
 		}
 		return $galleries;
