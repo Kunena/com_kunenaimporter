@@ -29,10 +29,12 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.7.0-DEV
+KunenaImporter 1.7.0
 
 29-August-2011 Matias
 # Fix phpBB2 poll votes and subscriptions import (multiple instances)
+^ Improve instructions
+^ Kunena Importer 1.7.0 Release
 
 28-August-2011 Matias
 # [#26] Agora: Fix avatar gallery import
