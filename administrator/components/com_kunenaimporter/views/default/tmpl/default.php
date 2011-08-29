@@ -111,6 +111,28 @@ endforeach; ?>
 						<p>
 						<font color="red"><strong>Please follow the instructions to avoid mistakes that could render your site unusable!</strong></font>
 						</p>
+						<p>
+						You should always start the import by truncating all the tables you are going to import into Kunena. This action will destroy
+						selected data from your Kunena installation! Import will fail on error if the tables are not empty.
+						</p>
+						<p>
+						If you are going to import external software like phpBB or SMF, you need to set the path (if auto detect fails) and choose
+						if you want to keep or delete Joomla users. If this is your existing Joomla site, you should always use existing users, otherwise
+						you should always delete all users. It is also recommended to let importer to automatically create all missing users.
+						</p>
+						<p>
+						When you are ready, select all the data you want to import and start the import. Importing your forum data can take a while. If you
+						run into any kinds of issues, please send support request with the error message.
+						</p>
+						<p>
+						If you imported phpBB or SMF, you should take a look into <strong>Migrate Users</strong> tab. There you should map all the conflicting
+						users and missing users, if you didn't let the importer to automatically create them. All data will be automatically updated if you
+						change mapping, for example if the automatic user mapping was wrong.
+						</p>
+						<p>
+						<strong>NOTE:</strong> It is very important that you configure and carefully test your new forum after migration. Migrating your existing
+						forum always cause some data to be lost, so be careful to check that all data which is important to you will be imported.
+						</p>
 					</td>
 				</tr>
 			</table>
