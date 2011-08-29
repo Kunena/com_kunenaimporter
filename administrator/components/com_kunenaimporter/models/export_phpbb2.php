@@ -680,7 +680,13 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 * Count total poll users to be exported
 	 */
 	public function countPollsUsers() {
-		$query="SELECT COUNT(*) FROM #__vote_voters";
+		$query="SELECT COUNT(*) FROM (
+			SELECT 1 FROM #__vote_voters AS u
+			INNER JOIN #__vote_desc AS v ON v.vote_id=u.vote_id
+			INNER JOIN #__topics AS t ON v.topic_id=t.topic_id
+			WHERE u.vote_user_id>0
+			GROUP BY v.topic_id, u.vote_user_id
+		) AS s";
 		return $this->getCount($query);
 	}
 
@@ -699,12 +705,14 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 		$query="SELECT
 			t.topic_first_post_id AS pollid,
 			u.vote_user_id AS userid,
-			1 AS votes,
+			SUM(1) AS votes,
 			'0000-00-00 00:00:00' AS lasttime,
 			0 AS lastvote
 		FROM #__vote_voters AS u
 		INNER JOIN #__vote_desc AS v ON v.vote_id=u.vote_id
-		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id";
+		INNER JOIN #__topics AS t ON v.topic_id=t.topic_id
+		WHERE u.vote_user_id>0
+		GROUP BY v.topic_id, u.vote_user_id";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
 	}
@@ -720,7 +728,12 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 	 * Count total number of subscription items to be exported
 	 */
 	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM #__topics_watch AS w INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		$query="SELECT COUNT(*) FROM (
+			SELECT 1 FROM #__topics_watch AS w
+			INNER JOIN #__topics AS t ON w.topic_id=t.topic_id
+			WHERE w.user_id>0
+			GROUP BY w.user_id, t.topic_first_post_id
+		) AS s";
 		return $this->getCount ( $query );
 	}
 
@@ -740,7 +753,9 @@ class KunenaimporterModelExport_phpBB2 extends KunenaimporterModelExport {
 			w.user_id AS userid,
 			w.notify_status AS future1
 		FROM #__topics_watch AS w
-		INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
+		INNER JOIN #__topics AS t ON w.topic_id=t.topic_id
+		WHERE w.user_id>0
+		GROUP BY w.user_id, t.topic_first_post_id";
 		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
