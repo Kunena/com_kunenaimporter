@@ -27,7 +27,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=agora&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/agora-gray.png', 'Agora' ) ?>
-									<span>Agora</span>
+									<span>Agora (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -43,7 +43,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=discussions&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/discussions-gray.png', 'Discussions' ) ?>
-									<span>Discussions</span>
+									<span>Discussions (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -51,7 +51,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=joobb&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/joobb-gray.png', 'Joo!BB' ) ?>
-									<span>Joo!BB</span>
+									<span>Joo!BB (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -59,7 +59,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=ninjaboard&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/ninjaboard-gray.png', 'Ninjaboard' ) ?>
-									<span>Ninjaboard</span>
+									<span>Ninjaboard (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -84,7 +84,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=pnphpbb2&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/pnphpbb2-gray.png', 'PNphpBB2' ) ?>
-									<span>PNphpBB2</span>
+									<span>PNphpBB2 (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -92,7 +92,7 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 							<div class="icon">
 								<a href="index.php?option=com_kunenaimporter&amp;task=start&amp;select=smf2&amp;<?php echo JUtility::getToken() ?>=1">
 									<?php echo JHTML::_ ( 'image', 'administrator/components/com_kunenaimporter/assets/smf2-gray.png', 'SMF2' ) ?>
-									<span>SMF2</span>
+									<span>SMF2 (experimental)</span>
 								</a>
 							</div>
 							</div>
@@ -131,7 +131,10 @@ JFactory::getApplication()->enqueueMessage('WARNING: Using this component may ca
 						</p>
 						<p>
 						Please click the software you want to import from. This action will take you into the
-						next page containing more options. <strong>Note:</strong> Going to next page will not start import.					
+						next page containing more options. <strong>Note:</strong> Going to next page will not start import.
+						</p>
+						<p>
+						<strong>Grayed out</strong> imports are still experimental.
 						</p>
 					</td>
 				</tr>
