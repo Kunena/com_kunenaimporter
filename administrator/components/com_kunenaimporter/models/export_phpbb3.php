@@ -365,10 +365,10 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			$query = "SELECT
 				u.user_id AS userid,
 				ag.forum_id AS catid
-			FROM phpbb_acl_roles AS ar
-			INNER JOIN phpbb_acl_groups AS ag ON ar.role_id=ag.auth_role_id
-			INNER JOIN phpbb_user_group AS ug ON ug.group_id=ag.group_id
-			INNER JOIN phpbb_users AS u ON u.user_id=ug.user_id AND u.user_id > 0 AND u.user_type != 2
+			FROM #__acl_roles AS ar
+			INNER JOIN #__acl_groups AS ag ON ar.role_id=ag.auth_role_id
+			INNER JOIN #__user_group AS ug ON ug.group_id=ag.group_id
+			INNER JOIN #__users AS u ON u.user_id=ug.user_id AND u.user_id > 0 AND u.user_type != 2
 			WHERE role_type='m_'";
 			$result = $this->getExportData ( $query, 0, 10000 );
 			$mods = array();
@@ -721,6 +721,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			topic_first_post_id AS threadid,
 			IF(poll_length>0,FROM_UNIXTIME(poll_start+poll_length),'0000-00-00 00:00:00') AS polltimetolive
 		FROM #__topics
+		WHERE poll_title!=''
 		ORDER BY threadid";
 		$result = $this->getExportData($query, $start, $limit, 'id');
 		return $result;

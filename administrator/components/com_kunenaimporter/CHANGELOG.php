@@ -33,6 +33,7 @@ KunenaImporter 1.7.1-DEV
 
 1-September-2011 Matias
 ^ Updated version to 1.7.0-DEV
+# Fix phpBB3 import: user profile and poll import fails
 
 KunenaImporter 1.7.0
 
