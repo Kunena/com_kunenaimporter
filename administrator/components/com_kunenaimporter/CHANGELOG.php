@@ -29,6 +29,11 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+KunenaImporter 1.7.1-DEV
+
+1-September-2011 Matias
+^ Updated version to 1.7.0-DEV
+
 KunenaImporter 1.7.0
 
 29-August-2011 Matias
