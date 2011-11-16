@@ -29,7 +29,10 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-KunenaImporter 1.7.1-DEV
+Kunena Importer 1.7.1
+
+16-November-2011 Matias
+^ Prepare 1.7.1 Release
 
 15-November-2011 Matias
 # Migrating attachments fails in J!1.7
@@ -38,7 +41,7 @@ KunenaImporter 1.7.1-DEV
 ^ Updated version to 1.7.0-DEV
 # Fix phpBB3 import: user profile and poll import fails
 
-KunenaImporter 1.7.0
+Kunena Importer 1.7.0
 
 29-August-2011 Matias
 # Fix phpBB2 poll votes and subscriptions import (multiple instances)
