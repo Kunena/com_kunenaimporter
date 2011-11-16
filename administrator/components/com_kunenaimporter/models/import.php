@@ -383,7 +383,8 @@ class KunenaimporterModelImport extends JModel {
 
 				// Create upload folder and index.html
 				if (!JFolder::exists($path) && JFolder::create($path)) {
-					JFile::write("{$path}/index.html",'<html><body></body></html>');
+					$data = '<html><body></body></html>';
+					JFile::write("{$path}/index.html", $data);
 				}
 				$item->hash = md5_file ( $item->copypath );
 				JFile::copy($item->copypath, "{$path}/{$item->filename}");
