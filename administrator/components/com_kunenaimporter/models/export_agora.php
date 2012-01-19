@@ -38,7 +38,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	 * Minimum required version
 	 * @var string or null
 	 */
-	protected $versionmin = '3.0.142';
+	protected $versionmin = '3.0.138';
 	/**
 	 * Maximum accepted version
 	 * @var string or null
@@ -75,7 +75,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 
 		$s = preg_replace ( '/\[justify\]/', '', $s );
 		$s = preg_replace ( '/\[\/justify\]/', '', $s );
-		
+
 		$s = preg_replace ( '/\[size=[1-9]\]/', '[size=1]', $s );
 		$s = preg_replace ( '/\[size=(10|11)\]/', '[size=2]', $s );
 		$s = preg_replace ( '/\[size=(12|13)\]/', '[size=3]', $s );
@@ -501,7 +501,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ( $result as $smiley ) {
 			// Full path to the original file
-			$rank->copyfile = JPATH_ROOT . "/components/components/com_agora/img/smilies/{$smiley->image}";
+			$smiley->copyfile = JPATH_ROOT . "/components/components/com_agora/img/smilies/{$smiley->image}";
 		}
 		return $result;
 	}

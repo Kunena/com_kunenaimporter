@@ -29,6 +29,10 @@ Legend:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Kunena Importer 1.7.2-DEV
+# Install under Joomla 1.7 need a specific xml file
+# Decrease agora minimu version to 3.0.138
+
 Kunena Importer 1.7.1
 
 16-November-2011 Matias
