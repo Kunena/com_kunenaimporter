@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
@@ -299,7 +297,7 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 		$query = "(SELECT
 			id+{$maxboard} AS id,
 			name AS name,
-			0 AS parent,
+			0 AS parent_id,
 			published,
 			NULL AS description,
 			0 AS locked,
@@ -316,7 +314,7 @@ class KunenaimporterModelExport_JooBB extends KunenaimporterModelExport {
 		(SELECT
 			f.id AS id,
 			f.name AS name,
-			cat.id+{$maxboard} AS parent,
+			cat.id+{$maxboard} AS parent_id,
 			f.status AS published,
 			f.description AS description,
 			f.locked AS locked,

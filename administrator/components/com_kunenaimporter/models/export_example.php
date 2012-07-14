@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once (JPATH_COMPONENT . '/models/export.php');
@@ -380,7 +378,7 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT
 			0 AS id,
-			0 AS parent,
+			0 AS parent_id,
 			'' AS name,
 			0 AS cat_emoticon,
 			0 AS locked,
@@ -441,6 +439,62 @@ class KunenaimporterModelExport_example extends KunenaimporterModelExport {
 			0 AS catid
 		FROM #__example_moderators";
 		$result = $this->getExportData ( $query, $start, $limit );
+		return $result;
+	}
+
+	/**
+	 * Count total number of topics to be exported
+	 */
+	public function countTopics() {
+		$query = "SELECT COUNT(*) FROM #__example_topics";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export topics
+	 *
+	 * Returns list of message objects containing database fields
+	 * to #__kunena_topics.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportTopics($start = 0, $limit = 0) {
+		$query = "SELECT
+		0 AS id,
+		0 AS category_id,
+		'' AS subject,
+		0 AS icon_id,
+		0 AS locked,
+		0 AS hold,
+		0 AS ordering,
+		0 AS posts,
+		0 AS hits,
+		0 AS attachments,
+		0 AS poll_id,
+		0 AS moved_id,
+		0 AS first_post_id,
+		0 AS first_post_time
+		0 AS first_post_userid
+		'' AS first_post_message
+		'' AS first_post_guest_name
+		0 AS last_post_id
+		0 AS last_post_time
+		0 AS last_post_userid
+		'' AS last_post_message
+		'' AS last_post_guest_name
+		'' AS params
+		FROM #__example_topics";
+		$result = $this->getExportData ( $query, $start, $limit );
+		foreach ( $result as $key => &$row ) {
+			$this->parseText ( $row->subject );
+			$this->parseText ( $row->first_post_guest_name );
+			$this->parseText ( $row->last_post_guest_name );
+			$this->parseBBCode ( $row->first_post_message );
+			$this->parseBBCode ( $row->last_post_message );
+		}
 		return $result;
 	}
 

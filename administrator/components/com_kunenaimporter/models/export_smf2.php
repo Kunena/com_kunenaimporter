@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 // Import Joomla! libraries
@@ -320,7 +318,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		$maxboard = (int) $this->ext_database->loadResult ();
 		$query = "(SELECT
 			id_board AS id,
-			IF(id_parent,id_parent,id_cat+{$maxboard}) AS parent,
+			IF(id_parent,id_parent,id_cat+{$maxboard}) AS parent_id,
 			name AS name,
 			0 AS cat_emoticon,
 			0 AS locked,
@@ -352,7 +350,7 @@ class KunenaimporterModelExport_Smf2 extends KunenaimporterModelExport {
 		UNION ALL
 		(SELECT
 			id_cat+{$maxboard} AS id,
-			0 AS parent,
+			0 AS parent_id,
 			name AS name,
 			0 AS cat_emoticon,
 			0 AS locked,

@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
@@ -286,15 +284,15 @@ class KunenaimporterModelExport_Ninjaboard extends KunenaimporterModelExport {
 			posts AS numPosts,
 			last_post_id AS id_last_msg,
 			ninjaboard_forum_id AS id,
-			path AS parent
+			path AS parent_id
 		FROM #__ninjaboard_forums)
 		ORDER BY id";
 		$result = $this->getExportData($query, $start, $limit);
 		foreach ($result as $key=>&$row) {
-			if( $row->parent=='/' ) {
-				$row->parent='0';
+			if( $row->parent_id=='/' ) {
+				$row->parent_id='0';
 			} else {
-				$row->parent=preg_replace('#/?#','',$row->parent);
+				$row->parent_id=preg_replace('#/?#','',$row->parent_id);
 			}
 			$row->name = $this->prep($row->name);
 			$row->description = $this->prep($row->description);
