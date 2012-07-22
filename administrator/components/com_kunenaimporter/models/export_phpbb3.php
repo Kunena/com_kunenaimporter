@@ -250,13 +250,18 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$s = preg_replace ( '/\<!-- e(.*?) -->/', '', $s );
 		$s = preg_replace ( '/\<!-- w(.*?) -->/', '', $s );
 		$s = preg_replace ( '/\<!-- m(.*?) -->/', '', $s );
+		$s = preg_replace ( '/\<!-- l(.*?) -->/', '', $s ); // local url
+		$s = preg_replace ( '/\<!-- ia(.*?) -->/', '', $s ); // attachment
 
+		// TODO: convert urls
 		$s = preg_replace ( '/\<a class=\"postlink\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
+		$s = preg_replace ( '/\<a class=\"postlink-local\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
 		$s = preg_replace ( '/\<a href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
 
 		$s = preg_replace ( '/\<a href=.*?mailto:.*?>/', '', $s );
 
 		$s = preg_replace ( '/\[url:(.*?)]/', '[url]', $s );
+		$s = preg_replace ( '/\[url=([^:]*):(.*?)]/', '[url]', $s );
 		$s = preg_replace ( '/\[\/url:(.*?)]/', '[/url]', $s );
 
 		$s = preg_replace ( '/\<\/a>/', '', $s );
@@ -497,7 +502,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	/**
 	 * Export user session information
 	 *
-	 * Returns list of attachment objects containing database fields
+	 * Returns list of session objects containing database fields
 	 * to #__kunena_sessions.
 	 *
 	 * @param int $start Pagination start
@@ -993,6 +998,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
 			$row->copypath = "{$this->basepath}/files/{$row->realfile}";
+			$row->copypaththumb = "{$this->basepath}/files/thumb_{$row->realfile}";
 		}
 		return $result;
 	}
@@ -1069,7 +1075,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['board_title'] = $result ['sitename']->value;
 		$config ['email'] = $result ['board_email']->value;
 		$config ['board_offline'] = $result ['board_disable']->value;
-		// $config ['board_ofset'] = $result ['board_timezone']->value;
 		// $config['offline_message'] = null;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
@@ -1120,8 +1125,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['avatarsize'] = ( int ) ($result ['avatar_filesize']->value / 1000);
 		// $config['allowimageupload'] = null;
 		// $config['allowimageregupload'] = null;
-		// $config['imageheight'] = null;
-		// $config['imagewidth'] = null;
+		$config['imageheight'] = $result ['img_max_height']->value;
+		$config['imagewidth'] = $result ['img_max_width']->value;
 		// $config['imagesize'] = null;
 		// $config['allowfileupload'] = null;
 		// $config['allowfileregupload'] = null;
@@ -1206,8 +1211,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['checkmimetypes'] = null;
 		// $config['imagemimetypes'] = null;
 		// $config['imagequality'] = null;
-		// $config['thumbheight'] = null;
-		// $config['thumbwidth'] = null;
+		$config['thumbwidth'] = isset($result ['img_max_thumb_width']->value) ? $result ['img_max_thumb_width']->value : 32;
+		$config['thumbheight'] = isset($result ['img_max_thumb_height']->value) ? $result ['img_max_thumb_height']->value : $config['thumbwidth'];
 		// $config['hideuserprofileinfo'] = null;
 		// $config['integration_access'] = null;
 		// $config['integration_login'] = null;

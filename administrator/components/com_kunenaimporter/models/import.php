@@ -464,6 +464,13 @@ class KunenaimporterModelImport extends JModel {
 				}
 				$item->hash = md5_file ( $item->copypath );
 				JFile::copy($item->copypath, "{$path}/{$item->filename}");
+				if (file_exists($item->copypaththumb)) {
+					if (!JFolder::exists("{$path}/thumb") && JFolder::create("{$path}/thumb")) {
+						$data = '<html><body></body></html>';
+						JFile::write("{$path}/thumb/index.html", $data);
+					}
+					JFile::copy($item->copypaththumb, "{$path}/thumb/{$item->filename}");
+				}
 				$count++;
 			}
 			$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
