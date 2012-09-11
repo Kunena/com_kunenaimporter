@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 class KunenaImporterTable extends JTable {
@@ -104,9 +102,27 @@ class KunenaImporterTableAttachments extends KunenaImporterTable {
 	}
 }
 
+require_once(KPATH_ADMIN . '/libraries/tables/kunenacategories.php');
+
+class KunenaImporterTableCategories extends TableKunenaCategories {
+	public function check() {
+		return true;
+	}
+}
+
+require_once(KPATH_ADMIN . '/libraries/tables/kunenatopics.php');
+
+class KunenaImporterTableTopics extends TableKunenaTopics {
+	public function check() {
+		return true;
+	}
+}
+
+/*
+
 class KunenaImporterTableCategories extends KunenaImporterTable {
 	var $id = null;
-	var $parent = null;
+	var $parent_id = null;
 	var $name = null;
 	var $cat_emoticon = null;
 	var $locked = null;
@@ -138,44 +154,8 @@ class KunenaImporterTableCategories extends KunenaImporterTable {
 	public function __construct($database) {
 		parent::__construct ( '#__kunena_categories', 'id', $database );
 	}
-
-	public function store($updateNulls = false) {
-		$ret = parent::store ( $updateNulls );
-		if ($ret) {
-			// we must reset fbSession (allowed), when forum record was changed
-			$this->_db->setQuery ( "UPDATE #__kunena_sessions SET allowed='na'" );
-			// FIXME: Need to check and validate query error codes
-			$this->_db->query ();
-
-		}
-		return $ret;
-	}
 }
-
-if (class_exists('Kunena')) {
-require_once (KUNENA_PATH_LIB . '/kunena.config.class.php');
-class KunenaImporterTableConfig extends CKunenaConfig {
-	protected function bind($array, $ignore = '') {
-		if (! is_array ( $array )) {
-			$this->_error = strtolower ( get_class ( $this ) ) . '::bind failed.';
-			return false;
-		} else {
-			foreach ( $array as $k => $v ) {
-				if (isset ( $this->$k ))
-					$this->$k = $v;
-			}
-		}
-
-		return true;
-	}
-
-	public function save($data) {
-		$this->remove ();
-		$this->bind ( $data );
-		$this->create ();
-	}
-}
-}
+*/
 
 class KunenaImporterTableFavorites extends KunenaImporterTable {
 	var $thread = null;

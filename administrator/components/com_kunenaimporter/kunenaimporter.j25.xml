@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE install>
-<install type="component" version="1.5.0" method="upgrade">
-	<name>KunenaImporter</name>
-	<version>2.0.1-DEV</version>
+<!DOCTYPE extension>
+<extension type="component" version="2.5.0" method="upgrade">
+	<name>com_kunenaimporter</name>
+	<version>@kunenaversion@</version>
 	<creationDate>@kunenaversiondate@</creationDate>
 	<author>Kunena Team</author>
 	<authorEmail>admin@kunena.org</authorEmail>
@@ -11,7 +11,7 @@
 	<license>GNU/GPLv3 or later</license>
 	<description>Imports ccBoard, phpBB2, phpBB3 and SMF2 into Kunena Forum.</description>
 
-	<installfile>install.kunenaimporter.php</installfile>
+	<scriptfile>install.script.php</scriptfile>
 	<install>
 		<sql>
 			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
@@ -22,32 +22,25 @@
 			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
 		</sql>
 	</uninstall>
-
+	<update>
+		<schemas>
+			<schemapath type="mysql">sql/updates/mysql</schemapath>
+		</schemas>
+	</update>
 
 	<administration>
-		<languages folder="admin/language">
-			<language tag="en-GB">en-GB/en-GB.com_kunenaimporter.ini</language>
-			<language tag="fr-FR">fr-FR/fr-FR.com_kunenaimporter.ini</language>
-			<language tag="ru-RU">ru-RU/ru-RU.com_kunenaimporter.ini</language>
-		</languages>
-
-		<menu view="default" img="components/com_kunenaimporter/assets/kunena.png">Kunena Forum Importer</menu>
-
+		<menu view="default" img="components/com_kunenaimporter/assets/kunena.png">COM_KUNENAIMPORTER</menu>
 		<files folder="admin">
 			<filename>access.xml</filename>
 			<filename>admin.kunenaimporter.php</filename>
 			<filename>config.xml</filename>
 			<filename>controller.php</filename>
 			<filename>index.html</filename>
-			<filename>install.script.php</filename>
 			<folder>assets</folder>
 			<folder>language</folder>
 			<folder>models</folder>
 			<folder>sql</folder>
 			<folder>views</folder>
 		</files>
-		<files>
-			<filename>kunenaimporter.j25.xml</filename>
-		</files>
 	</administration>
-</install>
+</extension>

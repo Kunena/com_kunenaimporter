@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
@@ -38,12 +36,12 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 	 * Minimum required version
 	 * @var string or null
 	 */
-	protected $versionmin = '3.0.138';
+	protected $versionmin = '3.0.137';
 	/**
 	 * Maximum accepted version
 	 * @var string or null
 	 */
-	protected $versionmax = null;
+	protected $versionmax = '3.0.999';
 
 	/**
 	 * Get configuration
@@ -418,7 +416,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		$query="(SELECT
 			cat_name AS name,
 			disp_position AS ordering,
-			0 AS parent,
+			0 AS parent_id,
 			enable AS published,
 			NULL AS description,
 			NULL AS headerdesc,
@@ -434,7 +432,7 @@ class KunenaimporterModelExport_Agora extends KunenaimporterModelExport {
 		(SELECT
 			f.forum_name AS name,
 			f.sort_by AS ordering,
-			cat.id+{$maxboard} AS parent,
+			cat.id+{$maxboard} AS parent_id,
 			f.enable AS published,
 			f.forum_desc AS description,
 			f.forum_mdesc AS headerdesc,

@@ -3,8 +3,7 @@
 <!--
   Kunena Importer ant build file
 
-  @version      $Id:kunena.build.xml 95 2010-01-23 21:46:51Z fxstein $
-  @copyright    Copyright (c) 2008 - 2010 Kunena Team 
+  @copyright    Copyright (c) 2008 - 2012 Kunena Team 
   				portions 2007 MjazTools. All rights reserved.
   @license      GNU/GPL
   @link         http://www.kunena.com
@@ -58,37 +57,36 @@
 	<target name="copy" depends="mkdir">
 		<copy todir="${tmp_dir}">
 			<fileset dir="${kunena.directory}">
+				<exclude name=".*" />
+				<exclude name=".*/**" />
 				<exclude name="build/" />
 				<exclude name="administrator/" />
 			</fileset>
 		</copy>
 		<copy todir="${tmp_dir}/admin">
 			<fileset dir="${kunena.directory}/administrator/components/com_kunenaimporter">
-				<exclude name="build/" />
-				<exclude name="*install.kunenaimporter.php" />
-				<exclude name="language/" />
-				<exclude name="kunenaimporter.xml" />
+				<exclude name="kunenaimporter*.xml" />
+			</fileset>
+		</copy>
+		<copy todir="${tmp_dir}/sql">
+			<fileset dir="${kunena.directory}/administrator/components/com_kunenaimporter/sql">
 			</fileset>
 		</copy>
 	</target>
 
 	<target name="init" depends="copy">
 		<xmlproperty file="${kunena.directory}/administrator/components/com_kunenaimporter/kunenaimporter.xml" collapseAttributes="true" prefix="xml" keepRoot="false" />
-		<buildnumber />
 		<tstamp>
 			<format property="str.datefmt" pattern="${cfg.datefmt}" locale="${cfg.dateloc}" />
 		</tstamp>
 
-		<condition property="str.build" value="_${cfg.buildprefix}${build.number}" else="">
-			<istrue value="${cfg.addbuild}" />
-		</condition>
 		<condition property="str.version" value="_${cfg.versionprefix}${xml.version}" else="">
 			<istrue value="${cfg.addversion}" />
 		</condition>
 		<condition property="str.date" value="_${str.datefmt}" else="">
 			<istrue value="${cfg.adddate}" />
 		</condition>
-		<property name="str.destfile" value="${package_dir}/${cfg.prefix}${cfg.name}${str.version}${str.build}${str.date}" />
+		<property name="str.destfile" value="${package_dir}/${cfg.prefix}${cfg.name}${str.version}${str.date}" />
 
 		<condition property="do.tar">
 			<istrue value="${cfg.tar}" />
@@ -111,18 +109,12 @@
 		</condition>
 		<filter token="kunenaversion" value="${xml.version}" />
 		<filter token="kunenaversiondate" value="${version.date}" />
-		<filter token="kunenaversionbuild" value="${build.number}" />
 		<filter token="kunenaversionname" value="${xml.versionname}" />
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/install.kunenaimporter.php" todir="${tmp_dir}" overwrite="true" filtering="false" />
-		<copy file="${project_dir}/administrator/components/com_kunenaimporter/uninstall.kunenaimporter.php" todir="${tmp_dir}" overwrite="true" filtering="false" />
+		<copy file="${project_dir}/administrator/components/com_kunenaimporter/install.script.php" todir="${tmp_dir}" overwrite="true" filtering="false" />
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/kunenaimporter.xml" todir="${tmp_dir}" overwrite="true" filtering="true" />
-		<copy file="${project_dir}/administrator/components/com_kunenaimporter/kunenaimporter.j16.xml" todir="${tmp_dir}" overwrite="true" filtering="true" />
+		<copy file="${project_dir}/administrator/components/com_kunenaimporter/kunenaimporter.j25.xml" todir="${tmp_dir}" overwrite="true" filtering="true" />
 		<copy file="${project_dir}/README.md" tofile="${tmp_dir}/README.txt" overwrite="true" filtering="true" />
-		<copy todir="${tmp_dir}/languages" flatten="yes" includeEmptyDirs="no">
-			<fileset dir="${project_dir}/administrator/components/com_kunenaimporter/language">
-				<include name="**/*.ini"/>
-			</fileset>
-		</copy>
 	</target>
 
 	<target name="tar" depends="package" if="do.tar">
@@ -150,7 +142,6 @@
 		<echo message="XML Copyright:   ${xml.copyright}" />
 		<echo message="XML License:     ${xml.license}" />
 		<echo message="XML Description: ${xml.description}" />
-		<echo message="Build:           ${build.number}" />
 		<echo message="Date:            ${TODAY}" />
 	</target>
 

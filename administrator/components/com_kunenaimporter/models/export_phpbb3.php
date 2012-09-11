@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 // Import Joomla! libraries
@@ -252,13 +250,18 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$s = preg_replace ( '/\<!-- e(.*?) -->/', '', $s );
 		$s = preg_replace ( '/\<!-- w(.*?) -->/', '', $s );
 		$s = preg_replace ( '/\<!-- m(.*?) -->/', '', $s );
+		$s = preg_replace ( '/\<!-- l(.*?) -->/', '', $s ); // local url
+		$s = preg_replace ( '/\<!-- ia(.*?) -->/', '', $s ); // attachment
 
+		// TODO: convert urls
 		$s = preg_replace ( '/\<a class=\"postlink\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
+		$s = preg_replace ( '/\<a class=\"postlink-local\" href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
 		$s = preg_replace ( '/\<a href=\"(.*?)\">(.*?)<\/a>/', '[url=\\1]\\2[/url]', $s );
 
 		$s = preg_replace ( '/\<a href=.*?mailto:.*?>/', '', $s );
 
 		$s = preg_replace ( '/\[url:(.*?)]/', '[url]', $s );
+		$s = preg_replace ( '/\[url=([^:]*):(.*?)]/', '[url]', $s );
 		$s = preg_replace ( '/\[\/url:(.*?)]/', '[/url]', $s );
 
 		$s = preg_replace ( '/\<\/a>/', '', $s );
@@ -499,7 +502,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	/**
 	 * Export user session information
 	 *
-	 * Returns list of attachment objects containing database fields
+	 * Returns list of session objects containing database fields
 	 * to #__kunena_sessions.
 	 *
 	 * @param int $start Pagination start
@@ -544,19 +547,20 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT
 			forum_id AS id,
-			parent_id AS parent,
+			parent_id AS parent_id,
 			forum_name AS name,
-			0 AS cat_emoticon,
+			forum_name AS alias,
+			0 AS icon_id,
 			(forum_status=1) AS locked,
-			0 AS alert_admin,
-			1 AS moderated,
-			NULL AS moderators,
+			'joomla.level' AS accesstype,
+			0 AS access,
 			0 AS pub_access,
 			1 AS pub_recurse,
 			0 AS admin_access,
 			1 AS admin_recurse,
 			left_id AS ordering,
 			1 AS published,
+			null AS channels,
 			0 AS checked_out,
 			'0000-00-00 00:00:00' AS checked_out_time,
 			0 AS review,
@@ -567,16 +571,22 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 			forum_rules AS headerdesc,
 			'' AS class_sfx,
 			1 AS allow_polls,
-			forum_last_post_id AS id_last_msg,
+			'' AS topic_ordering,
 			forum_posts AS numPosts,
 			forum_topics_real AS numTopics,
-			forum_last_post_time AS time_last_msg,
+			0 AS last_topic_id,
+			forum_last_post_id AS last_post_id,
+			forum_last_post_time AS last_post_time,
 			(LENGTH(forum_desc_bitfield)>0) AS bbcode_desc,
-			(LENGTH(forum_rules_bitfield)>0) AS bbcode_header
+			(LENGTH(forum_rules_bitfield)>0) AS bbcode_header,
+			'' AS params
 		FROM #__forums ORDER BY id";
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
 			$this->parseText ( $row->name );
+			// FIXME: joomla level in J2.5
+			// FIXME: remove id
+			$row->alias = KunenaRoute::stringURLSafe("{$row->id}-{$row->alias}");
 			if ($row->bbcode_desc) $this->parseBBCode ( $row->description );
 			else $this->parseText ( $row->description );
 			if ($row->bbcode_header) $this->parseBBCode ( $row->headerdesc );
@@ -588,45 +598,151 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	/**
 	 * Count total number of moderator columns to be exported
 	 */
-	public function countModeration() {
+	public function countUserCategories_Role() {
 		$mods = $this->getModerators();
-		$result = array();
+		$result = 0;
 		foreach ($mods as $userid=>$item) {
-			if (isset($item[0])) continue;
 			foreach ($item as $catid=>$value) {
-				$mod = new StdClass();
-				$mod->userid = $userid;
-				$mod->catid = $catid;
-				$result[] = $mod;
+				$result++;
 			}
 		}
-		return count($result);
+		return $result;
 	}
 
 	/**
 	 * Export moderator columns
 	 *
 	 * Returns list of moderator objects containing database fields
-	 * to #__kunena_moderation.
-	 * NOTE: Global moderator doesn't have columns in this table!
+	 * to #__kunena_user_categories.
 	 *
 	 * @param int $start Pagination start
 	 * @param int $limit Pagination limit
 	 * @return array
 	 */
-	public function &exportModeration($start = 0, $limit = 0) {
+	public function &exportUserCategories_Role($start = 0, $limit = 0) {
 		$mods = $this->getModerators();
 		$result = array();
 		foreach ($mods as $userid=>$item) {
-			if (isset($item[0])) continue;
 			foreach ($item as $catid=>$value) {
 				$mod = new StdClass();
-				$mod->userid = $userid;
-				$mod->catid = $catid;
+				$mod->user_id = $userid;
+				$mod->category_id = $catid;
+				$mod->role = 1;
 				$result[] = $mod;
 			}
 		}
 		$result = array_slice($result, $start, $limit);
+		return $result;
+	}
+
+	/**
+	 * Count total number of all read time columns to be exported
+	 */
+	public function countUserCategories_Allreadtime() {
+		$query = "SELECT COUNT(*) FROM #__forums_track";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export all read time columns
+	 *
+	 * Returns list of all userCategory objects containing database fields
+	 * to #__kunena_user_categories.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserCategories_Allreadtime($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS user_id,
+			forum_id AS category_id,
+			FROM_UNIXTIME(mark_time) AS allreadtime
+			FROM #__forums_track";
+		return $this->getExportData ( $query, $start, $limit );
+	}
+
+	/**
+	 * Count total number of category subscription columns to be exported
+	 */
+	public function countUserCategories_Subscribed() {
+		$query = "SELECT COUNT(*) FROM #__forums_watch";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export category subscription columns
+	 *
+	 * Returns list of userCategory objects containing database fields
+	 * to #__kunena_user_categories.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserCategories_Subscribed($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS user_id,
+			forum_id AS category_id,
+			(notify_status+1) AS subscribed
+			FROM #__forums_watch";
+		return $this->getExportData ( $query, $start, $limit );
+	}
+
+	/**
+	 * Count total number of topics to be exported
+	 */
+	public function countTopics() {
+		$query = "SELECT COUNT(*) FROM #__topics";
+		$count = $this->getCount ( $query );
+		return $count;
+	}
+
+	/**
+	 * Export topics
+	 *
+	 * Returns list of message objects containing database fields
+	 * to #__kunena_topics.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportTopics($start = 0, $limit = 0) {
+		$query = "SELECT
+		topic_id AS id,
+		forum_id AS category_id,
+		topic_title AS subject,
+		icon_id AS icon_id,
+		(topic_status=1) AS locked,
+		(topic_approved=0) AS hold,
+		(topic_type>0) AS ordering,
+		(topic_replies+1) AS posts,
+		topic_views AS hits,
+		topic_attachment AS attachments,
+		0 AS poll_id,
+		IF(topic_status=1,topic_moved_id,0) AS moved_id,
+		topic_first_post_id AS first_post_id,
+		0 AS first_post_time,
+		0 AS first_post_userid,
+		'' AS first_post_message,
+		topic_first_poster_name AS first_post_guest_name,
+		topic_last_post_id AS last_post_id,
+		0 AS last_post_time,
+		0 AS last_post_userid,
+		'' AS last_post_message,
+		topic_last_poster_name AS last_post_guest_name,
+		'' AS params
+		FROM #__topics";
+		// TODO: add support for announcements and global topics
+		$result = $this->getExportData ( $query, $start, $limit );
+		foreach ( $result as $key => &$row ) {
+			$this->parseText ( $row->subject );
+			$this->parseText ( $row->first_post_guest_name );
+			$this->parseText ( $row->last_post_guest_name );
+			$this->parseBBCode ( $row->first_post_message );
+			$this->parseBBCode ( $row->last_post_message );
+		}
 		return $result;
 	}
 
@@ -652,8 +768,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$query = "SELECT
 			p.post_id AS id,
 			IF(p.post_id=t.topic_first_post_id,0,t.topic_first_post_id) AS parent,
-			t.topic_first_post_id AS thread,
-			t.forum_id AS catid,
+			p.topic_id AS thread,
+			p.forum_id AS catid,
 			IF(p.post_username, p.post_username, u.username) AS name,
 			p.poster_id AS userid,
 			u.user_email AS email,
@@ -716,9 +832,9 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 */
 	public function &exportPolls($start=0, $limit=0) {
 		$query="SELECT
-			topic_first_post_id AS id,
+			topic_id AS id,
 			poll_title AS title,
-			topic_first_post_id AS threadid,
+			topic_id AS threadid,
 			IF(poll_length>0,FROM_UNIXTIME(poll_start+poll_length),'0000-00-00 00:00:00') AS polltimetolive
 		FROM #__topics
 		WHERE poll_title!=''
@@ -731,7 +847,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Count total poll options to be exported
 	 */
 	public function countPollsOptions() {
-		$query="SELECT COUNT(*) FROM #__poll_options";
+		$query="SELECT COUNT(*) FROM #__poll_options AS o INNER JOIN #__topics AS t ON o.topic_id=t.topic_id";
 		return $this->getCount($query);
 	}
 
@@ -746,10 +862,9 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * @return array
 	 */
 	public function &exportPollsOptions($start=0, $limit=0) {
-		// WARNING: from unknown reason pollid = threadid!!!
 		$query="SELECT
 			0 AS id,
-			t.topic_first_post_id AS pollid,
+			t.topic_id AS pollid,
 			o.poll_option_text AS text,
 			o.poll_option_total AS votes
 		FROM #__poll_options AS o
@@ -763,7 +878,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	 * Count total poll users to be exported
 	 */
 	public function countPollsUsers() {
-		$query="SELECT COUNT(DISTINCT vote_user_id) FROM #__poll_votes";
+		$query="SELECT COUNT(DISTINCT v.vote_user_id) FROM #__poll_votes AS v INNER JOIN #__topics AS t ON v.topic_id=t.topic_id";
 		return $this->getCount($query);
 	}
 
@@ -780,7 +895,7 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 	public function &exportPollsUsers($start=0, $limit=0) {
 		// WARNING: from unknown reason pollid = threadid!!!
 		$query="SELECT
-			t.topic_first_post_id AS pollid,
+			t.topic_id AS pollid,
 			v.vote_user_id AS userid,
 			COUNT(*) AS votes,
 			'0000-00-00 00:00:00' AS lasttime,
@@ -790,6 +905,62 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		GROUP BY v.vote_user_id";
 		$result = $this->getExportData($query, $start, $limit);
 		return $result;
+	}
+
+	/**
+	 * Count total number of all read time columns to be exported
+	 */
+	public function countUserTopics_Allreadtime() {
+		$query = "SELECT COUNT(*) FROM #__topics_track";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export mark read information for topics
+	 *
+	 * Returns list of items containing database fields
+	 * to #__kunena_user_topics.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserTopics_Allreadtime($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS user_id,
+			topic_id AS topic_id,
+			forum_id AS category_id,
+			0 AS message_id,
+			mark_time AS time
+			FROM #__topics_track";
+		return $this->getExportData ( $query, $start, $limit );
+	}
+
+	/**
+	 * Count total number of category subscription columns to be exported
+	 */
+	public function countUserTopics_Subscribed() {
+		$query = "SELECT COUNT(*) FROM #__topics_watch";
+		return $this->getCount ( $query );
+	}
+
+	/**
+	 * Export category subscriptions
+	 *
+	 * Returns list of items containing database fields
+	 * to #__kunena_user_topics.
+	 *
+	 * @param int $start Pagination start
+	 * @param int $limit Pagination limit
+	 * @return array
+	 */
+	public function &exportUserTopics_Subscribed($start = 0, $limit = 0) {
+		$query = "SELECT
+			user_id AS user_id,
+			topic_id AS topic_id,
+			(notify_status+1) AS subscribed
+			FROM #__topics_watch";
+		return $this->getExportData ( $query, $start, $limit );
 	}
 
 	/**
@@ -827,36 +998,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$result = $this->getExportData ( $query, $start, $limit, 'id' );
 		foreach ( $result as &$row ) {
 			$row->copypath = "{$this->basepath}/files/{$row->realfile}";
+			$row->copypaththumb = "{$this->basepath}/files/thumb_{$row->realfile}";
 		}
-		return $result;
-	}
-
-	/**
-	 * Count total number of subscription items to be exported
-	 */
-	public function countSubscriptions() {
-		$query = "SELECT COUNT(*) FROM #__topics_watch AS w INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
-		return $this->getCount ( $query );
-	}
-
-	/**
-	 * Export topic subscriptions
-	 *
-	 * Returns list of subscription objects containing database fields
-	 * to #__kunena_subscriptions.
-	 *
-	 * @param int $start Pagination start
-	 * @param int $limit Pagination limit
-	 * @return array
-	 */
-	public function &exportSubscriptions($start = 0, $limit = 0) {
-		$query = "SELECT
-			t.topic_first_post_id AS thread,
-			w.user_id AS userid,
-			w.notify_status AS future1
-		FROM #__topics_watch AS w
-		INNER JOIN #__topics AS t ON w.topic_id=t.topic_id";
-		$result = $this->getExportData ( $query, $start, $limit );
 		return $result;
 	}
 
@@ -932,7 +1075,6 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['board_title'] = $result ['sitename']->value;
 		$config ['email'] = $result ['board_email']->value;
 		$config ['board_offline'] = $result ['board_disable']->value;
-		// $config ['board_ofset'] = $result ['board_timezone']->value;
 		// $config['offline_message'] = null;
 		// $config['enablerss'] = null;
 		// $config['enablepdf'] = null;
@@ -983,8 +1125,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		$config ['avatarsize'] = ( int ) ($result ['avatar_filesize']->value / 1000);
 		// $config['allowimageupload'] = null;
 		// $config['allowimageregupload'] = null;
-		// $config['imageheight'] = null;
-		// $config['imagewidth'] = null;
+		$config['imageheight'] = $result ['img_max_height']->value;
+		$config['imagewidth'] = $result ['img_max_width']->value;
 		// $config['imagesize'] = null;
 		// $config['allowfileupload'] = null;
 		// $config['allowfileregupload'] = null;
@@ -1069,8 +1211,8 @@ class KunenaimporterModelExport_phpBB3 extends KunenaimporterModelExport {
 		// $config['checkmimetypes'] = null;
 		// $config['imagemimetypes'] = null;
 		// $config['imagequality'] = null;
-		// $config['thumbheight'] = null;
-		// $config['thumbwidth'] = null;
+		$config['thumbwidth'] = isset($result ['img_max_thumb_width']->value) ? $result ['img_max_thumb_width']->value : 32;
+		$config['thumbheight'] = isset($result ['img_max_thumb_height']->value) ? $result ['img_max_thumb_height']->value : $config['thumbwidth'];
 		// $config['hideuserprofileinfo'] = null;
 		// $config['integration_access'] = null;
 		// $config['integration_login'] = null;

@@ -1,24 +1,28 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 jimport ( 'joomla.application.component.controller' );
 jimport ( 'joomla.error.profiler' );
+
+// Define constants for all pages
+define ( 'COM_KUNENAIMPORTER_BASEDIR', JPATH_COMPONENT_ADMINISTRATOR );
+define ( 'COM_KUNENAIMPORTER_BASEURL', JURI::root () . 'administrator/index.php?option=com_kunenaimporter' );
 
 /**
  * Kunena importer Controller
  */
 class KunenaImporterController extends JController {
 	public function __construct() {
+		@set_time_limit ( 120 );
+
 		$this->item_type = 'Default';
 		$this->addModelPath ( JPATH_ADMINISTRATOR . '/components/com_kunenaimporter/models' );
 		parent::__construct ();
@@ -32,6 +36,9 @@ class KunenaImporterController extends JController {
 		$this->registerTask ( 'truncate', 'truncatetable' );
 	}
 
+	/**
+	 * This task gets run first time user users component
+	 */
 	public function start() {
 		$app = JFactory::getApplication ();
 		if (! JRequest::checkToken (true)) {
@@ -98,6 +105,7 @@ class KunenaImporterController extends JController {
 		$app = JFactory::getApplication ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
+		// FIXME: J!1.5 code
 		$params = new JParameter ( $component->params );
 		$newparams = JRequest::getVar ( 'params' );
 		if (!empty($newparams)) {
@@ -148,6 +156,7 @@ class KunenaImporterController extends JController {
 		$app = JFactory::getApplication ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
+		// FIXME: J!1.5 code
 		$params = new JParameter ( $component->params );
 		$extforum = $params->get ( 'extforum' );
 		$exporter = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
@@ -230,6 +239,7 @@ class KunenaImporterController extends JController {
 		$app = JFactory::getApplication ();
 
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
+		// FIXME: J!1.5 code
 		$params = new JParameter ( $component->params );
 		$newparams = JRequest::getVar ( 'params' );
 		if (!empty($newparams)) {
@@ -346,6 +356,12 @@ class KunenaImporterController extends JController {
 	}
 
 	public function display() {
+		$document = JFactory::getDocument ();
+		$document->addStyleSheet ( 'components/com_kunenaimporter/assets/importer.css' );
+
+		$document->setTitle ( JText::_ ( 'Kunena Forum Importer' ) );
+		JToolBarHelper::title ( JText::_ ( 'Forum Importer' ), 'kunenaimporter.png' );
+
 		$this->checkDependencies();
 		$params = getKunenaImporterParams();
 		$forum = $params->get('extforum');
@@ -356,6 +372,7 @@ class KunenaImporterController extends JController {
 		$cmd = !empty($cmd) ? $cmd : JRequest::getCmd ( 'view', 'default' );
 		$view = $this->getView ( $cmd, 'html' );
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
+		// FIXME: J!1.5 code
 		$params = new JParameter ( $component->params );
 		$view->setModel ( $this->getModel ( 'import' ), true );
 		$extforum = $params->get ( 'extforum' );
@@ -381,7 +398,7 @@ class KunenaImporterController extends JController {
 		if (empty ( $start ))
 			$start = $time;
 
-		if ($time - $start < 4)
+		if ($time - $start < 5)
 			return false;
 		return true;
 	}
@@ -409,12 +426,21 @@ class KunenaImporterController extends JController {
 
 	protected function checkDependencies() {
 		// Test if Kunena is installed and if the minimum version requirement is met
-		$minKunenaVersion = '1.7';
-		if (!class_exists('Kunena') || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
-			$app = JFactory::getApplication ();
-			$app->enqueueMessage( JText::sprintf ( 'COM_KUNENAIMPORTER_DEPENDENCY_FAIL', $minKunenaVersion ), 'error' );
+		$minKunenaVersion = '2.0.1';
+		if (!class_exists('KunenaForum') || !KunenaForum::isCompatible($minKunenaVersion)) {
+			JFactory::getApplication ()->enqueueMessage( JText::sprintf ( 'COM_KUNENAIMPORTER_DEPENDENCY_FAIL', $minKunenaVersion ), 'error' );
 			return false;
 		}
+		KunenaForum::setup();
 		return true;
 	}
+}
+
+function getKunenaImporterParams($component = 'com_kunenaimporter') {
+	static $instance = null;
+	if ($instance === null) {
+		$instance = JComponentHelper::getParams ( $component );
+		$instance->loadSetupFile(JPATH_ADMINISTRATOR . "/components/{$component}/config.xml");
+	}
+	return $instance;
 }
