@@ -1,19 +1,16 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 // TODO: Better Error detection
 // TODO: User Mapping
-
 
 // Import Joomla! libraries
 jimport ( 'joomla.application.component.model' );
@@ -23,20 +20,20 @@ require_once (JPATH_COMPONENT . '/models/kunena.php');
 
 class KunenaimporterModelImport extends JModel {
 	protected $userfields = array(
-		'messages'=>array('userid', 'modified_by'),
-		'attachments'=>array('userid'),
-		'subscriptions_categories'=>array('userid'),
-		'subscriptions'=>array('userid'),
-		'favorites'=>array('userid'),
-		'userprofile'=>array('userid'),
-		'sessions'=>array('userid'),
-		//'categories'=>array('checked_out'),
-		'moderation'=>array('userid'),
-		'pollsusers'=>array('userid'),
-		'thankyou'=>array('userid', 'target_userid'),
-		'usersbanned'=>array('userid', 'created_by', 'modified_by'),
-		'whoisonline'=>array('userid'),
+			'topics'=>array('first_post_userid', 'last_post_userid'),
+			'messages'=>array('userid', 'modified_by'),
+			'attachments'=>array('userid'),
+			'favorites'=>array('userid'),
+			'userprofile'=>array('userid'),
+			'sessions'=>array('userid'),
+			//'categories'=>array('checked_out'),
+			'usercategories'=>array('user_id'),
+			'usertopics'=>array('user_id'),
+			'pollsusers'=>array('userid'),
+			'thankyou'=>array('userid', 'target_userid'),
+			'usersbanned'=>array('userid', 'created_by', 'modified_by'),
 	);
+
 	protected $usertypes = null;
 
 	public function __construct() {
@@ -53,7 +50,7 @@ class KunenaimporterModelImport extends JModel {
 
 	public function getImportOptions() {
 		// version
-		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'moderation', 'messages', 'polls', 'pollsoptions', 'pollsusers', 'attachments', 'favorites', 'subscriptions', 'smilies', 'announcements', 'avatargalleries' );
+		$options = array ('config', 'users', 'mapusers', 'createusers', 'userprofile', 'ranks', 'sessions', 'whoisonline', 'categories', 'usercategories_role', 'usercategories_allreadtime', 'usercategories_subscribed', 'topics', 'messages', 'polls', 'pollsoptions', 'pollsusers', 'usertopics_allreadtime', 'usertopics_subscribed', 'attachments', 'favorites', 'smilies', 'announcements', 'avatargalleries' );
 		return $options;
 	}
 
@@ -178,6 +175,8 @@ class KunenaimporterModelImport extends JModel {
 
 	protected function UpdateCatStats() {
 		// Update last message time from all categories.
+		// FIXME
+		return;
 		// FIXME: use kunena recount
 		$query = "UPDATE `#__kunena_categories`, `#__kunena_messages`
 			SET `#__kunena_categories`.time_last_msg=`#__kunena_messages`.time
@@ -198,10 +197,23 @@ class KunenaimporterModelImport extends JModel {
 		}
 		if ($option == 'messages')
 			$this->truncateData ( $option . '_text' );
+
 		$this->db = JFactory::getDBO ();
-		$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
-		if (!$table) die ("<br />{$option}: Table doesn't exist!");
-		$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
+		if ($option == 'usercategories_role') {
+			$query = "UPDATE #__kunena_user_categories SET role=0";
+		} elseif ($option == 'usercategories_allreadtime') {
+			$query = "UPDATE #__kunena_user_categories SET allreadtime=NULL";
+		} elseif ($option == 'usercategories_subscribed') {
+			$query = "UPDATE #__kunena_user_categories SET subscribed=0";
+		} elseif ($option == 'usertopics_allreadtime') {
+			$query = "TRUNCATE TABLE " . $this->db->nameQuote ( '#__kunena_user_read' );
+		} elseif ($option == 'usertopics_subscribed') {
+			$query = "UPDATE #__kunena_user_topics SET subscribed=0";
+		} else {
+			$table = JTable::getInstance ( $option, 'KunenaImporterTable' );
+			if (!$table) die ("<br />{$option}: Table doesn't exist!");
+			$query = "TRUNCATE TABLE " . $this->db->nameQuote ( $table->getTableName () );
+		}
 		$this->db->setQuery ( $query );
 		$result = $this->db->query () or die ( "<br />{$option}: Invalid query:<br />$query<br />" . $this->db->errorMsg () );
 	}
@@ -261,9 +273,10 @@ class KunenaimporterModelImport extends JModel {
 					$newConfig = $newConfig->GetClassVars ();
 				$newConfig['id'] = 1;
 				$this->timedelta = intval(isset($newConfig['timedelta']) ? $newConfig['timedelta'] : 0);
+				unset($newConfig['timedelta']);
 				// TODO: move timedelta out of session:
 				JFactory::getApplication ()->setUserState ( 'com_kunenaimporter.timedelta', $this->timedelta );
-				$kunenaConfig = new KunenaImporterTableConfig ();
+				$kunenaConfig = KunenaFactory::getConfig();
 				if ($kunenaConfig->save ( $newConfig )) $count++;
 				break;
 			case 'messages' :
@@ -281,21 +294,29 @@ class KunenaimporterModelImport extends JModel {
 			case 'createusers':
 				$count = $this->createUsers( $data );
 				break;
-			case 'users':
+			case 'usercategories_role':
+			case 'usercategories_allreadtime':
+			case 'usercategories_subscribed':
+				$count = $this->importUserCategories( $option, $data );
+				break;
+			case 'usertopics_allreadtime':
+			case 'usertopics_subscribed':
+				$count = $this->importUserTopics( $option, $data );
+				break;
+				case 'users':
 				$option = 'extuser';
 			case 'userprofile':
 				// karma_time, banned:datetime
+			case 'topics' :
+				// first_post_time, last_post_time
 			case 'ranks':
 			case 'sessions':
 				// lasttime, currvisit
 			case 'whoisonline':
 			case 'categories':
-			case 'moderation':
 			case 'smilies':
 			case 'announcements':
 				// created:datetime
-			case 'subscriptions_categories':
-			case 'subscriptions':
 			case 'favorites':
 			case 'polls':
 			case 'pollsoptions':
@@ -318,7 +339,7 @@ class KunenaimporterModelImport extends JModel {
 		return $count;
 	}
 
-	protected function importDefault($option, &$data) {
+	protected function updateUserFields($option, &$data) {
 		// If table has userids in it, we need to convert them to Joomla userids
 		$userids = !empty($this->userfields[$option]);
 		if ($userids) {
@@ -329,17 +350,78 @@ class KunenaimporterModelImport extends JModel {
 				}
 			}
 			$this->loadUsers($extids);
+
+			foreach ( $data as $item ) {
+				foreach ( $this->userfields[$option] as $field) {
+					$item->$field = $this->getUser($item->$field)->userid;
+				}
+			}
 		}
+	}
+
+	protected function importUserCategories( $option, &$data) {
+		$this->updateUserFields('usercategories', $data);
 
 		$this->commitStart ();
 		$count = 0;
 		foreach ( $data as $item ) {
-			if ($userids) {
-				// Convert all userids in the table
-				foreach ( $this->userfields[$option] as $field) {
-					$item->userid = $this->getUser($item->userid)->userid;
-				}
+			switch ($option) {
+				case 'usercategories_role':
+					$query = "INSERT INTO #__kunena_user_categories (user_id, category_id, role)
+						VALUES ({$item->user_id}, {$item->category_id}, {$item->role})
+						ON DUPLICATE KEY UPDATE role={$item->role}";
+					break;
+				case 'usercategories_allreadtime':
+					$query = "INSERT INTO #__kunena_user_categories (user_id, category_id, allreadtime)
+						VALUES ({$item->user_id}, {$item->category_id}, {$this->db->quote($item->allreadtime)})
+						ON DUPLICATE KEY UPDATE allreadtime={$this->db->quote($item->allreadtime)}";
+					break;
+				case 'usercategories_subscribed':
+					$query = "INSERT INTO #__kunena_user_categories (user_id, category_id, subscribed)
+						VALUES ({$item->user_id}, {$item->category_id}, {$item->subscribed})
+						ON DUPLICATE KEY UPDATE subscribed={$item->subscribed}";
+					break;
 			}
+			$this->db->setQuery($query);
+			$this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$count++;
+		}
+		$this->commitEnd ();
+		return $count;
+	}
+
+	protected function importUsertopics( $option, &$data) {
+		$this->updateUserFields('usertopics', $data);
+
+		$this->commitStart ();
+		$count = 0;
+		foreach ( $data as $item ) {
+			switch ($option) {
+				case 'usertopics_allreadtime':
+					$query = "INSERT INTO #__kunena_user_read (user_id, topic_id, category_id, message_id, time)
+						VALUES ({$item->user_id}, {$item->topic_id}, {$item->category_id}, {$item->message_id}, {$this->db->quote($item->time)})
+						ON DUPLICATE KEY UPDATE time={$this->db->quote($item->time)}";
+					break;
+				case 'usertopics_subscribed':
+					$query = "INSERT INTO #__kunena_user_topics (user_id, topic_id, subscribed)
+						VALUES ({$item->user_id}, {$item->topic_id}, {$item->subscribed})
+						ON DUPLICATE KEY UPDATE subscribed={$item->subscribed}";
+					break;
+			}
+			$this->db->setQuery($query);
+			$this->db->query() or die("<br />Invalid query:<br />$query<br />" . $this->db->errorMsg());
+			$count++;
+		}
+		$this->commitEnd ();
+		return $count;
+	}
+
+	protected function importDefault($option, &$data) {
+		$this->updateUserFields($option, $data);
+
+		$this->commitStart ();
+		$count = 0;
+		foreach ( $data as $item ) {
 			if (!empty($item->copypath) && file_exists($item->copypath)) {
 				// There is attached file to be copied
 				switch ($option) {
@@ -366,17 +448,11 @@ class KunenaimporterModelImport extends JModel {
 	}
 
 	protected function importAttachments(&$data) {
-		$extids = array();
-		foreach ( $data as $item ) {
-			if (!empty($item->userid)) $extids[$item->userid] = $item->userid;
-		}
-		$this->loadUsers($extids);
+		$this->updateUserFields('attachments', $data);
 
 		$this->commitStart ();
 		$count = 0;
 		foreach ( $data as $item ) {
-			$user = $this->getUser($item->userid);
-			$item->userid = $user->userid;
 			$item->folder = 'media/kunena/attachments/'.$item->folder;
 			if (file_exists($item->copypath)) {
 				$path = JPATH_ROOT."/{$item->folder}";
@@ -388,6 +464,13 @@ class KunenaimporterModelImport extends JModel {
 				}
 				$item->hash = md5_file ( $item->copypath );
 				JFile::copy($item->copypath, "{$path}/{$item->filename}");
+				if (file_exists($item->copypaththumb)) {
+					if (!JFolder::exists("{$path}/thumb") && JFolder::create("{$path}/thumb")) {
+						$data = '<html><body></body></html>';
+						JFile::write("{$path}/thumb/index.html", $data);
+					}
+					JFile::copy($item->copypaththumb, "{$path}/thumb/{$item->filename}");
+				}
 				$count++;
 			}
 			$table = JTable::getInstance ( 'attachments', 'KunenaImporterTable' );
@@ -415,6 +498,7 @@ class KunenaimporterModelImport extends JModel {
 	}
 
 	protected function importMessages(&$messages) {
+		// Get external user information
 		$extids = array();
 		foreach ( $messages as $message ) {
 			if (!empty($message->userid)) $extids[$message->userid] = $message->userid;
@@ -444,7 +528,6 @@ class KunenaimporterModelImport extends JModel {
 				$user = $this->getUser($message->modified_by);
 				$message->modified_by = $user->userid;
 			}
-			$message->mesid = $message->id;
 			if ($message->userid > 0 && (empty ( $message->email ) || empty ( $message->name ))) {
 				$user = JUser::getInstance ( $message->userid );
 				if (empty ( $message->email ))
@@ -453,12 +536,10 @@ class KunenaimporterModelImport extends JModel {
 					$message->name = $user->username;
 			}
 
-			$msgtable = JTable::getInstance ( 'messages', 'KunenaImporterTable' );
-			if ($msgtable->save ( $message ) === false)
-				die ( "ERROR: " . $msgtable->getError () );
-			$txttable = JTable::getInstance ( 'messages_text', 'KunenaImporterTable' );
-			if ($txttable->save ( $message ) === false)
-				die ( "ERROR: " . $txttable->getError () );
+			$msgtable = JTable::getInstance ( 'KunenaMessages', 'Table' );
+			$msgtable->bind ( $message );
+			if (!$msgtable->check() || !$msgtable->store ())
+				echo ( "ERROR: " . $msgtable->getError () ); //FIXME
 			$count++;
 		}
 		$this->commitEnd ();
@@ -515,26 +596,29 @@ class KunenaimporterModelImport extends JModel {
 	}
 
 	public function updateUserData($oldid, $newid, $replace = false) {
+		if (!$oldid) return false;
 		if ($replace && $oldid) {
 			$this->db->setQuery ( "DELETE FROM `#__kunena_users` WHERE `userid` = {$this->db->quote($oldid)}" );
 			$this->db->query ();
 		}
 		$queries[] = "UPDATE `#__kunena_users` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_announcement` SET `created_by` = {$this->db->quote($newid)} WHERE `created_by` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_attachments` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
-		$queries[] = "UPDATE `#__kunena_favorites` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_keywords_map` SET `user_id` = {$this->db->quote($newid)} WHERE `user_id` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_topics` SET `first_post_userid` = {$this->db->quote($newid)} WHERE `first_post_userid` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_topics` SET `last_post_userid` = {$this->db->quote($newid)} WHERE `last_post_userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_messages` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_messages` SET `modified_by` = {$this->db->quote($newid)} WHERE `modified_by` = {$this->db->quote($oldid)}";
-		$queries[] = "UPDATE `#__kunena_moderation` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_polls_users` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_sessions` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
-		$queries[] = "UPDATE `#__kunena_subscriptions` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
-		$queries[] = "UPDATE `#__kunena_subscriptions_categories` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_thankyou` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_thankyou` SET `targetuserid` = {$this->db->quote($newid)} WHERE `targetuserid` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_user_categories` SET `user_id` = {$this->db->quote($newid)} WHERE `user_id` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_user_read` SET `user_id` = {$this->db->quote($newid)} WHERE `user_id` = {$this->db->quote($oldid)}";
+		$queries[] = "UPDATE `#__kunena_user_topics` SET `user_id` = {$this->db->quote($newid)} WHERE `user_id` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_users_banned` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_users_banned` SET `created_by` = {$this->db->quote($newid)} WHERE `created_by` = {$this->db->quote($oldid)}";
 		$queries[] = "UPDATE `#__kunena_users_banned` SET `modified_by` = {$this->db->quote($newid)} WHERE `modified_by` = {$this->db->quote($oldid)}";
-		$queries[] = "UPDATE `#__kunena_whoisonline` SET `userid` = {$this->db->quote($newid)} WHERE `userid` = {$this->db->quote($oldid)}";
 
 		foreach ($queries as $query) {
 			$this->db->setQuery ( $query );

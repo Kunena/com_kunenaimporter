@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once( JPATH_COMPONENT . '/models/export.php' );
@@ -260,7 +258,7 @@ class KunenaimporterModelExport_Discussions extends KunenaimporterModelExport {
 	public function &exportCategories($start = 0, $limit = 0) {
 		$query = "SELECT
 			id AS id,
-			parent_id AS parent,
+			parent_id AS parent_id,
 			name AS name,
 			0 AS cat_emoticon,
 			0 AS locked,

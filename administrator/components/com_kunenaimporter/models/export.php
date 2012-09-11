@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 // Import Joomla! libraries
@@ -185,14 +183,14 @@ class KunenaimporterModelExport extends JModel {
 
 	public function detect() {
 		// Kunena detection and version check
-		$minKunenaVersion = '1.6.4';
-		if (! class_exists ( 'Kunena' ) || version_compare(Kunena::version(), $minKunenaVersion, '<')) {
+		$minKunenaVersion = '2.0.0-RC2';
+		if (! class_exists ( 'KunenaForum' ) || !KunenaForum::isCompatible($minKunenaVersion) || !KunenaForum::installed()) {
 			$this->addMessage ( '<div>Kunena version: <b style="color:red">FAILED</b></div>' );
 			$this->addMessage ( '<br /><div><b>You need to install Kunena '.$minKunenaVersion.'!</b></div>' );
 			$this->error = 'Kunena not detected!';
 			return false;
 		}
-		$this->addMessage ( '<div>Kunena version: <b style="color:green">' . Kunena::version() . '</b></div>' );
+		$this->addMessage ( '<div>Kunena version: <b style="color:green">' . KunenaForum::version() . '</b></div>' );
 
 		if (get_class($this) == __CLASS__) {
 			$this->addMessage ( '<br /><div><b>Please select forum software!</b></div>' );

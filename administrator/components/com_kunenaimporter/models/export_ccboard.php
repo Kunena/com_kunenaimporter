@@ -1,14 +1,12 @@
 <?php
 /**
- * @package com_kunenaimporter
+ * Kunena Importer component
+ * @package Kunena.com_kunenaimporter
  *
- * Imports forum data into Kunena
- *
- * @Copyright (C) 2009 - 2011 Kunena Team All rights reserved
+ * @copyright (C) 2008 - 2012 Kunena Team. All rights reserved.
  * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL
  * @link http://www.kunena.org
- *
- */
+ **/
 defined ( '_JEXEC' ) or die ();
 
 require_once (JPATH_COMPONENT . '/models/export.php');
@@ -226,7 +224,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		// Import the categories
 		$query = "(SELECT
 			id AS id,
-			cat_id+{$maxforum} AS parent,
+			cat_id+{$maxforum} AS parent_id,
 			forum_name AS name,
 			0 AS cat_emoticon,
 			locked AS locked,
@@ -250,7 +248,7 @@ class KunenaimporterModelExport_ccBoard extends KunenaimporterModelExport {
 		UNION ALL
 		(SELECT
 			id+{$maxforum} AS id,
-			0 AS parent,
+			0 AS parent_id,
 			cat_name AS name,
 			0 AS cat_emoticon,
 			0 AS locked,
