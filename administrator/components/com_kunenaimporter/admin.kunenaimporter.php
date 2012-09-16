@@ -30,7 +30,7 @@ $document = JFactory::getDocument ();
 $document->addStyleSheet ( 'components/com_kunenaimporter/assets/importer.css' );
 
 // Require the base controller
-require_once JPATH_COMPONENT . DS . 'controller.php';
+require_once JPATH_COMPONENT . '/controller.php';
 
 $lang = JFactory::getLanguage ();
 $lang->load ( 'com_kunenaimporter', COM_KUNENAIMPORTER_BASEDIR );

@@ -194,7 +194,7 @@ class KunenaImporterController extends JController {
 		}
 		$replace = JRequest::getInt ( 'replace', 0 );
 
-		require_once (JPATH_COMPONENT . DS . 'models' . DS . 'kunena.php');
+		require_once (JPATH_COMPONENT . '/models/kunena.php');
 		$importer = $this->getModel ( 'import' );
 
 		$extuser = JTable::getInstance ( 'ExtUser', 'KunenaImporterTable' );
@@ -345,7 +345,7 @@ class KunenaImporterController extends JController {
 		$this->setRedirect ( $link, $msg, $type );
 	}
 
-	public function display() {
+	public function display($cachable = false, $urlparams = false) {
 		$this->checkDependencies();
 		$params = getKunenaImporterParams();
 		$forum = $params->get('extforum');
@@ -357,9 +357,9 @@ class KunenaImporterController extends JController {
 		$view = $this->getView ( $cmd, 'html' );
 		$component = JComponentHelper::getComponent ( 'com_kunenaimporter' );
 		$params = new JParameter ( $component->params );
-		$view->setModel ( $this->getModel ( 'import' ), true );
 		$extforum = $params->get ( 'extforum' );
-		$view->setModel ( $export = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' ), false );
+		$export = $this->getModel ( $extforum ? 'export_' . $extforum : 'export' );
+		$view->setModel ( $export , false );
 
 		if ($cmd != 'start') {
 			JSubMenuHelper::addEntry ( JText::_ ( 'Choose Your Software' ), 'index.php?option=com_kunenaimporter&view=start', $cmd == 'default' );

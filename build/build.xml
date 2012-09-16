@@ -119,7 +119,7 @@
 		<copy file="${project_dir}/administrator/components/com_kunenaimporter/kunenaimporter.j16.xml" todir="${tmp_dir}" overwrite="true" filtering="true" />
 		<copy file="${project_dir}/README.md" tofile="${tmp_dir}/README.txt" overwrite="true" filtering="true" />
 		<copy todir="${tmp_dir}/languages" flatten="yes" includeEmptyDirs="no">
-			<fileset dir="${project_dir}/administrator/components/com_kunenaimporter/language">
+			<fileset dir="${project_dir}/administrator/components/com_kunenaimporter/languages">
 				<include name="**/*.ini"/>
 			</fileset>
 		</copy>

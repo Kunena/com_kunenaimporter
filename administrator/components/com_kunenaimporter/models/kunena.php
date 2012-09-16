@@ -32,7 +32,7 @@ class KunenaImporterTable extends JTable {
 		return $return;
 	}
 
-	public function load($oid = null) {
+	public function load($oid = NULL, $reset = true) {
 		$ret = parent::load ( $oid );
 		if ($ret === true)
 			$this->_exists = true;

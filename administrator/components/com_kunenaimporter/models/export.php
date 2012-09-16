@@ -267,7 +267,7 @@ class KunenaimporterModelExport extends JModel {
 		return implode ( '', $this->messages );
 	}
 
-	public function getError() {
+	public function getError($i = NULL, $toString = true) {
 		return $this->error;
 	}
 
